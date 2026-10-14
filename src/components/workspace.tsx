@@ -1,4 +1,5 @@
 "use client";
+import Participants from "./participants";
 import {
   useEffect,
   useState,
@@ -42,6 +43,7 @@ const empty = () =>
 const menus = [
   ["overview", "현황", LayoutDashboard],
   ["customers", "고객·제품", Users],
+  ["participants", "참여자 관리", Users],
   ["contracts", "계약·견적", FileText],
   ["projects", "프로젝트", Layers],
   ["reviews", "검수함", CheckCheck],
@@ -757,7 +759,13 @@ export default function Workspace() {
                     </a>
                   ) : null}
                 </td>
-                <td>{String(t.assignee || "미배정")}</td>
+                <td>
+                  {t.participantId
+                    ? button(String(t.assignee || "참여자"), () =>
+                        navigate("participants", String(t.participantId)),
+                      )
+                    : String(t.assignee || "미배정")}
+                </td>
                 <td>
                   <Badge value={t.status} />
                 </td>
@@ -1019,6 +1027,15 @@ export default function Workspace() {
               </section>
             </div>
           </>
+        )}
+        {page === "participants" && (
+          <Participants
+            data={data}
+            selected={selected}
+            onSelect={(id) => navigate("participants", id)}
+            onProject={(id) => navigate("projects", id)}
+            onReload={load}
+          />
         )}
         {page === "customers" && !customer && (
           <>
@@ -2200,8 +2217,93 @@ export default function Workspace() {
                   <Field label="기획안" full>
                     {area("brief")}
                   </Field>
-                  <Field label="게시 담당자">{input("assignee")}</Field>
+                  <Field label="등록된 참여자">
+                    <select
+                      value={draft.participantId || ""}
+                      disabled={draft.payoutStatus === "paid"}
+                      onChange={(e) => {
+                        const p = find("participants", e.target.value);
+                        const account = ((p?.accounts as Draft[]) || []).find(
+                          (a) => a.channel === draft.channel,
+                        );
+                        setDraft({
+                          ...draft,
+                          participantId: e.target.value,
+                          participantAccountId: account?.id || "",
+                          assignee: p ? String(p.nickname || p.name) : "",
+                        });
+                      }}
+                    >
+                      <option value="">미배정 / 기존 담당자명 사용</option>
+                      {data.participants
+                        .filter(
+                          (p) =>
+                            p.status === "active" ||
+                            p.id === draft.participantId,
+                        )
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {String(p.nickname || p.name)}
+                            {p.status !== "active" ? " · 섭외 중지" : ""}
+                          </option>
+                        ))}
+                    </select>
+                  </Field>
+                  {draft.participantId ? (
+                    <Field label="게시 계정">
+                      <select
+                        value={draft.participantAccountId || ""}
+                        disabled={draft.payoutStatus === "paid"}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            participantAccountId: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">계정 선택</option>
+                        {(
+                          (find("participants", draft.participantId)
+                            ?.accounts || []) as Draft[]
+                        )
+                          .filter((a) => a.channel === draft.channel)
+                          .map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.label || a.url}
+                            </option>
+                          ))}
+                      </select>
+                    </Field>
+                  ) : (
+                    <Field label="기존 담당자명">{input("assignee")}</Field>
+                  )}
                   <Field label="지급액">{input("payout", "number")}</Field>
+                  {draft.participantId && (
+                    <div className="full">
+                      <button
+                        type="button"
+                        disabled={draft.payoutStatus === "paid"}
+                        onClick={() => {
+                          const p = find("participants", draft.participantId);
+                          const rate =
+                            draft.channel === "blog"
+                              ? p?.blogRate
+                              : p?.clipRate;
+                          if (rate === null || rate === undefined) {
+                            setError("참여자 기본 지급액이 미정입니다.");
+                            return;
+                          }
+                          setDraft({ ...draft, payout: rate });
+                        }}
+                      >
+                        참여자 기본 지급액 적용
+                      </button>
+                      <p className="hint">
+                        현재 작업 금액만 변경합니다. 단가를 바꿔도 다른 작업의
+                        지급액은 유지됩니다.
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
               {modal === "notes" && (

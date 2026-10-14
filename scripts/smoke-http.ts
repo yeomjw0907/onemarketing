@@ -113,10 +113,24 @@ await act("project-notes", project.id, {
   budget: 10000,
 });
 await act("project-stage", project.id, { status: "planning" });
+const profile = {
+  id: crypto.randomUUID(),
+  channel: "blog",
+  url: "https://blog.naver.com/smoke-" + project.id,
+  label: "인수검증 계정",
+};
+const participant = await entity("participants", {
+  name: "인수검증 참여자",
+  nickname: "검증 리뷰어",
+  blogRate: 8000,
+  accounts: [profile],
+});
 await act("task-edit", task.id, {
   brief: "제품 정보 소개",
   assignee: "검증 게시자",
   payout: 5000,
+  participantId: participant.id,
+  participantAccountId: profile.id,
 });
 await act("project-stage", project.id, { status: "brief_review" });
 await act("project-stage", project.id, { status: "producing" });
@@ -174,6 +188,30 @@ await act("publication", task.id, {
   verified: true,
 });
 await act("project-stage", project.id, { status: "completed" });
+await act("payout", task.id, { paid: true });
+await entity("participant_history", {
+  participantId: participant.id,
+  name: "시스템 외 과거 협업",
+  channel: "blog",
+  date: "2026-09-01",
+  amount: 10000,
+  paid: true,
+  paidDate: "2026-09-10",
+});
+const withParticipants = await call("/api/data");
+assert.ok(
+  withParticipants.tasks.some(
+    (t: any) =>
+      t.id === task.id &&
+      t.participantId === participant.id &&
+      t.payoutStatus === "paid",
+  ),
+);
+assert.ok(
+  withParticipants.participant_history.some(
+    (h: any) => h.participantId === participant.id,
+  ),
+);
 await act("settle", project.id);
 const options = await call("/api/recommendations", { budget: 150000 });
 assert.ok(

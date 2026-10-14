@@ -1,6 +1,8 @@
 export type Kind =
   | "customers"
   | "products"
+  | "participants"
+  | "participant_history"
   | "prices"
   | "contracts"
   | "projects"
@@ -22,6 +24,8 @@ export type DatabaseView = Record<Kind, RecordData[]>;
 export const kinds: Kind[] = [
   "customers",
   "products",
+  "participants",
+  "participant_history",
   "prices",
   "contracts",
   "projects",

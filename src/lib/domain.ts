@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { audit, create, get, list, update, db, once } from "./db";
 import type { RecordData, Kind } from "./types";
+import {
+  participantSchema,
+  participantHistorySchema,
+  validateParticipant,
+  participantAssignment,
+} from "./participants";
 const text = z.string().trim().max(10000);
 const name = z.string().trim().min(1).max(200);
 const amount = z.number().int().min(0).max(1e12);
@@ -84,6 +90,8 @@ const project = z.object({
   budget: amount,
 });
 const schemas = {
+  participants: participantSchema,
+  participant_history: participantHistorySchema,
   customers: customer,
   products: product,
   prices: price,
@@ -141,6 +149,25 @@ export function save(
     unknown
   >;
   return db.transaction(() => {
+    if (id) {
+      requireRecord(id, kind);
+      z.number().int().positive().parse(version);
+    }
+    if (kind === "participants") validateParticipant(data, id);
+    if (kind === "participant_history") {
+      requireRecord(String(data.participantId), "participants");
+      if (id) {
+        const previous = requireRecord(id, "participant_history");
+        if (previous.participantId !== data.participantId)
+          throw new Error("기존 협업 이력의 참여자는 변경할 수 없습니다.");
+        audit(actor, "participant-history-updated", id, {
+          previousAmount: previous.amount,
+          amount: data.amount,
+          previousPaid: previous.paid,
+          paid: data.paid,
+        });
+      }
+    }
     if (kind === "products")
       requireRecord(String(data.customerId), "customers");
     if (kind === "contracts") {
@@ -353,6 +380,17 @@ export function command(
       const p = requireRecord(String(row.projectId), "projects");
       const brief = text.parse(input.brief),
         changed = brief !== row.brief;
+      const assignment = participantAssignment(row, input);
+      const newPayout = optionalAmount.parse(input.payout);
+      if (
+        row.payoutStatus === "paid" &&
+        (newPayout !== row.payout ||
+          (assignment.participantId !== row.participantId &&
+            Boolean(row.participantId)))
+      )
+        throw new Error(
+          "지급 완료한 작업의 지급액·참여자는 변경할 수 없습니다.",
+        );
       if (
         changed &&
         ["ready", "publishing", "completed", "cancelled"].includes(
@@ -364,12 +402,22 @@ export function command(
         id,
         {
           brief,
-          assignee: text.parse(input.assignee),
-          payout: optionalAmount.parse(input.payout),
+          ...assignment,
+          payout: newPayout,
           ...(changed ? { briefApprovedAt: null, status: "planned" } : {}),
         },
         Number(input.version),
       );
+      if (
+        assignment.participantId !== row.participantId ||
+        newPayout !== row.payout
+      )
+        audit(actor, "participant-assigned", id, {
+          from: row.participantId || null,
+          to: assignment.participantId,
+          previousPayout: row.payout,
+          payout: newPayout,
+        });
       if (changed && ["producing", "review"].includes(String(p.status)))
         update(p.id, { status: "brief_review" });
     } else if (action === "approve-task") {
