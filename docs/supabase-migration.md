@@ -87,7 +87,9 @@ Vercel MCP 토큰에는 환경변수 조회·생성 권한이 없어(403) Supaba
 ## 검증 결과 (2026-10-14)
 
 - 통과: TypeScript, Prettier, `next build`, Vercel 운영 배포(main 자동 배포, READY).
-- 통과(실제 Supabase 일회용 스키마): 트랜잭션 롤백·savepoint, 버전 충돌, 명령 중복 방지(동시 3건 중 1건 실행), 작업별 lease·만료 후 재개, 로그인 시도 제한·세션 저장, 가격 스냅샷·슬롯·정산 제약, 참여자 등록·배정·이력 — `tests/db.test.ts`, `tests/domain.test.ts`, `tests/participants.test.ts` 15개.
-- 통과(운영 배포 HTTP): 비로그인 `/api/data` 401, 비로그인 파일 접근 404, `/api/jobs/run` 비밀 없이 401, 잘못된 로그인 401(공유 DB 기록).
-- 미완료: `SUPABASE_SERVICE_ROLE_KEY` 미입력으로 Storage 경로 검증(`tests/workflow.test.ts`: 업로드·비공개 버킷·ZIP·fal 재조회·ffmpeg, HTTP smoke 업로드/다운로드/ZIP)과 SQLite 파일 이전 실행은 대기. 키 입력 후 실행한다.
-- 미완료: 유료 API(Claude·fal) 실제 생성 검증. 소량 검증 비용 추정 약 $0.5~1.2, 기본 구성 1회 약 $2~5. 지시가 있을 때만 실행한다.
+- 통과(실제 Supabase 일회용 스키마·접두어, `npm test` 22개): 트랜잭션 롤백·savepoint, 버전 충돌, 명령 중복 방지(동시 3건 중 1건 실행), 작업별 lease·만료 후 재개, 로그인 시도 제한·세션, 가격 스냅샷·슬롯·정산, 참여자 등록·배정·이력, 비공개 버킷 저장·업로드 실패 시 DB 미기록, 승인본 ZIP·전달·게시·정산, 중복 이미지 차단, 예산·중복 실행 방지, 실제 ffmpeg 편집, fal 수집 실패 후 같은 요청 ID로 재수집(새 생성 0회), 서버리스 제한 시간 Yield 후 재개, 이전 공급사 요청 중복 제출 차단, Seedance 요청 형식, Claude 웹 검색 pause_turn·출처·도구 오류 처리.
+- 통과(격리 서버 `npm run acceptance` + `npm run smoke`, acceptance 스키마): 로그인·CSRF·고객/제품/단가/계약/프로젝트·참여자 등록·배정·게시 작업 편집·이미지 업로드·인증 다운로드·비로그인 404·ZIP·전달 기록·게시 확인·지급·협업 이력·정산 마감·추천·로그아웃.
+- 통과(운영 배포 HTTP): 비로그인 `/api/data` 401, 비로그인 파일 접근 404, `/api/jobs/run` 비밀 없이 401, 잘못된 로그인 401 후 `login_attempts` 1건 기록(확인 후 삭제).
+- 실행: `npm run db:import-sqlite` (운영 `.data`). 레코드·파일 0건, 유효 세션 2건 이전, 백업 `.data/backups/`. 원본 보존.
+- 미실행: 유료 API(Claude·fal) 실제 생성 검증. 소량 검증 비용 추정 약 $0.5~1.2, 기본 구성 1회 약 $2~5. 지시가 있을 때만 실행한다.
+- 보안 메모: service role 키가 채팅으로 공유되었으므로 검증이 끝나면 Supabase 대시보드에서 키를 재발급하고 `.env.local`·Vercel 값을 교체하는 것을 권장한다.

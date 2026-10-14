@@ -19,6 +19,15 @@ const { slideshow, hybrid } = await import("../src/lib/video");
 const { executeProviderJob } = await import("../src/lib/providers");
 const { runJobs } = await import("../src/lib/worker");
 const actor = "workflow@local";
+const realFetch = globalThis.fetch;
+// 공급사 호출만 가로채고 Supabase Storage 요청은 실제로 보낸다.
+function mockFetch(handler: typeof fetch) {
+  globalThis.fetch = (async (url, init) => {
+    if (String(url).startsWith(String(process.env.SUPABASE_URL)))
+      return realFetch(url, init);
+    return handler(url, init);
+  }) as typeof fetch;
+}
 async function setup(channel = "blog", images = 1) {
   const c = await save("customers", { name: "테스트" }, actor),
     product = await save(
@@ -331,16 +340,18 @@ test("영속 큐 예산·승인·중복 실행 방지와 원고 adapter", async 
   assert.equal(claimed!.id, job.id);
   assert.equal(await claimJob("other-worker"), null);
   const original = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({
-        id: "mock-message",
-        stop_reason: "end_turn",
-        content: [{ type: "text", text: "검증된 제품 소개 원고" }],
-        usage: { input_tokens: 100, output_tokens: 100 },
-      }),
-      { status: 200 },
-    );
+  mockFetch(
+    async () =>
+      new Response(
+        JSON.stringify({
+          id: "mock-message",
+          stop_reason: "end_turn",
+          content: [{ type: "text", text: "검증된 제품 소개 원고" }],
+          usage: { input_tokens: 100, output_tokens: 100 },
+        }),
+        { status: 200 },
+      ),
+  );
   try {
     await executeProviderJob(claimed!);
   } finally {
@@ -432,7 +443,7 @@ test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구 (
   const original = globalThis.fetch;
   let submitted = 0;
   let failDownload = true;
-  globalThis.fetch = async (url, init) => {
+  mockFetch(async (url, init) => {
     const target = String(url);
     if (init?.method === "POST") {
       submitted++;
@@ -454,7 +465,7 @@ test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구 (
       });
     if (failDownload) throw new Error("download interrupted");
     return new Response(new Uint8Array(png));
-  };
+  });
   try {
     // 전체 실행기 경로: 수집 실패 → uncertain + 비용 확인 필요 기록, 요청 ID 보존.
     const first = await runJobs({ owner: "test-runner" });
@@ -504,7 +515,7 @@ test("서버리스 실행 제한 시간: fal 진행 중이면 요청 ID를 보�
   const original = globalThis.fetch;
   let submitted = 0,
     polls = 0;
-  globalThis.fetch = async (url, init) => {
+  mockFetch(async (url, init) => {
     if (init?.method === "POST") {
       submitted++;
       return Response.json({
@@ -524,17 +535,34 @@ test("서버리스 실행 제한 시간: fal 진행 중이면 요청 ID를 보�
         images: [{ url: "https://v3b.fal.media/test.png" }],
       });
     return new Response(new Uint8Array(png));
-  };
+  });
+  // 이미 접수된 요청(request ID 저장)이 진행 중일 때 남은 시간이 30초 미만이면 새 요청 없이 다음 실행으로 넘긴다.
+  await update(job.id, {
+    providerState: {
+      provider: "fal",
+      model: "openai/gpt-image-2.5/sunburst/edit",
+      request_id: "fal-slow",
+      status_url: "https://queue.fal.run/test/status",
+      response_url: "https://queue.fal.run/test/result",
+      input: {},
+    },
+    providerRequestId: "fal-slow",
+    providerSubmittedAt: new Date().toISOString(),
+  });
   try {
-    // 제한 시간 65초: 접수(60초 필요)는 가능하지만 진행 중 대기(30초 여유)는 불가 → yield.
-    const first = await runJobs({ owner: "tick-1", budgetMs: 65000 });
+    const first = await runJobs({ owner: "tick-1", budgetMs: 25000 });
     assert.equal(first.results[0]?.result, "yielded");
     assert.equal(first.more, true);
     assert.equal((await get(job.id))!.status, "pending");
     assert.equal((await get(job.id))!.providerRequestId, "fal-slow");
+    assert.equal(submitted, 0);
     const second = await runJobs({ owner: "tick-2" });
     assert.equal(second.results[0]?.result, "succeeded");
-    assert.equal(submitted, 1);
+    assert.equal(submitted, 0);
+    assert.equal(
+      (await list("assets")).filter((a) => a.jobId === job.id).length,
+      1,
+    );
   } finally {
     globalThis.fetch = original;
   }
@@ -562,9 +590,9 @@ test("이전 공급사 영상 요청을 fal로 중복 제출하지 않음", asyn
     providerState: { response: { request_id: "legacy-request" } },
   });
   const original = globalThis.fetch;
-  globalThis.fetch = async () => {
+  mockFetch(async () => {
     throw new Error("must not call provider");
-  };
+  });
   try {
     await assert.rejects(
       executeProviderJob((await get(job.id))!),
@@ -598,7 +626,7 @@ test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", as
     actor,
   );
   const original = globalThis.fetch;
-  globalThis.fetch = async (url, init) => {
+  mockFetch(async (url, init) => {
     if (init?.method === "POST") {
       assert.equal(
         String(url),
@@ -621,7 +649,7 @@ test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", as
         video: { url: "https://v3b.fal.media/test.mp4" },
       });
     return new Response(new Uint8Array(videoBytes));
-  };
+  });
   try {
     await executeProviderJob(job);
     assert.ok(
@@ -650,7 +678,7 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
   const original = globalThis.fetch;
   let searches = 0,
     plain = 0;
-  globalThis.fetch = async (url, init) => {
+  mockFetch(async (url, init) => {
     assert.equal(String(url), "https://api.anthropic.com/v1/messages");
     const body = JSON.parse(String(init?.body));
     if (body.tools) {
@@ -724,7 +752,7 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
         },
       ],
     });
-  };
+  });
   try {
     await executeProviderJob(job);
     assert.equal(searches, 2);
@@ -776,7 +804,7 @@ test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않�
     );
     const original = globalThis.fetch;
     let count = 0;
-    globalThis.fetch = async () => {
+    mockFetch(async () => {
       count++;
       return Response.json({
         id: "search-error",
@@ -784,7 +812,7 @@ test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않�
         content,
         usage: { input_tokens: 100 },
       });
-    };
+    });
     try {
       await assert.rejects(executeProviderJob(job), /검색/);
       assert.equal(count, 1);
