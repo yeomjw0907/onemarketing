@@ -6,6 +6,7 @@ const { create, get, update, once, transaction, query, list } =
 const { claimJob, enqueue, releaseLease, renewLease } =
   await import("../src/lib/jobs");
 const { save, command } = await import("../src/lib/domain");
+const { login, passwordHash } = await import("../src/lib/auth");
 const actor = "db@local";
 test("트랜잭션 롤백: 실패한 트랜잭션의 쓰기는 남지 않는다", async () => {
   const before = (await list("customers")).length;
@@ -177,4 +178,23 @@ test("worker lease: 작업별 lease로 동시 처리 차단, 만료 후 재개 �
   assert.equal(resumed!.attempts, 2);
   await releaseLease("worker-c", job.id);
   await update(job.id, { status: "failed" });
+});
+test("로그인: 실패 시도는 공유 DB에 남고 8회 후 차단, 성공 시 세션 저장·시도 초기화", async () => {
+  process.env.ADMIN_USERS_JSON = JSON.stringify([
+    { email: "admin@test.local", hash: passwordHash("correct-password") },
+  ]);
+  await assert.rejects(login("admin@test.local", "wrong"), /비밀번호/);
+  const attempts = await query<{ count: number }>(
+    "select count from login_attempts",
+  );
+  assert.equal(attempts.length, 1);
+  assert.equal(Number(attempts[0].count), 1);
+  for (let i = 0; i < 7; i++)
+    await assert.rejects(login("admin@test.local", "wrong"));
+  await assert.rejects(login("admin@test.local", "correct-password"), /15분/);
+  await query("delete from login_attempts");
+  const token = await login("admin@test.local", "correct-password");
+  assert.equal(token.length, 64);
+  assert.equal((await query("select 1 from sessions")).length, 1);
+  assert.equal((await query("select 1 from login_attempts")).length, 0);
 });

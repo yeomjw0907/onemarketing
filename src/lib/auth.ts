@@ -45,42 +45,41 @@ export function sameOrigin(request: Request) {
     throw new Error("허용되지 않은 요청입니다.");
 }
 // 관리자 계정은 환경변수의 scrypt 해시로 확인하고, 세션·시도 제한은 공유 DB에 저장한다.
-export function login(email: string, password: string) {
-  return transaction(async () => {
-    const key = tokenHash(email.toLowerCase());
-    const now = Date.now();
-    const attempts = (
-      await query<{ count: number; until_time: string | number }>(
-        "select count, until_time from login_attempts where key=$1 for update",
-        [key],
-      )
-    )[0];
-    const blocked = attempts && Number(attempts.until_time) > now;
-    if (blocked && Number(attempts.count) >= 8)
-      throw new Error("로그인 시도가 많습니다. 15분 후 다시 시도하세요.");
-    const users = JSON.parse(process.env.ADMIN_USERS_JSON || "[]") as {
-      email: string;
-      hash: string;
-    }[];
-    const user = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase(),
+// 실패 기록은 트랜잭션 밖에서 남겨 오류로 되돌아가지 않게 한다.
+export async function login(email: string, password: string) {
+  const key = tokenHash(email.toLowerCase());
+  const now = Date.now();
+  const attempts = (
+    await query<{ count: number; until_time: string | number }>(
+      "select count, until_time from login_attempts where key=$1",
+      [key],
+    )
+  )[0];
+  const blocked = attempts && Number(attempts.until_time) > now;
+  if (blocked && Number(attempts.count) >= 8)
+    throw new Error("로그인 시도가 많습니다. 15분 후 다시 시도하세요.");
+  const users = JSON.parse(process.env.ADMIN_USERS_JSON || "[]") as {
+    email: string;
+    hash: string;
+  }[];
+  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  if (!user || !verifyPassword(password, user.hash)) {
+    await execute(
+      "insert into login_attempts (key, count, until_time) values ($1,$2,$3) on conflict (key) do update set count=excluded.count, until_time=excluded.until_time",
+      [key, blocked ? Number(attempts.count) + 1 : 1, now + 15 * 60_000],
     );
-    if (!user || !verifyPassword(password, user.hash)) {
-      await execute(
-        "insert into login_attempts (key, count, until_time) values ($1,$2,$3) on conflict (key) do update set count=excluded.count, until_time=excluded.until_time",
-        [key, blocked ? Number(attempts.count) + 1 : 1, now + 15 * 60_000],
-      );
-      throw new Error("이메일 또는 비밀번호를 확인하세요.");
-    }
+    throw new Error("이메일 또는 비밀번호를 확인하세요.");
+  }
+  const token = randomBytes(32).toString("hex");
+  await transaction(async () => {
     await execute("delete from login_attempts where key=$1", [key]);
     await execute("delete from sessions where expires<$1", [now]);
-    const token = randomBytes(32).toString("hex");
     await execute(
       "insert into sessions (token_hash, email, expires) values ($1,$2,$3)",
       [tokenHash(token), user.email, now + 12 * 60 * 60_000],
     );
-    return token;
   });
+  return token;
 }
 export async function logout(token: string | undefined) {
   if (token)

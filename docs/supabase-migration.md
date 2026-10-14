@@ -83,3 +83,11 @@ Vercel MCP 토큰에는 환경변수 조회·생성 권한이 없어(403) Supaba
 - `npm test`: 파일마다 일회용 스키마 `test_<무작위>`와 Storage 접두어 `test_<무작위>/`를 만들어 같은 migration 파일을 적용하고 끝나면 스키마·객체를 삭제한다. 운영 public 스키마와 운영 파일은 건드리지 않는다. `TEST_DATABASE_URL`로 다른 DB를 지정할 수 있다.
 - `npm run acceptance`: `acceptance` 스키마·`acceptance/` 접두어로 격리 서버(3108)를 띄운다. `npm run smoke`는 이 서버에 실행한다.
 - 과거 `.data/acceptance`는 테스트 데이터이므로 운영 DB에 이전하지 않았다.
+
+## 검증 결과 (2026-10-14)
+
+- 통과: TypeScript, Prettier, `next build`, Vercel 운영 배포(main 자동 배포, READY).
+- 통과(실제 Supabase 일회용 스키마): 트랜잭션 롤백·savepoint, 버전 충돌, 명령 중복 방지(동시 3건 중 1건 실행), 작업별 lease·만료 후 재개, 로그인 시도 제한·세션 저장, 가격 스냅샷·슬롯·정산 제약, 참여자 등록·배정·이력 — `tests/db.test.ts`, `tests/domain.test.ts`, `tests/participants.test.ts` 15개.
+- 통과(운영 배포 HTTP): 비로그인 `/api/data` 401, 비로그인 파일 접근 404, `/api/jobs/run` 비밀 없이 401, 잘못된 로그인 401(공유 DB 기록).
+- 미완료: `SUPABASE_SERVICE_ROLE_KEY` 미입력으로 Storage 경로 검증(`tests/workflow.test.ts`: 업로드·비공개 버킷·ZIP·fal 재조회·ffmpeg, HTTP smoke 업로드/다운로드/ZIP)과 SQLite 파일 이전 실행은 대기. 키 입력 후 실행한다.
+- 미완료: 유료 API(Claude·fal) 실제 생성 검증. 소량 검증 비용 추정 약 $0.5~1.2, 기본 구성 1회 약 $2~5. 지시가 있을 때만 실행한다.

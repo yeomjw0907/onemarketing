@@ -18,8 +18,8 @@ delete process.env.CRON_SECRET;
 const { applyMigrations, dropSchema } = await import("../src/lib/migrate");
 const { closeDb } = await import("../src/lib/db");
 const { listObjects, removeObjects } = await import("../src/lib/storage");
-await applyMigrations();
 export const testSchema = run;
+// 정리 훅은 migration 적용 전에 등록해 적용이 실패해도 스키마를 남기지 않는다.
 after(async () => {
   try {
     const names = await listObjects();
@@ -33,3 +33,4 @@ after(async () => {
   await dropSchema();
   await closeDb();
 });
+await applyMigrations();
