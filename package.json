@@ -13,7 +13,10 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "worker": "tsx scripts/worker.ts",
-    "setup-admins": "tsx scripts/setup-admins.ts"
+    "setup-admins": "tsx scripts/setup-admins.ts",
+    "format": "prettier --write src scripts tests next.config.ts tsconfig.json package.json",
+    "format:check": "prettier --check src scripts tests next.config.ts tsconfig.json package.json",
+    "smoke": "tsx scripts/smoke-http.ts"
   },
   "repository": {
     "type": "git",
@@ -37,6 +40,7 @@
     "next": "^16.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -49,7 +53,7 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
-  "private": "true",
+  "private": true,
   "overrides": {
     "uuid": "^11.1.1"
   },
