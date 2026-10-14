@@ -1,0 +1,54 @@
+{
+  "name": "onemarketing",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "tsx --test tests/*.test.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "worker": "tsx scripts/worker.ts",
+    "setup-admins": "tsx scripts/setup-admins.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeomjw0907/onemarketing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yeomjw0907/onemarketing/issues"
+  },
+  "homepage": "https://github.com/yeomjw0907/onemarketing#readme",
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.7",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^1.57.0",
+    "next": "^16.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/archiver": "^8.0.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "private": "true",
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "type": "module"
+}
