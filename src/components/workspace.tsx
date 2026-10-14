@@ -1,5 +1,6 @@
 "use client";
 import Participants from "./participants";
+import AiCosts from "./ai-costs";
 import {
   useEffect,
   useState,
@@ -383,6 +384,10 @@ export default function Workspace() {
         setBusy(false);
       }
       return;
+    }
+    if (kind === "prices" && values.channel === "blog") {
+      values.duration = 0;
+      values.mode = "slideshow";
     }
     const r = await mutate({ kind, data: values, id, version });
     if (r) {
@@ -975,6 +980,7 @@ export default function Workspace() {
                 </div>
               ))}
             </div>
+            <AiCosts costs={data.costs} />
             <div className="split">
               <section className="section">
                 <div className="section-title">
@@ -1797,7 +1803,6 @@ export default function Workspace() {
                     <th>상품 / 채널</th>
                     <th>판매가</th>
                     <th>지급액</th>
-                    <th>예상 AI 비용</th>
                     <th>수정</th>
                   </tr>
                 </thead>
@@ -1807,13 +1812,13 @@ export default function Workspace() {
                       <td>
                         <strong>{String(p.name)}</strong>
                         <small>
-                          {p.channel === "blog" ? "블로그" : "클립"} ·{" "}
-                          {p.mode === "slideshow" ? "슬라이드형" : "AI 생성형"}
+                          {p.channel === "blog"
+                            ? "블로그"
+                            : `클립 · ${p.mode === "slideshow" ? "슬라이드형" : p.mode === "hybrid" ? "혼합형" : "AI 생성형"}`}
                         </small>
                       </td>
                       <td>{money(p.sale)}</td>
                       <td>{money(p.payout)}</td>
-                      <td>{money(p.aiEstimate)}</td>
                       <td>{button("수정", () => open("prices", { ...p }))}</td>
                     </tr>
                   ))}
@@ -1937,25 +1942,31 @@ export default function Workspace() {
                   <Field label="게시자 지급액 · 미정이면 빈칸">
                     {input("payout", "number")}
                   </Field>
-                  <Field label="AI 예상 비용 · 미정이면 빈칸">
-                    {input("aiEstimate", "number")}
-                  </Field>
                   <Field label="포함 이미지 수">
                     {input("images", "number")}
                   </Field>
-                  <Field label="영상 길이 · 초">
-                    {input("duration", "number")}
-                  </Field>
-                  <Field label="영상 방식">
-                    {select("mode", [
-                      { id: "slideshow", name: "이미지 슬라이드형" },
-                      { id: "hybrid", name: "혼합형" },
-                      { id: "generated", name: "AI 생성형" },
-                    ])}
-                  </Field>
+                  {draft.channel === "clip" && (
+                    <>
+                      <Field label="영상 길이 · 초">
+                        {input("duration", "number")}
+                      </Field>
+                      <Field label="영상 방식">
+                        {select("mode", [
+                          { id: "slideshow", name: "이미지 슬라이드형" },
+                          { id: "hybrid", name: "혼합형" },
+                          { id: "generated", name: "AI 생성형" },
+                        ])}
+                      </Field>
+                    </>
+                  )}
                   <Field label="포함 수정 횟수">
                     {input("revisions", "number")}
                   </Field>
+                  <p className="hint full">
+                    AI 사용 비용은 대시보드에서 이번 달 비용과 프로젝트당
+                    평균으로 확인하세요. AI 예상비용이 미정인 견적은 예상 마진도
+                    미정으로 표시합니다.
+                  </p>
                 </>
               )}
               {modal === "contracts" && (
