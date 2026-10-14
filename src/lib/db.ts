@@ -6,16 +6,37 @@ import { kinds, type Kind, type RecordData, type DatabaseView } from "./types";
 export const dataDir = path.resolve(
   /* turbopackIgnore: true */ process.env.DATA_DIR || ".data",
 );
-mkdirSync(dataDir, { recursive: true });
-export const db = new Database(path.join(dataDir, "marketing.sqlite"));
-db.pragma("journal_mode = WAL");
-db.pragma("busy_timeout = 5000");
-db.exec(`CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY,kind TEXT NOT NULL,version INTEGER NOT NULL,data TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+let connection: Database.Database | undefined;
+function database(): Database.Database {
+  if (connection) return connection;
+  mkdirSync(dataDir, { recursive: true });
+  const opened = new Database(path.join(dataDir, "marketing.sqlite"));
+  try {
+    // Set the timeout before the first operation that can acquire a write lock.
+    opened.pragma("busy_timeout = 5000");
+    opened.pragma("journal_mode = WAL");
+    opened.exec(`CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY,kind TEXT NOT NULL,version INTEGER NOT NULL,data TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS records_kind ON records(kind);
 CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY,email TEXT NOT NULL,expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY,count INTEGER NOT NULL,until_time INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS commands (key TEXT PRIMARY KEY,result TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS leases (key TEXT PRIMARY KEY,owner TEXT NOT NULL,expires INTEGER NOT NULL);`);
+    connection = opened;
+    return opened;
+  } catch (error) {
+    opened.close();
+    throw error;
+  }
+}
+// Importing a route during next build must not open or initialize the database.
+// Bind methods to the real connection to preserve better-sqlite3's receiver.
+export const db = new Proxy({} as Database.Database, {
+  get(_target, property) {
+    const opened = database();
+    const value = Reflect.get(opened, property, opened);
+    return typeof value === "function" ? value.bind(opened) : value;
+  },
+});
 const decode = (row: unknown): RecordData | undefined =>
   row ? JSON.parse((row as { data: string }).data) : undefined;
 export const get = (id: string) =>
