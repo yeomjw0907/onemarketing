@@ -617,9 +617,17 @@ export default function Participants({
                               {String(product?.name || "")}
                             </small>
                             <small>
-                              {String(
-                                (t.participantSnapshot as Draft)?.account
-                                  ?.url || "",
+                              {(t.participantSnapshot as Draft)?.account
+                                ?.url && (
+                                <a
+                                  href={
+                                    (t.participantSnapshot as Draft).account.url
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  배정 계정 ↗
+                                </a>
                               )}
                             </small>
                           </td>
@@ -682,7 +690,9 @@ export default function Participants({
                         <td>
                           <strong>{String(h.name)}</strong>
                           <small>
-                            {String(h.customer)} · {String(h.product)}
+                            {[h.customer, h.product]
+                              .filter(Boolean)
+                              .join(" · ") || "고객·제품 미등록"}
                           </small>
                           <small>기존 협업 · {String(h.date)}</small>
                         </td>
@@ -733,6 +743,19 @@ export default function Participants({
             <div className="fields">
               {historyField("name", "작업명")}
               {historyField("date", "참여일", "date")}
+              <label>
+                채널
+                <select
+                  value={history.channel}
+                  onChange={(e) =>
+                    setHistory({ ...history, channel: e.target.value })
+                  }
+                >
+                  <option value="blog">네이버 블로그</option>
+                  <option value="clip">네이버 클립</option>
+                  <option value="other">기타</option>
+                </select>
+              </label>
               {historyField("customer", "고객·브랜드")}
               {historyField("product", "제품")}
               {historyField("link", "게시 링크", "url")}
