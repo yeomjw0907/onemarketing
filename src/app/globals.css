@@ -6,6 +6,21 @@
   --line: #e9edf2;
   --bg: #f7f8fa;
 }
+.customer-report {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.report-header h1 {
+  margin: 12px 0;
+}
 .posting-set {
   border-top: 1px solid var(--line);
   padding: 20px 0;

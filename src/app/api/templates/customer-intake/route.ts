@@ -8,7 +8,7 @@ export async function GET() {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent("고객_마케팅자료_작성양식_v1.xlsx")}`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent("고객_마케팅자료_작성양식_v2.xlsx")}`,
         "Cache-Control": "private, no-store",
       },
     });

@@ -22,13 +22,13 @@ test("고객 사업자번호를 저장하고 잘못된 번호는 거절", async 
   );
 });
 
-test("고객 작성 Excel의 5개 시트를 읽고 작성본·사업자등록증을 비공개 보관", async () => {
+test("고객 작성 Excel의 제품 맥락 양식를 읽고 작성본·사업자등록증을 비공개 보관", async () => {
   const buffer = await customerIntakeTemplate();
   const book = new ExcelJS.Workbook();
   await book.xlsx.load(buffer as unknown as ExcelJS.Buffer);
-  assert.equal(book.worksheets.length, 5);
-  assert.equal(book.getWorksheet("4_제작요청")!.rowCount, 6);
-  book.getWorksheet("2_고객브랜드")!.getCell("B2").value = "고객 작성 상호";
+  assert.equal(book.worksheets.length, 3);
+  assert.ok(book.getWorksheet("2_제품맥락")!.rowCount >= 20);
+  book.getWorksheet("2_제품맥락")!.getCell("C2").value = "고객 작성 상호";
   const filled = Buffer.from(await book.xlsx.writeBuffer());
   const customer = await save("customers", { name: "업로드 고객" }, actor);
   const intake = await saveCustomerFile(

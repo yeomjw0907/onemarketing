@@ -4,6 +4,7 @@ import Dashboard from "./dashboard";
 import PostingSets from "./posting-sets";
 import MaterialChecklist from "./material-checklist";
 import CustomerDocuments from "./customer-documents";
+import CustomerReportLinks from "./customer-report-links";
 import {
   useEffect,
   useState,
@@ -1125,6 +1126,12 @@ export default function Workspace() {
                 </p>
               </section>
             </div>
+            <CustomerReportLinks
+              key={"report:" + customer.id}
+              customerId={customer.id}
+              links={data.report_links}
+              onReload={async () => setData(await api("/api/data"))}
+            />
             <CustomerDocuments
               key={customer.id}
               customerId={customer.id}
