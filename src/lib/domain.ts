@@ -22,6 +22,15 @@ const amount = z.number().int().min(0).max(1e12);
 const optionalAmount = amount.nullable();
 const customer = z.object({
   name,
+  businessNumber: z
+    .string()
+    .trim()
+    .default("")
+    .transform((v) => v.replaceAll("-", "").replaceAll(" ", ""))
+    .refine(
+      (v) => v === "" || /^\d{10}$/.test(v),
+      "사업자번호는 숫자 10자리로 입력하세요.",
+    ),
   contact: text.default(""),
   brand: text.default(""),
   tone: text.default(""),

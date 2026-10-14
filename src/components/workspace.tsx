@@ -1,6 +1,7 @@
 "use client";
 import Participants from "./participants";
 import AiCosts from "./ai-costs";
+import CustomerDocuments from "./customer-documents";
 import {
   useEffect,
   useState,
@@ -45,6 +46,7 @@ const menus = [
   ["overview", "현황", LayoutDashboard],
   ["customers", "고객·제품", Users],
   ["participants", "참여자 관리", Users],
+  ["library", "자료실", FolderOpen],
   ["contracts", "계약·견적", FileText],
   ["projects", "프로젝트", Layers],
   ["reviews", "검수함", CheckCheck],
@@ -187,6 +189,7 @@ function Field({
   );
 }
 export default function Workspace() {
+  const customerUploads = useRef<{ category: string; file: File }[]>([]);
   const [email, setEmail] = useState<string | null | undefined>(undefined),
     [data, setData] = useState<DatabaseView>(empty),
     [page, setPage] = useState("overview"),
@@ -263,6 +266,7 @@ export default function Workspace() {
     setError("");
   }
   function open(kind: string, values: Draft = {}) {
+    customerUploads.current = [];
     setModal(kind);
     setError("");
     setRecommendations([]);
@@ -391,6 +395,35 @@ export default function Workspace() {
     }
     const r = await mutate({ kind, data: values, id, version });
     if (r) {
+      if (kind === "customers") {
+        setBusy(true);
+        try {
+          while (customerUploads.current.length) {
+            const next = customerUploads.current[0];
+            if (next.file.size > 4 * 1024 * 1024)
+              throw new Error(
+                "고객은 저장됐습니다. 첨부파일은 4MB 이하로 다시 선택하세요.",
+              );
+            const form = new FormData();
+            form.set("file", next.file);
+            form.set("customerId", r.id);
+            form.set("category", next.category);
+            await api("/api/customer-files", { method: "POST", body: form });
+            customerUploads.current.shift();
+          }
+          setData(await api("/api/data"));
+          navigate("customers", r.id);
+        } catch (e) {
+          setDraft({ ...r });
+          setError(
+            "고객 저장 완료 · 첨부자료 등록 실패: " +
+              (e instanceof Error ? e.message : "다시 시도하세요."),
+          );
+          return;
+        } finally {
+          setBusy(false);
+        }
+      }
       setModal("");
       if (kind === "projects") navigate("projects", r.id);
     }
@@ -1043,6 +1076,22 @@ export default function Workspace() {
             onReload={load}
           />
         )}
+        {page === "library" && (
+          <>
+            <div className="pagehead">
+              <div>
+                <h1>자료실</h1>
+                <p>고객 작성 양식과 고객별 참고자료를 보관하세요.</p>
+              </div>
+            </div>
+            <CustomerDocuments
+              customers={data.customers}
+              assets={data.assets}
+              projects={data.projects}
+              onReload={async () => setData(await api("/api/data"))}
+            />
+          </>
+        )}
         {page === "customers" && !customer && (
           <>
             <div className="pagehead">
@@ -1133,6 +1182,7 @@ export default function Workspace() {
                   ["타깃", customer.target],
                   ["피해야 할 표현", customer.forbidden],
                   ["연락처", customer.contact],
+                  ["사업자등록번호", customer.businessNumber],
                 ].map(([k, v]) => (
                   <div className="amountline" key={String(k)}>
                     <span className="muted">{String(k)}</span>
@@ -1160,6 +1210,14 @@ export default function Workspace() {
                 </p>
               </section>
             </div>
+            <CustomerDocuments
+              key={customer.id}
+              customerId={customer.id}
+              customers={data.customers}
+              assets={data.assets}
+              projects={data.projects}
+              onReload={async () => setData(await api("/api/data"))}
+            />
             <div className="section-title">
               <h2>제품 목록</h2>
               {button(
@@ -1893,6 +1951,50 @@ export default function Workspace() {
               {modal === "customers" && (
                 <>
                   <Field label="고객명">{input("name")}</Field>
+                  <Field label="사업자등록번호">
+                    {input("businessNumber", "text", "000-00-00000")}
+                  </Field>
+                  <Field label="사업자등록증 · PDF/이미지, 최대 4MB" full>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={(e) => {
+                        customerUploads.current =
+                          customerUploads.current.filter(
+                            (f) => f.category !== "business_registration",
+                          );
+                        const file = e.target.files?.[0];
+                        if (file)
+                          customerUploads.current.push({
+                            category: "business_registration",
+                            file,
+                          });
+                      }}
+                    />
+                  </Field>
+                  <Field label="기타 참고자료 · 파일당 최대 4MB" full>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.csv,.txt,.md"
+                      onChange={(e) => {
+                        customerUploads.current =
+                          customerUploads.current.filter(
+                            (f) => f.category !== "reference",
+                          );
+                        customerUploads.current.push(
+                          ...Array.from(e.target.files || []).map((file) => ({
+                            category: "reference",
+                            file,
+                          })),
+                        );
+                      }}
+                    />
+                  </Field>
+                  <p className="hint full">
+                    첨부파일은 고객 저장 시 함께 등록됩니다. 작성된 Excel은
+                    자료실에서 미리보기·다운로드할 수 있습니다.
+                  </p>
                   <Field label="브랜드">{input("brand")}</Field>
                   <Field label="연락처" full>
                     {input("contact")}

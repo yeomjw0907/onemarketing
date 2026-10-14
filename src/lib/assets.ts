@@ -37,6 +37,11 @@ export async function imageFingerprint(buffer: Buffer) {
 }
 export function detectMime(buffer: Buffer, extension: string) {
   if (
+    extension === "pdf" &&
+    buffer.subarray(0, 5).toString("ascii") === "%PDF-"
+  )
+    return "application/pdf";
+  if (
     extension === "png" &&
     buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
   )
