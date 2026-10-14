@@ -1,4 +1,10 @@
 import { z } from "zod";
+import { materialItems } from "./material-checklist";
+import {
+  createPostingSet,
+  payPostingSet,
+  dissolvePostingSet,
+} from "./posting-sets";
 import {
   audit,
   create,
@@ -322,20 +328,62 @@ export function command(
   z.string().min(1).max(100).parse(key);
   return once(actor + ":" + key, async () => {
     const id = String(input.id || "");
-    const row = await requireRecord(id);
+    let row = await requireRecord(id);
     let result: RecordData = row;
-    const parent =
+    let parent =
       row.kind === "projects"
         ? row
         : row.projectId
           ? await requireRecord(String(row.projectId), "projects")
           : null;
+    if (parent) {
+      await lock("project-operations:" + parent.id);
+      row = await requireRecord(id);
+      parent =
+        row.kind === "projects"
+          ? row
+          : await requireRecord(parent.id, "projects");
+      result = row;
+    }
     if (
       parent?.settled &&
       !["reopen-settlement", "import-source"].includes(action)
     )
       throw new Error("정산 마감한 프로젝트입니다. 먼저 마감을 취소하세요.");
-    if (action === "project-stage") {
+    if (action === "posting-set-create") {
+      if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
+      if (row.version !== Number(input.version))
+        throw new Error("새로고침 후 다시 시도하세요.");
+      result = await createPostingSet(row, input);
+    } else if (action === "posting-set-pay") {
+      result = await payPostingSet(row, input, actor);
+    } else if (action === "posting-set-dissolve") {
+      result = await dissolvePostingSet(row, input);
+    } else if (action === "materials-update") {
+      if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
+      const items = z
+        .array(
+          z.object({
+            key: z.enum(materialItems.map((i) => i[0])),
+            required: z.boolean(),
+            status: z.enum(["missing", "received", "confirmed"]),
+            note: z.string().trim().max(1000),
+          }),
+        )
+        .length(materialItems.length)
+        .parse(input.items);
+      if (new Set(items.map((i) => i.key)).size !== materialItems.length)
+        throw new Error("자료 항목이 중복되었습니다.");
+      result = await update(
+        id,
+        {
+          materialChecklist: items,
+          materialsCheckedAt: new Date().toISOString(),
+          materialsCheckedBy: actor,
+        },
+        Number(input.version),
+      );
+    } else if (action === "project-stage") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
       const next = String(input.status);
       const allowed: Record<string, string[]> = {
@@ -403,6 +451,15 @@ export function command(
         changed = brief !== row.brief;
       const assignment = await participantAssignment(row, input);
       const newPayout = optionalAmount.parse(input.payout);
+      if (
+        row.postingSetId &&
+        (newPayout !== row.payout ||
+          assignment.participantId !== row.participantId ||
+          assignment.participantAccountId !== row.participantAccountId)
+      )
+        throw new Error(
+          "세트에 묶인 작업의 보수·참여자·계정은 개별 변경할 수 없습니다.",
+        );
       if (
         row.payoutStatus === "paid" &&
         (newPayout !== row.payout ||
@@ -498,6 +555,14 @@ export function command(
         throw new Error("웹 링크를 입력하세요.");
       if ((await list("tasks")).some((t) => t.id !== id && t.link === link))
         throw new Error("이미 등록된 게시 링크입니다.");
+      if (
+        row.postingSetId &&
+        row.payoutStatus === "paid" &&
+        (input.verified !== true || link !== row.link)
+      )
+        throw new Error(
+          "지급한 세트의 게시 링크를 변경하려면 먼저 세트 지급을 취소하세요.",
+        );
       result = await update(
         id,
         {
@@ -509,6 +574,8 @@ export function command(
         Number(input.version),
       );
     } else if (action === "payout") {
+      if (row.postingSetId)
+        throw new Error("참여자 게시 세트에서 통합 지급을 처리하세요.");
       if (row.kind !== "tasks" || row.payout === null)
         throw new Error("지급액을 먼저 확정하세요.");
       result = await update(
@@ -660,6 +727,10 @@ export function command(
       );
     } else if (action === "cancel-task") {
       if (row.kind !== "tasks") throw new Error("게시 작업을 선택하세요.");
+      if (row.postingSetId)
+        throw new Error(
+          "세트 작업은 개별 취소할 수 없습니다. 전달 전 세트를 해제하세요.",
+        );
       result = await update(
         id,
         {

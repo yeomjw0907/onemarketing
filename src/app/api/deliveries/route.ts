@@ -1,7 +1,11 @@
 import { ZipArchive } from "archiver";
 import { Readable } from "node:stream";
 import { requireActor, sameOrigin } from "@/lib/auth";
-import { approvedBundle, recordDelivery } from "@/lib/deliveries";
+import {
+  approvedBundle,
+  participantBundle,
+  recordDelivery,
+} from "@/lib/deliveries";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 export async function GET(request: Request) {
@@ -10,12 +14,15 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const projectId = url.searchParams.get("projectId");
     if (!projectId) throw new Error("프로젝트를 선택하세요.");
-    const bundle = await approvedBundle(
-      projectId,
-      url.searchParams.getAll("taskId").length
-        ? url.searchParams.getAll("taskId")
-        : undefined,
-    );
+    const setId = url.searchParams.get("setId");
+    const bundle = setId
+      ? await participantBundle(projectId, setId)
+      : await approvedBundle(
+          projectId,
+          url.searchParams.getAll("taskId").length
+            ? url.searchParams.getAll("taskId")
+            : undefined,
+        );
     const archive = new ZipArchive({ zlib: { level: 5 } });
     const stream = Readable.toWeb(archive) as ReadableStream<Uint8Array>;
     for (const entry of bundle.entries)
@@ -24,7 +31,7 @@ export async function GET(request: Request) {
     return new Response(stream, {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(String(bundle.project.name) + ".zip")}`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent("filename" in bundle ? String(bundle.filename) : String(bundle.project.name) + ".zip")}`,
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },

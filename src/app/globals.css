@@ -6,6 +6,37 @@
   --line: #e9edf2;
   --bg: #f7f8fa;
 }
+.posting-set {
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+}
+.material-checklist table {
+  min-width: 680px;
+}
+.material-checklist select {
+  min-width: 120px;
+}
+.material-checklist input[type="checkbox"] {
+  width: auto;
+}
+.actionlist button > span:first-child {
+  min-width: 0;
+  text-align: left;
+}
+.actionlist small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.actionlist .badge {
+  flex-shrink: 0;
+}
+.button-link {
+  display: inline-flex;
+  padding: 9px 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
 * {
   box-sizing: border-box;
 }

@@ -1,6 +1,8 @@
 "use client";
 import Participants from "./participants";
-import AiCosts from "./ai-costs";
+import Dashboard from "./dashboard";
+import PostingSets from "./posting-sets";
+import MaterialChecklist from "./material-checklist";
 import CustomerDocuments from "./customer-documents";
 import {
   useEffect,
@@ -700,7 +702,10 @@ export default function Workspace() {
                   {t.channel === "blog"
                     ? `이미지 ${t.images}장`
                     : `${t.mode === "slideshow" ? "슬라이드형" : "AI 생성형"} · ${t.duration}초`}{" "}
-                  · 지급 {money(t.payout)}
+                  ·{" "}
+                  {t.postingSetId
+                    ? "세트 통합 보수에 포함"
+                    : `지급 ${money(t.payout)}`}
                 </span>
               </div>
               <div className="row">
@@ -808,7 +813,7 @@ export default function Workspace() {
                   <Badge value={t.status} />
                 </td>
                 <td>
-                  {money(t.payout)}
+                  {t.postingSetId ? "세트 통합 보수" : money(t.payout)}
                   <small>
                     {t.payoutStatus === "paid" ? "지급 완료" : "지급 예정"}
                   </small>
@@ -821,13 +826,18 @@ export default function Workspace() {
                         verified: t.status === "verified",
                       }),
                     )}
-                    {button(
-                      t.payoutStatus === "paid" ? "지급 취소" : "지급 완료",
-                      () =>
-                        action("payout", t, {
-                          paid: t.payoutStatus !== "paid",
-                        }),
-                    )}
+                    {t.postingSetId
+                      ? button("세트 지급 관리", () => {
+                          navigate("projects", String(t.projectId));
+                          setTab(4);
+                        })
+                      : button(
+                          t.payoutStatus === "paid" ? "지급 취소" : "지급 완료",
+                          () =>
+                            action("payout", t, {
+                              paid: t.payoutStatus !== "paid",
+                            }),
+                        )}
                   </div>
                 </td>
               </tr>
@@ -962,109 +972,14 @@ export default function Workspace() {
         )}
         {page === "overview" && (
           <>
-            <div className="pagehead">
-              <div>
-                <h1>오늘의 마케팅 업무</h1>
-                <p>진행 중인 작업과 먼저 확인할 일을 모았어요.</p>
-              </div>
-              <button className="primary" onClick={() => newProject()}>
-                <Plus size={17} />
-                프로젝트 시작
-              </button>
-            </div>
-            <div className="stats">
-              {[
-                [
-                  "진행 중인 프로젝트",
-                  data.projects.filter(
-                    (p) =>
-                      !["completed", "cancelled"].includes(String(p.status)),
-                  ).length + "건",
-                  "운영 중",
-                ],
-                [
-                  "검수 대기",
-                  data.tasks.filter((t) =>
-                    ["review", "changes"].includes(String(t.status)),
-                  ).length + "건",
-                  "승인을 기다리는 작업",
-                ],
-                [
-                  "게시 확인",
-                  data.tasks.filter((t) => t.status === "verified").length +
-                    "건",
-                  `전체 ${data.tasks.length}건`,
-                ],
-                [
-                  "계약 판매액",
-                  money(
-                    data.contracts.reduce(
-                      (n, c) => n + Number(c.sale) * Number(c.slotCount),
-                      0,
-                    ),
-                  ),
-                  "계약 전체 · 수금액과 다름",
-                ],
-              ].map(([label, value, sub]) => (
-                <div className="stat" key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                  <small>{sub}</small>
-                </div>
-              ))}
-            </div>
-            <AiCosts costs={data.costs} />
-            <div className="split">
-              <section className="section">
-                <div className="section-title">
-                  <h2>먼저 처리할 일</h2>
-                  <span className="muted">Action needed</span>
-                </div>
-                <div className="actionlist">
-                  {data.projects
-                    .filter(
-                      (p) =>
-                        p.status !== "completed" && p.status !== "cancelled",
-                    )
-                    .sort((a, b) => String(a.due).localeCompare(String(b.due)))
-                    .slice(0, 8)
-                    .map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => navigate("projects", p.id)}
-                      >
-                        <span>
-                          <Badge value={p.status} />　{String(p.name)}
-                        </span>
-                        <ChevronRight size={16} />
-                      </button>
-                    ))}
-                </div>
-                {!data.projects.length && (
-                  <Empty title="첫 프로젝트를 시작해 볼까요?">
-                    고객과 단가를 등록한 뒤 견적을 확정하세요.
-                  </Empty>
-                )}
-              </section>
-              <section className="section">
-                <h2>작업 순서</h2>
-                {[
-                  "고객·제품 자료 등록",
-                  "단가 설정 및 계약 확정",
-                  "조사·기획 승인",
-                  "콘텐츠 제작·검수",
-                  "ZIP 전달·게시 확인",
-                ].map((s, i) => (
-                  <div className="amountline" key={s}>
-                    <span className="muted">0{i + 1}</span>
-                    <span>{s}</span>
-                  </div>
-                ))}
-                <p className="hint" style={{ marginTop: 20 }}>
-                  모든 게시가 확인된 뒤 운영을 완료하고 비용을 확정해요.
-                </p>
-              </section>
-            </div>
+            <Dashboard
+              data={data}
+              onNew={newProject}
+              onOpen={(id, nextTab) => {
+                navigate("projects", id);
+                setTab(nextTab);
+              }}
+            />
           </>
         )}
         {page === "participants" && (
@@ -1531,53 +1446,79 @@ export default function Workspace() {
               </div>
             )}
             {tab === 1 && (
-              <section className="section">
-                <div className="section-title">
-                  <h2>고객 제공 자료</h2>
-                  <button onClick={() => upload(project.id)} disabled={busy}>
-                    <Upload size={16} />
-                    엑셀·사진 등록
-                  </button>
-                </div>
-                <p className="hint">
-                  원본을 보존해요. 사진은 이미지 생성 시 제품 기준으로
-                  사용됩니다.
-                </p>
-                <Assets
-                  rows={data.assets.filter(
+              <>
+                <MaterialChecklist
+                  key={
+                    project.id +
+                    ":" +
+                    project.version +
+                    ":" +
+                    data.assets.filter((a) => a.projectId === project.id).length
+                  }
+                  project={project}
+                  assets={data.assets}
+                  onSave={async (items) => {
+                    const result = await action("materials-update", project, {
+                      items,
+                    });
+                    if (!result)
+                      throw new Error(
+                        "체크리스트를 저장하지 못했습니다. 화면의 오류를 확인하세요.",
+                      );
+                    return result;
+                  }}
+                />
+                <section className="section">
+                  <div className="section-title">
+                    <h2>고객 제공 자료</h2>
+                    <button onClick={() => upload(project.id)} disabled={busy}>
+                      <Upload size={16} />
+                      엑셀·사진 등록
+                    </button>
+                  </div>
+                  <p className="hint">
+                    원본을 보존해요. 사진은 이미지 생성 시 제품 기준으로
+                    사용됩니다.
+                  </p>
+                  <Assets
+                    rows={data.assets.filter(
+                      (a) =>
+                        a.projectId === project.id && a.category === "source",
+                    )}
+                  />
+                  {!data.assets.some(
                     (a) =>
                       a.projectId === project.id && a.category === "source",
-                  )}
-                />
-                {!data.assets.some(
-                  (a) => a.projectId === project.id && a.category === "source",
-                ) && <Empty title="엑셀과 제품 사진을 등록하세요" />}
-                <details>
-                  <summary>이 제품의 이전 자료 가져오기</summary>
-                  {data.assets
-                    .filter(
-                      (a) =>
-                        a.category === "source" &&
-                        a.projectId !== project.id &&
-                        find("projects", a.projectId)?.productId ===
-                          project.productId &&
-                        !data.assets.some(
-                          (b) =>
-                            b.projectId === project.id &&
-                            b.category === "source" &&
-                            b.hash === a.hash,
-                        ),
-                    )
-                    .map((a) => (
-                      <div className="amountline" key={a.id}>
-                        <span>{String(a.name)}</span>
-                        {button("가져오기", () =>
-                          action("import-source", a, { projectId: project.id }),
-                        )}
-                      </div>
-                    ))}
-                </details>
-              </section>
+                  ) && <Empty title="엑셀과 제품 사진을 등록하세요" />}
+                  <details>
+                    <summary>이 제품의 이전 자료 가져오기</summary>
+                    {data.assets
+                      .filter(
+                        (a) =>
+                          a.category === "source" &&
+                          a.projectId !== project.id &&
+                          find("projects", a.projectId)?.productId ===
+                            project.productId &&
+                          !data.assets.some(
+                            (b) =>
+                              b.projectId === project.id &&
+                              b.category === "source" &&
+                              b.hash === a.hash,
+                          ),
+                      )
+                      .map((a) => (
+                        <div className="amountline" key={a.id}>
+                          <span>{String(a.name)}</span>
+                          {button("가져오기", () =>
+                            action("import-source", a, {
+                              projectId: project.id,
+                            }),
+                          )}
+                        </div>
+                      ))}
+                  </details>
+                </section>
+              </>
             )}
             {tab === 2 && (
               <section className="section">
@@ -1612,6 +1553,12 @@ export default function Workspace() {
             )}
             {tab === 4 && (
               <>
+                <PostingSets
+                  key={project.id}
+                  project={project}
+                  data={data}
+                  onReload={load}
+                />
                 <section className="section">
                   <div className="section-title">
                     <h2>승인본 전달</h2>
@@ -2333,7 +2280,10 @@ export default function Workspace() {
                   <Field label="등록된 참여자">
                     <select
                       value={draft.participantId || ""}
-                      disabled={draft.payoutStatus === "paid"}
+                      disabled={
+                        draft.payoutStatus === "paid" ||
+                        Boolean(draft.postingSetId)
+                      }
                       onChange={(e) => {
                         const p = find("participants", e.target.value);
                         const account = ((p?.accounts as Draft[]) || []).find(
@@ -2366,7 +2316,10 @@ export default function Workspace() {
                     <Field label="게시 계정">
                       <select
                         value={draft.participantAccountId || ""}
-                        disabled={draft.payoutStatus === "paid"}
+                        disabled={
+                          draft.payoutStatus === "paid" ||
+                          Boolean(draft.postingSetId)
+                        }
                         onChange={(e) =>
                           setDraft({
                             ...draft,
@@ -2390,12 +2343,21 @@ export default function Workspace() {
                   ) : (
                     <Field label="기존 담당자명">{input("assignee")}</Field>
                   )}
-                  <Field label="지급액">{input("payout", "number")}</Field>
+                  <Field label="지급액">
+                    {draft.postingSetId ? (
+                      <p>세트 통합 보수에 포함 · 전달·게시 탭에서 관리</p>
+                    ) : (
+                      input("payout", "number")
+                    )}
+                  </Field>
                   {draft.participantId && (
                     <div className="full">
                       <button
                         type="button"
-                        disabled={draft.payoutStatus === "paid"}
+                        disabled={
+                          draft.payoutStatus === "paid" ||
+                          Boolean(draft.postingSetId)
+                        }
                         onClick={() => {
                           const p = find("participants", draft.participantId);
                           const rate =

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { audit, create, list, transaction, update } from "./db";
+import { audit, create, list, lock, transaction, update } from "./db";
 import { requireRecord } from "./domain";
 import { bytes } from "./assets";
 import type { RecordData } from "./types";
@@ -88,6 +88,33 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
   });
   return { project: p, tasks, entries };
 }
+export async function participantBundle(projectId: string, setId: string) {
+  const set = await requireRecord(setId, "posting_sets");
+  if (set.status === "cancelled") throw new Error("해제한 게시 세트입니다.");
+  if (set.projectId !== projectId)
+    throw new Error("다른 프로젝트의 게시 세트입니다.");
+  const bundle = await approvedBundle(projectId, [
+    String(set.blogTaskId),
+    String(set.clipTaskId),
+  ]);
+  if (
+    bundle.tasks.some(
+      (t) => t.postingSetId !== set.id || t.participantId !== set.participantId,
+    )
+  )
+    throw new Error("참여자 배정을 확인하세요.");
+  const name = String(set.participantName)
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+    .slice(0, 80);
+  bundle.entries.push({
+    path: "세트_게시안내.txt",
+    buffer: Buffer.from(
+      `참여자: ${set.participantName}\n프로젝트: ${bundle.project.name}\n게시 마감: ${bundle.project.due || "운영자와 협의"}\n구성: 블로그 1건 + 클립 1건\n약정 보수: ${set.amount}원 (두 게시물 확인 후 세트당 1회 지급)\n${String(set.instructions || "")}\n원고의 광고·협찬 표시와 필수 문구를 유지해 주세요.\n게시 후 블로그와 클립 링크를 각각 운영자에게 전달해 주세요.\n`,
+      "utf8",
+    ),
+  });
+  return { ...bundle, filename: `${bundle.project.name}_${name}_게시세트.zip` };
+}
 export function recordDelivery(input: unknown, actor: string) {
   const body = z
     .object({
@@ -98,7 +125,10 @@ export function recordDelivery(input: unknown, actor: string) {
     })
     .parse(input);
   return transaction(async () => {
+    await lock("project-operations:" + body.projectId);
     const bundle = await approvedBundle(body.projectId, body.taskIds);
+    if (bundle.project.settled || bundle.project.status === "cancelled")
+      throw new Error("마감·취소한 프로젝트에는 전달을 기록할 수 없습니다.");
     const row = await create("deliveries", {
       ...body,
       actor,
@@ -110,7 +140,9 @@ export function recordDelivery(input: unknown, actor: string) {
     });
     for (const task of bundle.tasks)
       await update(task.id, {
-        status: "delivered",
+        status: ["submitted", "verified"].includes(String(task.status))
+          ? task.status
+          : "delivered",
         deliveryVersion: task.approvedAssets,
         deliveredAt: row.createdAt,
       });

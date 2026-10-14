@@ -675,7 +675,9 @@ export default function Participants({
                             ) : null}
                           </td>
                           <td>
-                            {money(t.payout)}
+                            {t.postingSetId
+                              ? "세트 보수에 포함"
+                              : money(t.payout)}
                             {!accountable(t) && <small>취소 · 합계 제외</small>}
                           </td>
                           <td>
@@ -699,13 +701,18 @@ export default function Participants({
                             </button>
                             <button
                               disabled={
-                                busy || p?.settled === true || t.payout === null
+                                busy ||
+                                p?.settled === true ||
+                                t.payout === null ||
+                                Boolean(t.postingSetId)
                               }
                               onClick={() => payout(t)}
                             >
-                              {t.payoutStatus === "paid"
-                                ? "지급 취소"
-                                : "지급 완료"}
+                              {t.postingSetId
+                                ? "프로젝트에서 통합 지급"
+                                : t.payoutStatus === "paid"
+                                  ? "지급 취소"
+                                  : "지급 완료"}
                             </button>
                           </td>
                         </tr>
