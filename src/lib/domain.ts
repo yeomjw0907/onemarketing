@@ -26,7 +26,7 @@ export function save(kind:Kind,input:unknown,actor:string,id?:string,version?:nu
   requireRecord(String(data.customerId),'customers');const calculation=quote(data.lines as {priceId:string;quantity:number}[],Number(data.discount));
   if(calculation.cost===null)throw new Error('지급 단가와 AI 예상 비용을 먼저 입력하세요.');
   if(data.budget!==null&&calculation.sale>Number(data.budget))throw new Error('설정한 예산을 초과합니다.');
-  Object.assign(data,calculation,{slotCount:Number(data.months)*Number(data.setsPerMonth),status:'confirmed'});
+  Object.assign(data,calculation,{saleInput:calculation.sale,sale:data.vatIncluded?Math.round(calculation.sale/1.1):calculation.sale,vat:data.vatIncluded?calculation.sale-Math.round(calculation.sale/1.1):Math.round(calculation.sale*.1),gross:data.vatIncluded?calculation.sale:calculation.sale+Math.round(calculation.sale*.1),slotCount:Number(data.months)*Number(data.setsPerMonth),status:'confirmed'});
  }
  if(kind==='projects'){
   if(id)throw new Error('프로젝트 변경은 작업 메뉴에서 처리하세요.');
@@ -47,6 +47,8 @@ export function save(kind:Kind,input:unknown,actor:string,id?:string,version?:nu
 export function projectCosts(p:RecordData){const tasks=list('tasks').filter(t=>t.projectId===p.id&&t.status!=='cancelled');const costs=list('costs').filter(c=>c.projectId===p.id);const actual=costs.filter(c=>c.category!=='payout').reduce((s,c)=>s+Number(c.amount),0);const payouts=tasks.reduce((s,t)=>s+Number(t.payout||0),0);const missing=tasks.some(t=>t.payout===null)||costs.some(c=>c.confirmed!==true);const expected=Number(p.payoutEstimate)+Number(p.aiEstimate);return{sale:Number(p.sale),expected,expectedMargin:Number(p.sale)-expected,actual:actual+payouts,margin:Number(p.sale)-actual-payouts,provisional:missing||p.settled!==true};}
 export function command(action:string,input:Record<string,unknown>,actor:string,key:string){return once(actor+':'+key,()=>{
  const id=String(input.id||'');const row=requireRecord(id);let result:RecordData=row;
+ const parent=row.kind==='projects'?row:row.projectId?requireRecord(String(row.projectId),'projects'):null;
+ if(parent?.settled&&action!=='reopen-settlement')throw new Error('정산 마감한 프로젝트입니다. 먼저 마감을 취소하세요.');
  if(action==='project-stage'){
   if(row.kind!=='projects')throw new Error('프로젝트를 선택하세요.');
   const next=String(input.status);const allowed:Record<string,string[]>= {materials:['planning','cancelled'],planning:['brief_review','cancelled'],brief_review:['planning','producing','cancelled'],producing:['review','cancelled'],review:['producing','ready','cancelled'],ready:['publishing','cancelled'],publishing:['completed','cancelled'],completed:[],cancelled:[]};
@@ -83,6 +85,26 @@ export function command(action:string,input:Record<string,unknown>,actor:string,
   if(row.kind!=='tasks'||row.payout===null)throw new Error('지급액을 먼저 확정하세요.');result=update(id,{payoutStatus:input.paid===true?'paid':'pending',paidAt:input.paid===true?new Date().toISOString():null},Number(input.version));
  }else if(action==='cost'){
   if(row.kind!=='projects')throw new Error('프로젝트를 선택하세요.');result=create('costs',{projectId:id,category:z.enum(['ai','shipping','shooting','editing','other']).parse(input.category),amount:amount.parse(input.amount),description:name.parse(input.description),confirmed:input.confirmed===true,currency:'KRW',actor});
+ }else if(action==='assign-common'){
+  if(row.kind!=='assets'||row.category!=='source'||!String(row.mime).startsWith('image/'))throw new Error('제품 원본 이미지를 선택하세요.');
+  const p=requireRecord(String(row.projectId),'projects');if(['ready','publishing','completed','cancelled'].includes(String(p.status)))throw new Error('전달 전 제작 단계에서 배정하세요.');
+  const tasks=list('tasks').filter(t=>t.projectId===p.id&&t.channel==='blog'&&t.status!=='cancelled');
+  for(const t of tasks){if(list('assets').some(a=>a.taskId===t.id&&a.sourceAssetId===row.id&&a.current===true))continue;const {id:sourceId,...a}=row;create('assets',{...a,category:'image',taskId:t.id,common:true,sourceAssetId:row.id,current:true,slot:'common-'+row.id});update(t.id,{status:'review',approvedAssets:[]});}
+  result=update(id,{common:true},Number(input.version));
+ }else if(action==='confirm-cost'){
+  if(row.kind!=='costs')throw new Error('비용을 선택하세요.');result=update(id,{amount:amount.parse(input.amount),confirmed:true,estimate:false,description:name.parse(input.description),confirmedBy:actor,confirmedAt:new Date().toISOString()},Number(input.version));
+ }else if(action==='resolve-job'){
+  if(row.kind!=='jobs'||!['failed','uncertain'].includes(String(row.status)))throw new Error('확인이 필요한 작업을 선택하세요.');
+  result=update(id,{status:'failed',resolution:name.parse(input.note),resolvedBy:actor,resolvedAt:new Date().toISOString()},Number(input.version));
+ }else if(action==='resume-job'){
+  if(row.kind!=='jobs'||!['uncertain','failed'].includes(String(row.status))||!(row.providerState as {response?:unknown})?.response)throw new Error('저장된 영상 요청이 있는 작업만 재조회할 수 있습니다.');
+  result=update(id,{status:'pending',error:null},Number(input.version));
+ }else if(action==='reopen-settlement'){
+  if(row.kind!=='projects')throw new Error('프로젝트를 선택하세요.');result=update(id,{settled:false,reopenReason:name.parse(input.note)},Number(input.version));
+ }else if(action==='cancel-task'){
+  if(row.kind!=='tasks')throw new Error('게시 작업을 선택하세요.');result=update(id,{status:'cancelled',cancelReason:name.parse(input.note)},Number(input.version));
+ }else if(action==='project-adjustment'){
+  if(row.kind!=='projects')throw new Error('프로젝트를 선택하세요.');const adjustment=amount.parse(input.refund);if(adjustment>Number(row.sale))throw new Error('환불액이 판매액보다 큽니다.');result=update(id,{originalSale:row.originalSale??row.sale,sale:Number(row.sale)-adjustment,adjustmentNote:name.parse(input.note)},Number(input.version));
  }else if(action==='settle'){
   if(row.kind!=='projects'||!['completed','cancelled'].includes(String(row.status)))throw new Error('운영 완료 또는 취소 후 정산할 수 있습니다.');
   if(list('jobs').some(j=>j.projectId===id&&['pending','running','uncertain'].includes(String(j.status))))throw new Error('미완료 AI 작업의 비용을 먼저 확인하세요.');

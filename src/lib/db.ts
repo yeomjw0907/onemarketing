@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { kinds, type Kind, type RecordData, type DatabaseView } from './types';
-export const dataDir = path.resolve(process.env.DATA_DIR || '.data');
+export const dataDir = path.resolve(/* turbopackIgnore: true */ process.env.DATA_DIR || '.data');
 mkdirSync(dataDir,{recursive:true});
 export const db = new Database(path.join(dataDir,'marketing.sqlite'));
 db.pragma('journal_mode = WAL'); db.pragma('busy_timeout = 5000');
@@ -30,3 +30,4 @@ export function update(id:string,patch:Record<string,unknown>,version?:number):R
 }
 export function audit(actor:string,action:string,targetId:string,detail:unknown={}){return create('events',{actor,action,targetId,detail});}
 export function once<T>(key:string,fn:()=>T):T {return db.transaction(()=>{const old=db.prepare('SELECT result FROM commands WHERE key=?').get(key) as {result:string}|undefined;if(old)return JSON.parse(old.result) as T;const result=fn();db.prepare('INSERT INTO commands VALUES (?,?)').run(key,JSON.stringify(result));return result;})();}
+

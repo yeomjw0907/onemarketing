@@ -20,3 +20,12 @@ API adapter·영속 작업 worker·파일 보관·엑셀 읽기·승인본 ZIP·
 실 API 검증은 사용자가 .env.local에 설정하는 키로 수행. 미설정 상태를 가짜 생성 성공으로 대체하지 않는다.
 
 Phase 1A 검증: TypeScript 통과, 도메인 테스트 2개 통과, production build 통과, 실제 브라우저에서 첫 관리자 로그인·대시보드 확인. 의존성 audit: 0 vulnerabilities. API 제작/파일/전달 버튼은 다음 1B·1C에서 연결한다.
+
+## Phase 1B 구현·로컬 검증
+
+- 파일 형식 확인, CSV/XLSX 내용 읽기, 제품 기준 사진, 공통 이미지 배정.
+- GPT/Claude/Gemini/Higgsfield adapter, 영속 큐, 별도 worker, 예산 예약, 요청 ID·사용량 기록.
+- 원고·이미지·영상 작업, 기존 영상 요청 재조회, 비용 잠정/확정 구분.
+- 등록 단가 기반 예산 구성 추천. AI가 금액을 임의 생성하지 않음.
+- TypeScript·production build 통과. 외부 API 모의 원고 응답, 큐 제약, 실제 FFmpeg 영상 생성 검증 통과.
+- 실 API 품질·청구 검증: 키 미입력으로 미완료. 자동 재생성 없이 확인 필요 상태를 표시.
