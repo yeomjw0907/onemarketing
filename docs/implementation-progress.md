@@ -74,3 +74,11 @@ Phase 1A 검증: TypeScript 통과, 도메인 테스트 2개 통과, production 
 ## Claude 웹 검색 통합
 
 사용자 요청으로 Gemini 조사 호출·키 검사·설정 표시·환경변수를 제거했다. Claude 웹 검색 도구로 조사하며 출처 URL·제목·수집일·인용을 저장하고 도구 사용량을 기존 호출 이력에 기록한다. pause_turn 대화를 저장해 이어받고 검색 오류·출처 누락 시 기획을 차단한다. 기존 Gemini 조사 체크포인트와 과거 비용은 보존한다. 신규 구성은 Anthropic/fal 두 키만 사용한다. 실 API 호출과 크레딧 차감 검증은 미수행이다.
+
+## 2026-10-14 Supabase DB·Storage 전환과 서버리스 실행
+
+- SQLite·로컬 파일을 Supabase PostgreSQL(`records` jsonb, 세션·로그인 제한·명령 키·작업 lease)과 비공개 Storage 버킷 `onemarketing-assets`로 전환했다. DB 함수는 모두 비동기이며 트랜잭션은 AsyncLocalStorage, 명령 중복 방지와 lease는 advisory lock으로 직렬화한다. 기존 ID·version·관계·정산 내역을 그대로 유지한다.
+- 스키마는 `supabase/migrations/` SQL 파일로 관리하고 운영 public에 적용했다. 모든 테이블 RLS 활성화 + anon/authenticated 권한 회수, 버킷은 비공개(정책 없음). 파일 조회는 관리자 세션 확인 후 서버가 service role로 전달한다.
+- 서버리스 실행: 작업 등록·재개·화면 새로고침 시 `after()`로 처리, 제한 시간이 가까우면 request ID·체크포인트를 보존한 채 pending으로 돌려보내고(Yield) `/api/jobs/run` 연쇄 호출·Cron으로 이어간다. fal 결과 수집 실패는 uncertain으로 남기고 재개 시 새 생성 없이 같은 요청 ID로 수집한다. 별도 worker(`npm run worker`)는 같은 코드로 전용 서버에서만 사용한다.
+- 운영 SQLite에는 레코드가 없었고(세션 2건) `.data/backups/`에 백업했다. `.data/acceptance` 테스트 데이터는 이전하지 않았다. 이전 스크립트 `npm run db:import-sqlite`는 재실행 안전하며 원본을 삭제하지 않는다.
+- 상세: [Supabase 전환·서버리스 실행](supabase-migration.md). 검증 결과와 남은 설정은 같은 문서와 최종 보고에 기록한다.

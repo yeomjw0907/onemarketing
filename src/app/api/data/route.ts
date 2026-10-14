@@ -1,12 +1,23 @@
 import { requireActor, sameOrigin } from "@/lib/auth";
 import { view } from "@/lib/db";
 import { save, command } from "@/lib/domain";
+import { activeStatuses } from "@/lib/jobs";
+import { scheduleTick } from "@/lib/trigger";
 import { kinds, type Kind } from "@/lib/types";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function GET() {
   try {
     await requireActor();
-    return Response.json(view(), { headers: { "Cache-Control": "no-store" } });
+    const data = await view();
+    // 화면 새로고침마다 미처리 작업이 있으면 백그라운드 실행을 이어간다.
+    if (
+      data.jobs.some((j) =>
+        activeStatuses.slice(0, 2).includes(String(j.status)),
+      )
+    )
+      scheduleTick();
+    return Response.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
@@ -16,12 +27,15 @@ export async function POST(request: Request) {
     sameOrigin(request);
     const email = await requireActor();
     const body = await request.json();
-    if (body.action)
-      return Response.json(command(body.action, body.data, email, body.key));
+    if (body.action) {
+      const result = await command(body.action, body.data, email, body.key);
+      if (body.action === "resume-job") scheduleTick(true);
+      return Response.json(result);
+    }
     if (!kinds.includes(body.kind as Kind))
       throw new Error("잘못된 항목입니다.");
     return Response.json(
-      save(body.kind, body.data, email, body.id, body.version),
+      await save(body.kind, body.data, email, body.id, body.version),
     );
   } catch (e) {
     return Response.json(

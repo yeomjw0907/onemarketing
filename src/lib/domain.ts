@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { audit, create, get, list, update, db, once } from "./db";
+import {
+  audit,
+  create,
+  get,
+  list,
+  update,
+  transaction,
+  lock,
+  once,
+} from "./db";
 import type { RecordData, Kind } from "./types";
 import {
   participantSchema,
@@ -98,20 +107,21 @@ const schemas = {
   contracts: contract,
   projects: project,
 };
-export function requireRecord(id: string, kind?: Kind) {
-  const r = get(id);
+export async function requireRecord(id: string, kind?: Kind) {
+  const r = await get(id);
   if (!r || (kind && r.kind !== kind))
     throw new Error("연결된 항목을 찾을 수 없습니다.");
   return r;
 }
-export function quote(
+export async function quote(
   lines: { priceId: string; quantity: number }[],
   discount = 0,
 ) {
-  const snapshots: RecordData[] = lines.map((l) => {
-    const p = requireRecord(l.priceId, "prices");
-    return { ...p, priceId: p.id, quantity: l.quantity };
-  });
+  const snapshots: RecordData[] = [];
+  for (const l of lines) {
+    const p = await requireRecord(l.priceId, "prices");
+    snapshots.push({ ...p, priceId: p.id, quantity: l.quantity });
+  }
   const total = snapshots.reduce(
     (s, p) => s + Number(p.sale) * Number(p.quantity),
     0,
@@ -148,19 +158,21 @@ export function save(
     string,
     unknown
   >;
-  return db.transaction(() => {
+  return transaction(async () => {
+    // 같은 종류의 동시 저장을 직렬화해 중복 계정·중복 슬롯 검사가 경쟁 조건에 뚫리지 않게 한다.
+    await lock("save:" + kind);
     if (id) {
-      requireRecord(id, kind);
+      await requireRecord(id, kind);
       z.number().int().positive().parse(version);
     }
-    if (kind === "participants") validateParticipant(data, id);
+    if (kind === "participants") await validateParticipant(data, id);
     if (kind === "participant_history") {
-      requireRecord(String(data.participantId), "participants");
+      await requireRecord(String(data.participantId), "participants");
       if (id) {
-        const previous = requireRecord(id, "participant_history");
+        const previous = await requireRecord(id, "participant_history");
         if (previous.participantId !== data.participantId)
           throw new Error("기존 협업 이력의 참여자는 변경할 수 없습니다.");
-        audit(actor, "participant-history-updated", id, {
+        await audit(actor, "participant-history-updated", id, {
           previousAmount: previous.amount,
           amount: data.amount,
           previousPaid: previous.paid,
@@ -169,14 +181,14 @@ export function save(
       }
     }
     if (kind === "products")
-      requireRecord(String(data.customerId), "customers");
+      await requireRecord(String(data.customerId), "customers");
     if (kind === "contracts") {
       if (id)
         throw new Error(
           "확정 계약은 직접 변경할 수 없습니다. 새 계약으로 등록하세요.",
         );
-      requireRecord(String(data.customerId), "customers");
-      const calculation = quote(
+      await requireRecord(String(data.customerId), "customers");
+      const calculation = await quote(
         data.lines as { priceId: string; quantity: number }[],
         Number(data.discount),
       );
@@ -205,14 +217,14 @@ export function save(
     }
     if (kind === "projects") {
       if (id) throw new Error("프로젝트 변경은 작업 메뉴에서 처리하세요.");
-      const c = requireRecord(String(data.contractId), "contracts"),
-        p = requireRecord(String(data.productId), "products");
+      const c = await requireRecord(String(data.contractId), "contracts"),
+        p = await requireRecord(String(data.productId), "products");
       if (c.customerId !== p.customerId)
         throw new Error("계약과 제품의 고객이 다릅니다.");
       if (Number(data.slot) >= Number(c.slotCount))
         throw new Error("계약의 제공 범위를 초과합니다.");
       if (
-        list("projects").some(
+        (await list("projects")).some(
           (p) => p.contractId === c.id && p.slot === data.slot,
         )
       )
@@ -230,20 +242,20 @@ export function save(
           0,
         ),
         knowledge: {
-          customer: requireRecord(String(c.customerId), "customers"),
+          customer: await requireRecord(String(c.customerId), "customers"),
           product: p,
         },
         settled: false,
         hold: false,
       });
     }
-    const row = id ? update(id, data, version) : create(kind, data);
+    const row = id ? await update(id, data, version) : await create(kind, data);
     if (kind === "projects") {
-      const c = requireRecord(String(data.contractId), "contracts");
+      const c = await requireRecord(String(data.contractId), "contracts");
       let order = 0;
       for (const l of c.snapshots as RecordData[])
         for (let i = 0; i < Number(l.quantity); i++)
-          create("tasks", {
+          await create("tasks", {
             projectId: row.id,
             customerId: c.customerId,
             name: `${l.name} ${i + 1}`,
@@ -262,19 +274,19 @@ export function save(
             paidAt: null,
           });
     }
-    audit(actor, id ? "update" : "create", row.id);
+    await audit(actor, id ? "update" : "create", row.id);
     return row;
-  })();
+  });
 }
-export function projectCosts(p: RecordData) {
-  const tasks = list("tasks").filter(
+export async function projectCosts(p: RecordData) {
+  const tasks = (await list("tasks")).filter(
     (t) =>
       t.projectId === p.id &&
       (t.status !== "cancelled" ||
         t.payoutStatus === "paid" ||
         t.payoutCommitted === true),
   );
-  const costs = list("costs").filter((c) => c.projectId === p.id);
+  const costs = (await list("costs")).filter((c) => c.projectId === p.id);
   const actual = costs
     .filter((c) => c.category !== "payout")
     .reduce((s, c) => s + Number(c.amount), 0);
@@ -299,15 +311,15 @@ export function command(
   key: string,
 ) {
   z.string().min(1).max(100).parse(key);
-  return once(actor + ":" + key, () => {
+  return once(actor + ":" + key, async () => {
     const id = String(input.id || "");
-    const row = requireRecord(id);
+    const row = await requireRecord(id);
     let result: RecordData = row;
     const parent =
       row.kind === "projects"
         ? row
         : row.projectId
-          ? requireRecord(String(row.projectId), "projects")
+          ? await requireRecord(String(row.projectId), "projects")
           : null;
     if (
       parent?.settled &&
@@ -330,13 +342,13 @@ export function command(
       };
       if (!allowed[String(row.status)]?.includes(next))
         throw new Error("허용되지 않은 단계 변경입니다.");
-      const tasks = list("tasks").filter(
+      const tasks = (await list("tasks")).filter(
         (t) => t.projectId === id && t.status !== "cancelled",
       );
       if (
         next === "planning" &&
         !(
-          list("assets").some(
+          (await list("assets")).some(
             (a) => a.projectId === id && a.category === "source",
           ) || String(row.materialNotes || "").trim()
         )
@@ -346,7 +358,7 @@ export function command(
         throw new Error("모든 작업의 기획안을 작성하세요.");
       if (next === "producing" && row.status === "brief_review") {
         for (const t of tasks)
-          update(t.id, {
+          await update(t.id, {
             briefApprovedAt: new Date().toISOString(),
             briefApprovedBy: actor,
           });
@@ -363,10 +375,10 @@ export function command(
         throw new Error("모든 결과물을 승인하세요.");
       if (next === "completed" && tasks.some((t) => t.status !== "verified"))
         throw new Error("모든 게시물을 확인하세요.");
-      result = update(id, { status: next }, Number(input.version));
+      result = await update(id, { status: next }, Number(input.version));
     } else if (action === "project-notes") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
-      result = update(
+      result = await update(
         id,
         {
           materialNotes: text.parse(input.materialNotes),
@@ -377,10 +389,10 @@ export function command(
       );
     } else if (action === "task-edit") {
       if (row.kind !== "tasks") throw new Error("게시 작업을 선택하세요.");
-      const p = requireRecord(String(row.projectId), "projects");
+      const p = await requireRecord(String(row.projectId), "projects");
       const brief = text.parse(input.brief),
         changed = brief !== row.brief;
-      const assignment = participantAssignment(row, input);
+      const assignment = await participantAssignment(row, input);
       const newPayout = optionalAmount.parse(input.payout);
       if (
         row.payoutStatus === "paid" &&
@@ -398,7 +410,7 @@ export function command(
         )
       )
         throw new Error("전달 단계 이후에는 기획을 변경할 수 없습니다.");
-      result = update(
+      result = await update(
         id,
         {
           brief,
@@ -412,20 +424,20 @@ export function command(
         assignment.participantId !== row.participantId ||
         newPayout !== row.payout
       )
-        audit(actor, "participant-assigned", id, {
+        await audit(actor, "participant-assigned", id, {
           from: row.participantId || null,
           to: assignment.participantId,
           previousPayout: row.payout,
           payout: newPayout,
         });
       if (changed && ["producing", "review"].includes(String(p.status)))
-        update(p.id, { status: "brief_review" });
+        await update(p.id, { status: "brief_review" });
     } else if (action === "approve-task") {
       if (row.kind !== "tasks") throw new Error("게시 작업을 선택하세요.");
-      const p = requireRecord(String(row.projectId), "projects");
+      const p = await requireRecord(String(row.projectId), "projects");
       if (!["producing", "review"].includes(String(p.status)))
         throw new Error("제작·검수 단계에서 승인할 수 있습니다.");
-      const assets = list("assets").filter(
+      const assets = (await list("assets")).filter(
         (a) => a.taskId === id && a.current === true && a.category !== "source",
       );
       if (
@@ -437,7 +449,7 @@ export function command(
         throw new Error("원고와 계약 수량의 이미지를 등록하세요.");
       if (row.channel === "clip" && !assets.some((a) => a.category === "video"))
         throw new Error("영상을 등록하세요.");
-      result = update(
+      result = await update(
         id,
         {
           status: "approved",
@@ -453,7 +465,7 @@ export function command(
         ["delivered", "submitted", "verified"].includes(String(row.status))
       )
         throw new Error("전달 전 작업만 수정 요청할 수 있습니다.");
-      result = update(
+      result = await update(
         id,
         {
           status: "changes",
@@ -462,9 +474,9 @@ export function command(
         },
         Number(input.version),
       );
-      const p = requireRecord(String(row.projectId), "projects");
+      const p = await requireRecord(String(row.projectId), "projects");
       if (["ready", "publishing"].includes(String(p.status)))
-        update(p.id, { status: "review" });
+        await update(p.id, { status: "review" });
     } else if (action === "publication") {
       if (
         row.kind !== "tasks" ||
@@ -475,9 +487,9 @@ export function command(
       const u = new URL(link);
       if (!["https:", "http:"].includes(u.protocol))
         throw new Error("웹 링크를 입력하세요.");
-      if (list("tasks").some((t) => t.id !== id && t.link === link))
+      if ((await list("tasks")).some((t) => t.id !== id && t.link === link))
         throw new Error("이미 등록된 게시 링크입니다.");
-      result = update(
+      result = await update(
         id,
         {
           link,
@@ -490,7 +502,7 @@ export function command(
     } else if (action === "payout") {
       if (row.kind !== "tasks" || row.payout === null)
         throw new Error("지급액을 먼저 확정하세요.");
-      result = update(
+      result = await update(
         id,
         {
           payoutStatus: input.paid === true ? "paid" : "pending",
@@ -500,7 +512,7 @@ export function command(
       );
     } else if (action === "cost") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
-      result = create("costs", {
+      result = await create("costs", {
         projectId: id,
         category: z
           .enum(["ai", "shipping", "shooting", "editing", "other"])
@@ -514,8 +526,8 @@ export function command(
     } else if (action === "import-source") {
       if (row.kind !== "assets" || row.category !== "source")
         throw new Error("원본 자료를 선택하세요.");
-      const target = requireRecord(String(input.projectId), "projects"),
-        origin = requireRecord(String(row.projectId), "projects");
+      const target = await requireRecord(String(input.projectId), "projects"),
+        origin = await requireRecord(String(row.projectId), "projects");
       if (
         target.productId !== origin.productId ||
         target.customerId !== origin.customerId
@@ -527,7 +539,7 @@ export function command(
       )
         throw new Error("마감한 프로젝트입니다.");
       if (
-        list("assets").some(
+        (await list("assets")).some(
           (a) =>
             a.projectId === target.id &&
             a.category === "source" &&
@@ -536,7 +548,7 @@ export function command(
       )
         throw new Error("이미 등록된 자료입니다.");
       const { id: oldId, ...source } = row;
-      result = create("assets", {
+      result = await create("assets", {
         ...source,
         projectId: target.id,
         taskId: null,
@@ -549,22 +561,23 @@ export function command(
         !String(row.mime).startsWith("image/")
       )
         throw new Error("제품 원본 이미지를 선택하세요.");
-      const p = requireRecord(String(row.projectId), "projects");
+      const p = await requireRecord(String(row.projectId), "projects");
       if (
         ["ready", "publishing", "completed", "cancelled"].includes(
           String(p.status),
         )
       )
         throw new Error("전달 전 제작 단계에서 배정하세요.");
-      const tasks = list("tasks").filter(
+      const tasks = (await list("tasks")).filter(
         (t) =>
           t.projectId === p.id &&
           t.channel === "blog" &&
           t.status !== "cancelled",
       );
+      const assets = await list("assets");
       for (const t of tasks) {
         if (
-          list("assets").some(
+          assets.some(
             (a) =>
               a.taskId === t.id &&
               a.sourceAssetId === row.id &&
@@ -573,7 +586,7 @@ export function command(
         )
           continue;
         const { id: sourceId, ...a } = row;
-        create("assets", {
+        await create("assets", {
           ...a,
           category: "image",
           taskId: t.id,
@@ -582,12 +595,12 @@ export function command(
           current: true,
           slot: "common-" + row.id,
         });
-        update(t.id, { status: "review", approvedAssets: [] });
+        await update(t.id, { status: "review", approvedAssets: [] });
       }
-      result = update(id, { common: true }, Number(input.version));
+      result = await update(id, { common: true }, Number(input.version));
     } else if (action === "confirm-cost") {
       if (row.kind !== "costs") throw new Error("비용을 선택하세요.");
-      result = update(
+      result = await update(
         id,
         {
           amount: amount.parse(input.amount),
@@ -605,7 +618,7 @@ export function command(
         !["failed", "uncertain"].includes(String(row.status))
       )
         throw new Error("확인이 필요한 작업을 선택하세요.");
-      result = update(
+      result = await update(
         id,
         {
           status: "failed",
@@ -616,27 +629,29 @@ export function command(
         Number(input.version),
       );
     } else if (action === "resume-job") {
+      const state = row.providerState as
+        { response?: unknown; request_id?: unknown } | undefined;
       if (
         row.kind !== "jobs" ||
         !["uncertain", "failed"].includes(String(row.status)) ||
-        !(row.providerState as { response?: unknown })?.response
+        !(state?.response || state?.request_id)
       )
-        throw new Error("저장된 영상 요청이 있는 작업만 재조회할 수 있습니다.");
-      result = update(
+        throw new Error("저장된 생성 요청이 있는 작업만 재조회할 수 있습니다.");
+      result = await update(
         id,
         { status: "pending", error: null },
         Number(input.version),
       );
     } else if (action === "reopen-settlement") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
-      result = update(
+      result = await update(
         id,
         { settled: false, reopenReason: name.parse(input.note) },
         Number(input.version),
       );
     } else if (action === "cancel-task") {
       if (row.kind !== "tasks") throw new Error("게시 작업을 선택하세요.");
-      result = update(
+      result = await update(
         id,
         {
           status: "cancelled",
@@ -655,7 +670,7 @@ export function command(
       const adjustment = amount.parse(input.refund);
       if (adjustment > Number(row.sale))
         throw new Error("환불액이 판매액보다 큽니다.");
-      result = update(
+      result = await update(
         id,
         {
           originalSale: row.originalSale ?? row.sale,
@@ -671,22 +686,22 @@ export function command(
       )
         throw new Error("운영 완료 또는 취소 후 정산할 수 있습니다.");
       if (
-        list("jobs").some(
+        (await list("jobs")).some(
           (j) =>
             j.projectId === id &&
             ["pending", "running", "uncertain"].includes(String(j.status)),
         )
       )
         throw new Error("미완료 AI 작업의 비용을 먼저 확인하세요.");
-      if (projectCosts({ ...row, settled: true }).provisional)
+      if ((await projectCosts({ ...row, settled: true })).provisional)
         throw new Error("미확정 비용을 먼저 확인하세요.");
-      result = update(
+      result = await update(
         id,
         { settled: true, settledAt: new Date().toISOString() },
         Number(input.version),
       );
     } else throw new Error("지원하지 않는 작업입니다.");
-    audit(actor, action, id, { resultId: result.id });
+    await audit(actor, action, id, { resultId: result.id });
     return result;
   });
 }

@@ -4,7 +4,7 @@
 
 ## 실행
 
-Node.js 22 이상. 단일 서버의 영속 디스크가 필요합니다.
+Node.js 22 이상. 데이터는 Supabase PostgreSQL과 비공개 Storage 버킷에 저장하므로 서버 디스크는 임시 파일(ffmpeg)만 사용합니다.
 
 ```powershell
 npm ci
@@ -38,11 +38,11 @@ AI 요청 전 입력한 예상 비용으로 예산을 예약합니다. 이 상�
 
 ## 저장·배포·백업
 
-초기 저장소는 SQLite WAL과 `.data/files`입니다. `.data`와 `.env.local`은 Git 제외이며 GitHub에 push해도 운영 데이터와 계정은 복제되지 않습니다. 다른 환경에는 관리자를 별도로 초기화합니다.
+저장소는 Supabase PostgreSQL(레코드·세션·로그인 제한·명령 키·작업 lease)과 비공개 Storage 버킷 `onemarketing-assets`(고객 원본·엑셀·원고·이미지·영상)입니다. 파일 조회·다운로드·승인본 ZIP은 관리자 세션을 확인한 서버가 service role로 처리하며 서버 비밀 키는 브라우저에 전달하지 않습니다. 모든 테이블은 RLS가 켜져 있고 anon/authenticated 권한을 회수해 브라우저가 내부 테이블·세션에 직접 접근할 수 없습니다. 스키마는 `supabase/migrations/`의 SQL 파일로, 버킷·앱 역할은 `supabase/setup/`의 SQL로 관리합니다.
 
-이 구성은 단일 서버 + worker를 전제로 합니다. Vercel 같은 일시 파일 시스템에 그대로 배포하지 마세요. 다중 서버에서는 PostgreSQL·객체 저장소로 전환해야 합니다. 배포는 별도이며 현재 GitHub push가 서비스 배포를 뜻하지 않습니다.
+Vercel 배포에서는 별도 worker 없이 작업 등록·재개·화면 새로고침 시 `after()`로 생성 작업을 처리하고, 남은 작업은 `/api/jobs/run`을 연쇄 호출하거나 Cron으로 이어갑니다. fal 요청 ID와 Claude 체크포인트를 저장하므로 함수 제한 시간이나 중단 뒤에도 새 비용 없이 재개합니다. 자세한 설정과 환경변수는 [Supabase 전환·서버리스 실행](docs/supabase-migration.md)을 보세요.
 
-백업은 SQLite backup API로 DB를 복사하고 동일 시점의 파일 디렉터리를 함께 보관합니다. 정산 마감/납품 전 백업을 권장합니다. `.env.local`은 별도 비밀 저장소에서 관리하세요. 삭제·보존 정책은 실제 고객 계약에 맞춰 설정해야 합니다.
+기존 SQLite·로컬 파일은 `npm run db:import-sqlite`로 이전합니다(백업 후, 재실행 안전, 원본 보존). `.data`와 `.env.local`은 Git 제외입니다. 백업은 Supabase 프로젝트의 DB 백업과 Storage 복제를 사용하고 정산 마감/납품 전 시점을 남기세요. `.env.local`과 service role 키는 별도 비밀 저장소에서 관리하세요. 삭제·보존 정책은 실제 고객 계약에 맞춰 설정해야 합니다.
 
 ## 검증
 
@@ -53,9 +53,9 @@ npm run build
 npm run format:check
 ```
 
-테스트는 임시 DB를 사용하며 실제 API 키를 호출하지 않습니다. 승인·단가 스냅샷·예산·중복 실행·파일·ZIP 구성·게시/정산과 실제 FFmpeg 렌더링을 확인합니다. 실 API 품질·청구 검증은 별도입니다.
+테스트는 DATABASE_URL과 SUPABASE_SERVICE_ROLE_KEY가 필요하며, 같은 Supabase 프로젝트에 일회용 스키마(test_xxx)와 Storage 접두어를 만들어 사용한 뒤 삭제합니다. 운영 public 스키마와 운영 파일에는 닿지 않으며 실제 API 키를 호출하지 않습니다. 승인·단가 스냅샷·예산·중복 실행·파일 업로드/비공개 버킷·ZIP 구성·게시/정산·트랜잭션 롤백·버전 충돌·명령 중복 방지·작업 lease·fal 재조회와 실제 FFmpeg 렌더링을 확인합니다. 실 API 품질·청구 검증은 별도입니다.
 
-HTTP 인수 검증은 테스트 전용 DATA_DIR와 SMOKE_URL의 서버를 사용하고 SMOKE_ADMIN_EMAIL, SMOKE_ADMIN_PASSWORD를 프로세스 환경에 주입한 뒤 `npm run smoke`를 실행하세요. 실제 운영 DB에 실행하지 마세요.
+HTTP 인수 검증은 `npm run build` 후 `npm run acceptance`(acceptance 스키마 격리 서버)와 SMOKE_URL을 사용하고 SMOKE_ADMIN_EMAIL, SMOKE_ADMIN_PASSWORD를 프로세스 환경에 주입한 뒤 `npm run smoke`를 실행하세요. 실제 운영 DB에 실행하지 마세요.
 
 ## 범위
 

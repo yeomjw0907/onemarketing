@@ -7,3 +7,6 @@ output/
 *.tsbuildinfo
 .playwright-cli/
 next-env.d.ts
+.vercel/
+
+.vercel

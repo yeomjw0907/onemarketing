@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireActor, sameOrigin } from "@/lib/auth";
 import { extractSheet, saveAsset, imageFingerprint } from "@/lib/assets";
+export const maxDuration = 120;
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
         })
         .parse(await request.json());
       return Response.json(
-        saveAsset(
+        await saveAsset(
           {
             ...body,
             category: "copy",
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       ? await imageFingerprint(buffer)
       : undefined;
     return Response.json(
-      saveAsset(
+      await saveAsset(
         {
           projectId: z.string().min(1).parse(form.get("projectId")),
           taskId: form.get("taskId") ? String(form.get("taskId")) : undefined,

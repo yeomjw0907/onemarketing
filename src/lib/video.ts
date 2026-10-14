@@ -1,10 +1,10 @@
 import ffmpegStatic from "ffmpeg-static";
-import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { list } from "./db";
-import { assetPath, saveAsset } from "./assets";
+import { localCopy, saveAsset } from "./assets";
 import { jobInput } from "./jobs";
 import type { RecordData } from "./types";
 export function runFFmpeg(args: string[]) {
@@ -40,39 +40,29 @@ export function runFFmpeg(args: string[]) {
     });
   });
 }
-export async function slideshow(job: RecordData) {
-  const { task } = jobInput(job);
-  const images = list("assets").filter(
-    (a) =>
-      a.taskId === job.taskId && a.category === "image" && a.current === true,
-  );
-  if (images.length < Number(task?.images || 1))
-    throw new Error("계약 수량의 이미지를 먼저 등록하세요.");
-  const folder = mkdtempSync(path.join(tmpdir(), "om-video-"));
-  const per = Number(task?.duration || 15) / images.length;
-  const clips: string[] = [];
-  for (let i = 0; i < images.length; i++) {
-    const file = path.join(folder, `${i}.mp4`);
-    await runFFmpeg([
-      "-y",
-      "-loop",
-      "1",
-      "-i",
-      assetPath(images[i]),
-      "-t",
-      String(per),
-      "-vf",
-      "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1",
-      "-r",
-      "25",
-      "-c:v",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      file,
-    ]);
-    clips.push(file);
-  }
+const scale =
+  "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1";
+async function stillClip(image: string, seconds: number, file: string) {
+  await runFFmpeg([
+    "-y",
+    "-loop",
+    "1",
+    "-i",
+    image,
+    "-t",
+    String(seconds),
+    "-vf",
+    scale,
+    "-r",
+    "25",
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    file,
+  ]);
+}
+async function concat(folder: string, clips: string[]) {
   const manifest = path.join(folder, "clips.txt");
   writeFileSync(
     manifest,
@@ -93,17 +83,43 @@ export async function slideshow(job: RecordData) {
     "+faststart",
     output,
   ]);
-  saveAsset(
-    {
-      projectId: String(job.projectId),
-      taskId: String(job.taskId),
-      category: "video",
-      name: "슬라이드-클립.mp4",
-      buffer: readFileSync(output),
-      jobId: job.id,
-    },
-    String(job.actor),
+  return readFileSync(output);
+}
+async function taskImages(job: RecordData) {
+  return (await list("assets")).filter(
+    (a) =>
+      a.taskId === job.taskId && a.category === "image" && a.current === true,
   );
+}
+export async function slideshow(job: RecordData) {
+  const { task } = jobInput(job);
+  const images = await taskImages(job);
+  if (images.length < Number(task?.images || 1))
+    throw new Error("계약 수량의 이미지를 먼저 등록하세요.");
+  const folder = mkdtempSync(path.join(tmpdir(), "om-video-"));
+  try {
+    const per = Number(task?.duration || 15) / images.length;
+    const clips: string[] = [];
+    for (let i = 0; i < images.length; i++) {
+      const file = path.join(folder, `${i}.mp4`);
+      await stillClip(await localCopy(images[i], folder), per, file);
+      clips.push(file);
+    }
+    const buffer = await concat(folder, clips);
+    await saveAsset(
+      {
+        projectId: String(job.projectId),
+        taskId: String(job.taskId),
+        category: "video",
+        name: "슬라이드-클립.mp4",
+        buffer,
+        jobId: job.id,
+      },
+      String(job.actor),
+    );
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 }
 export async function hybrid(
   job: RecordData,
@@ -111,86 +127,51 @@ export async function hybrid(
   sceneSeconds: number,
 ) {
   const { task } = jobInput(job);
-  const images = list("assets").filter(
-    (a) =>
-      a.taskId === job.taskId && a.category === "image" && a.current === true,
-  );
+  const images = await taskImages(job);
   if (!images.length) throw new Error("혼합형에 사용할 이미지를 등록하세요.");
   const folder = mkdtempSync(path.join(tmpdir(), "om-hybrid-"));
-  const original = path.join(folder, "scene.mp4"),
-    normalized = path.join(folder, "0.mp4");
-  writeFileSync(original, scene);
-  await runFFmpeg([
-    "-y",
-    "-i",
-    original,
-    "-t",
-    String(sceneSeconds),
-    "-an",
-    "-vf",
-    "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1",
-    "-r",
-    "25",
-    "-c:v",
-    "libx264",
-    "-pix_fmt",
-    "yuv420p",
-    normalized,
-  ]);
-  const clips = [normalized];
-  const per =
-    Math.max(1, Number(task?.duration || 15) - sceneSeconds) / images.length;
-  for (let i = 0; i < images.length; i++) {
-    const file = path.join(folder, `${i + 1}.mp4`);
+  try {
+    const original = path.join(folder, "scene.mp4"),
+      normalized = path.join(folder, "0.mp4");
+    writeFileSync(original, scene);
     await runFFmpeg([
       "-y",
-      "-loop",
-      "1",
       "-i",
-      assetPath(images[i]),
+      original,
       "-t",
-      String(per),
+      String(sceneSeconds),
+      "-an",
       "-vf",
-      "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1",
+      scale,
       "-r",
       "25",
       "-c:v",
       "libx264",
       "-pix_fmt",
       "yuv420p",
-      file,
+      normalized,
     ]);
-    clips.push(file);
+    const clips = [normalized];
+    const per =
+      Math.max(1, Number(task?.duration || 15) - sceneSeconds) / images.length;
+    for (let i = 0; i < images.length; i++) {
+      const file = path.join(folder, `${i + 1}.mp4`);
+      await stillClip(await localCopy(images[i], folder), per, file);
+      clips.push(file);
+    }
+    const buffer = await concat(folder, clips);
+    await saveAsset(
+      {
+        projectId: String(job.projectId),
+        taskId: String(job.taskId),
+        category: "video",
+        name: "혼합형-클립.mp4",
+        buffer,
+        jobId: job.id,
+      },
+      String(job.actor),
+    );
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
   }
-  const manifest = path.join(folder, "clips.txt");
-  writeFileSync(
-    manifest,
-    clips.map((f) => `file '${f.replaceAll("\\", "/")}'`).join("\n"),
-  );
-  const output = path.join(folder, "output.mp4");
-  await runFFmpeg([
-    "-y",
-    "-f",
-    "concat",
-    "-safe",
-    "0",
-    "-i",
-    manifest,
-    "-c",
-    "copy",
-    "-movflags",
-    "+faststart",
-    output,
-  ]);
-  saveAsset(
-    {
-      projectId: String(job.projectId),
-      taskId: String(job.taskId),
-      category: "video",
-      name: "혼합형-클립.mp4",
-      buffer: readFileSync(output),
-      jobId: job.id,
-    },
-    String(job.actor),
-  );
 }

@@ -12,7 +12,9 @@ export async function POST(request: Request) {
         discount: z.number().int().min(0).default(0),
       })
       .parse(await request.json());
-    return Response.json(recommend(list("prices"), body.budget, body.discount));
+    return Response.json(
+      recommend(await list("prices"), body.budget, body.discount),
+    );
   } catch (e) {
     return Response.json(
       { error: e instanceof Error ? e.message : "추천 실패" },

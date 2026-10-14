@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { audit, create, list, db, update } from "./db";
+import { audit, create, list, transaction, update } from "./db";
 import { requireRecord } from "./domain";
 import { bytes } from "./assets";
 import type { RecordData } from "./types";
-export function approvedBundle(projectId: string, taskIds?: string[]) {
-  const p = requireRecord(projectId, "projects");
-  const tasks = list("tasks").filter(
+export async function approvedBundle(projectId: string, taskIds?: string[]) {
+  const p = await requireRecord(projectId, "projects");
+  const tasks = (await list("tasks")).filter(
     (t) =>
       t.projectId === p.id &&
       (taskIds
@@ -28,7 +28,8 @@ export function approvedBundle(projectId: string, taskIds?: string[]) {
       throw new Error("미승인 작업이 포함되어 있습니다.");
     const ids = task.approvedAssets as string[];
     if (!ids?.length) throw new Error("승인 버전이 없습니다.");
-    const assets = ids.map((id) => requireRecord(id, "assets"));
+    const assets: RecordData[] = [];
+    for (const id of ids) assets.push(await requireRecord(id, "assets"));
     if (
       assets.some(
         (a) =>
@@ -48,7 +49,10 @@ export function approvedBundle(projectId: string, taskIds?: string[]) {
         String(++i).padStart(2, "0") +
         "_" +
         String(asset.name).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_");
-      entries.push({ path: folder + "/" + filename, buffer: bytes(asset) });
+      entries.push({
+        path: folder + "/" + filename,
+        buffer: await bytes(asset),
+      });
       if (asset.category === "copy")
         entries.push({
           path: folder + "/원고.txt",
@@ -93,9 +97,9 @@ export function recordDelivery(input: unknown, actor: string) {
       note: z.string().max(2000).default(""),
     })
     .parse(input);
-  return db.transaction(() => {
-    const bundle = approvedBundle(body.projectId, body.taskIds);
-    const row = create("deliveries", {
+  return transaction(async () => {
+    const bundle = await approvedBundle(body.projectId, body.taskIds);
+    const row = await create("deliveries", {
       ...body,
       actor,
       versions: bundle.tasks.map((t) => ({
@@ -105,14 +109,14 @@ export function recordDelivery(input: unknown, actor: string) {
       deliveredAt: new Date().toISOString(),
     });
     for (const task of bundle.tasks)
-      update(task.id, {
+      await update(task.id, {
         status: "delivered",
         deliveryVersion: task.approvedAssets,
         deliveredAt: row.createdAt,
       });
     const p = bundle.project;
-    if (p.status === "ready") update(p.id, { status: "publishing" });
-    audit(actor, "delivery-recorded", p.id, { deliveryId: row.id });
+    if (p.status === "ready") await update(p.id, { status: "publishing" });
+    await audit(actor, "delivery-recorded", p.id, { deliveryId: row.id });
     return row;
-  })();
+  });
 }

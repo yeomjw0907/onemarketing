@@ -67,7 +67,7 @@ export function normalizeProfile(url: string) {
   const u = new URL(url);
   return u.hostname.toLowerCase() + u.pathname.replace(/\/$/, "") + u.search;
 }
-export function validateParticipant(
+export async function validateParticipant(
   data: Record<string, unknown>,
   id?: string,
 ) {
@@ -78,7 +78,7 @@ export function validateParticipant(
       accounts.length
   )
     throw new Error("같은 계정을 중복 등록할 수 없습니다.");
-  for (const p of list("participants").filter((p) => p.id !== id))
+  for (const p of (await list("participants")).filter((p) => p.id !== id))
     if (
       (p.accounts as { url: string }[]).some((a) =>
         accounts.some(
@@ -88,7 +88,7 @@ export function validateParticipant(
     )
       throw new Error("다른 참여자에게 등록된 계정입니다.");
   if (id)
-    for (const task of list("tasks").filter(
+    for (const task of (await list("tasks")).filter(
       (t) =>
         t.participantId === id &&
         !["verified", "cancelled"].includes(String(t.status)),
@@ -98,7 +98,7 @@ export function validateParticipant(
           "진행 중인 작업에서 사용하는 계정은 삭제할 수 없습니다. 먼저 담당 계정을 변경하세요.",
         );
 }
-export function participantAssignment(
+export async function participantAssignment(
   task: RecordData,
   input: Record<string, unknown>,
 ) {
@@ -117,7 +117,7 @@ export function participantAssignment(
         .max(1000)
         .parse(input.assignee || ""),
     };
-  const p = get(participantId);
+  const p = await get(participantId);
   if (!p || p.kind !== "participants")
     throw new Error("참여자를 찾을 수 없습니다.");
   if (p.status !== "active" && task.participantId !== p.id)

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
-import { actor, login, sameOrigin, tokenHash } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { actor, login, logout, sameOrigin } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 export async function GET() {
   return Response.json(
     { email: await actor() },
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       body.password.length > 256
     )
       throw new Error("로그인 정보를 확인하세요.");
-    const token = login(body.email, body.password);
+    const token = await login(body.email, body.password);
     (await cookies()).set("om_session", token, {
       httpOnly: true,
       sameSite: "strict",
@@ -37,11 +37,7 @@ export async function DELETE(request: Request) {
   try {
     sameOrigin(request);
     const jar = await cookies();
-    const token = jar.get("om_session")?.value;
-    if (token)
-      db.prepare("DELETE FROM sessions WHERE token_hash=?").run(
-        tokenHash(token),
-      );
+    await logout(jar.get("om_session")?.value);
     jar.delete("om_session");
     return Response.json({ ok: true });
   } catch {

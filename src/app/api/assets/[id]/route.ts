@@ -1,16 +1,18 @@
 import { requireActor } from "@/lib/auth";
 import { requireRecord } from "@/lib/domain";
 import { bytes } from "@/lib/assets";
+export const dynamic = "force-dynamic";
+// 비공개 버킷의 파일은 관리자 세션을 확인한 서버가 service role로 읽어 전달한다. 클라이언트에 키나 서명 URL을 주지 않는다.
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await requireActor();
-    const a = requireRecord((await params).id, "assets");
+    const a = await requireRecord((await params).id, "assets");
     const inline =
       String(a.mime).startsWith("image/") || a.mime === "video/mp4";
-    return new Response(new Uint8Array(bytes(a)), {
+    return new Response(new Uint8Array(await bytes(a)), {
       headers: {
         "Content-Type": String(a.mime),
         "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(String(a.name))}`,

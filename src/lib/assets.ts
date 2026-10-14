@@ -1,21 +1,29 @@
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import ExcelJS from "exceljs";
 import sharp from "sharp";
-import { audit, create, list, update, db, dataDir } from "./db";
+import { audit, create, list, update, transaction, lock } from "./db";
+import { getObject, putObject, removeObjects } from "./storage";
 import { requireRecord } from "./domain";
 import type { RecordData } from "./types";
-export const filesDir = path.join(dataDir, "files");
-mkdirSync(filesDir, { recursive: true });
-export function assetPath(a: RecordData) {
+export function storageName(a: RecordData) {
   const name = String(a.storageName);
   if (!/^[a-f0-9-]+\.[a-z0-9]+$/.test(name))
     throw new Error("잘못된 파일 경로입니다.");
-  return path.join(filesDir, name);
+  return name;
 }
+// 비공개 버킷에서 파일 내용을 읽는다. 관리자 인증은 호출하는 라우트가 확인한다.
 export function bytes(a: RecordData) {
-  return readFileSync(assetPath(a));
+  return getObject(storageName(a));
+}
+// ffmpeg 등 로컬 경로가 필요한 처리를 위해 임시 폴더에 내려받는다. 호출자가 폴더를 정리한다.
+export async function localCopy(a: RecordData, folder?: string) {
+  const dir = folder || mkdtempSync(path.join(tmpdir(), "om-asset-"));
+  const file = path.join(dir, storageName(a));
+  writeFileSync(file, await bytes(a));
+  return file;
 }
 export async function imageFingerprint(buffer: Buffer) {
   const values = await sharp(buffer, { limitInputPixels: 40_000_000 })
@@ -58,10 +66,7 @@ export function detectMime(buffer: Buffer, extension: string) {
 export async function extractSheet(buffer: Buffer, ext: string) {
   if (!["xlsx", "csv"].includes(ext)) return null;
   if (ext === "csv")
-    return buffer
-      .toString("utf8")
-      .replace(/^\uFEFF/, "")
-      .slice(0, 50000);
+    return buffer.toString("utf8").replace(/^﻿/, "").slice(0, 50000);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
   let count = 0;
@@ -88,7 +93,7 @@ export async function extractSheet(buffer: Buffer, ext: string) {
   }
   return sheets.join("\n\n").slice(0, 50000);
 }
-export function saveAsset(
+export async function saveAsset(
   input: {
     projectId: string;
     taskId?: string;
@@ -103,16 +108,16 @@ export function saveAsset(
   },
   actor: string,
 ) {
-  const project = requireRecord(input.projectId, "projects");
+  const project = await requireRecord(input.projectId, "projects");
   if (
     project.settled ||
     ["completed", "cancelled"].includes(String(project.status))
   )
     throw new Error("마감한 프로젝트에는 자료를 추가할 수 없습니다.");
   if (input.taskId) {
-    const task = requireRecord(input.taskId, "tasks");
+    const task = await requireRecord(input.taskId, "tasks");
     if (input.jobId) {
-      const job = requireRecord(input.jobId, "jobs");
+      const job = await requireRecord(input.jobId, "jobs");
       const snapshot = (job.snapshot as { task: RecordData }).task;
       if (
         snapshot.brief !== task.brief ||
@@ -137,7 +142,7 @@ export function saveAsset(
     throw new Error("이미지 형식이 아닙니다.");
   if (input.category === "video" && mime !== "video/mp4")
     throw new Error("MP4 영상이 아닙니다.");
-  const duplicate = list("assets").find(
+  const duplicate = (await list("assets")).find(
     (a) =>
       a.projectId === project.id &&
       a.category === "image" &&
@@ -149,58 +154,66 @@ export function saveAsset(
     throw new Error(
       "다른 게시 작업에 사용한 이미지입니다. 중복되지 않는 이미지를 등록하세요.",
     );
+  // 업로드가 성공한 뒤에만 DB에 기록한다. DB 기록이 실패하면 올린 객체를 정리한다.
   const storageName = randomUUID() + "." + ext;
-  writeFileSync(path.join(filesDir, storageName), input.buffer);
-  return db.transaction(() => {
-    const slot =
-      input.slot ||
-      (input.category === "copy" || input.category === "video"
-        ? input.category
-        : randomUUID());
-    if (input.taskId && input.category !== "source") {
-      for (const a of list("assets").filter(
-        (a) =>
-          a.taskId === input.taskId && a.slot === slot && a.current === true,
-      ))
-        update(a.id, { current: false });
-      const t = requireRecord(input.taskId);
-      update(t.id, { status: "review", approvedAssets: [] });
-      if (["ready", "publishing"].includes(String(project.status)))
-        update(project.id, { status: "review" });
-    }
-    const a = create("assets", {
-      projectId: input.projectId,
-      customerId: project.customerId,
-      taskId: input.taskId || null,
-      category: input.category,
-      name: path.basename(input.name),
-      mime,
-      hash,
-      fingerprint: input.fingerprint || null,
-      similarWarning:
-        input.category === "image" &&
-        !!input.fingerprint &&
-        list("assets").some(
+  await putObject(storageName, input.buffer, mime);
+  try {
+    return await transaction(async () => {
+      await lock("assets:" + project.id);
+      const slot =
+        input.slot ||
+        (input.category === "copy" || input.category === "video"
+          ? input.category
+          : randomUUID());
+      const assets = await list("assets");
+      if (input.taskId && input.category !== "source") {
+        for (const a of assets.filter(
           (a) =>
-            a.projectId === project.id &&
-            a.taskId !== input.taskId &&
-            a.category === "image" &&
-            a.current === true &&
-            typeof a.fingerprint === "string" &&
-            a.fingerprint.length === input.fingerprint!.length &&
-            Array.from(input.fingerprint!).filter(
-              (v, i) => v !== (a.fingerprint as string)[i],
-            ).length <= 6,
-        ),
-      storageName,
-      size: input.buffer.length,
-      current: true,
-      slot,
-      text: input.text || null,
-      extracted: input.extracted || null,
-      jobId: input.jobId || null,
+            a.taskId === input.taskId && a.slot === slot && a.current === true,
+        ))
+          await update(a.id, { current: false });
+        const t = await requireRecord(input.taskId);
+        await update(t.id, { status: "review", approvedAssets: [] });
+        if (["ready", "publishing"].includes(String(project.status)))
+          await update(project.id, { status: "review" });
+      }
+      const a = await create("assets", {
+        projectId: input.projectId,
+        customerId: project.customerId,
+        taskId: input.taskId || null,
+        category: input.category,
+        name: path.basename(input.name),
+        mime,
+        hash,
+        fingerprint: input.fingerprint || null,
+        similarWarning:
+          input.category === "image" &&
+          !!input.fingerprint &&
+          assets.some(
+            (a) =>
+              a.projectId === project.id &&
+              a.taskId !== input.taskId &&
+              a.category === "image" &&
+              a.current === true &&
+              typeof a.fingerprint === "string" &&
+              a.fingerprint.length === input.fingerprint!.length &&
+              Array.from(input.fingerprint!).filter(
+                (v, i) => v !== (a.fingerprint as string)[i],
+              ).length <= 6,
+          ),
+        storageName,
+        size: input.buffer.length,
+        current: true,
+        slot,
+        text: input.text || null,
+        extracted: input.extracted || null,
+        jobId: input.jobId || null,
+      });
+      await audit(actor, "asset-created", a.id, { projectId: project.id });
+      return a;
     });
-    audit(actor, "asset-created", a.id, { projectId: project.id });
-    return a;
-  })();
+  } catch (e) {
+    await removeObjects([storageName]).catch(() => {});
+    throw e;
+  }
 }

@@ -6,25 +6,27 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
-process.env.DATA_DIR = mkdtempSync(path.join(tmpdir(), "om-workflow-"));
+import "./helpers";
 const { save, command } = await import("../src/lib/domain");
 const { list, get, update, create } = await import("../src/lib/db");
 const { saveAsset, detectMime, extractSheet, bytes } =
   await import("../src/lib/assets");
+const { objectExists, bucketIsPrivate } = await import("../src/lib/storage");
 const { enqueue, claimJob, releaseLease } = await import("../src/lib/jobs");
 const { approvedBundle, recordDelivery } =
   await import("../src/lib/deliveries");
 const { slideshow, hybrid } = await import("../src/lib/video");
 const { executeProviderJob } = await import("../src/lib/providers");
+const { runJobs } = await import("../src/lib/worker");
 const actor = "workflow@local";
-function setup(channel = "blog", images = 1) {
-  const c = save("customers", { name: "테스트" }, actor),
-    product = save(
+async function setup(channel = "blog", images = 1) {
+  const c = await save("customers", { name: "테스트" }, actor),
+    product = await save(
       "products",
       { name: "제품", customerId: c.id, facts: "확인 정보" },
       actor,
     ),
-    price = save(
+    price = await save(
       "prices",
       {
         name: "제작",
@@ -39,7 +41,7 @@ function setup(channel = "blog", images = 1) {
       },
       actor,
     ),
-    contract = save(
+    contract = await save(
       "contracts",
       {
         name: "계약",
@@ -51,7 +53,7 @@ function setup(channel = "blog", images = 1) {
       },
       actor,
     ),
-    p = save(
+    p = await save(
       "projects",
       {
         name: "프로젝트",
@@ -63,32 +65,37 @@ function setup(channel = "blog", images = 1) {
       },
       actor,
     );
-  return { p, t: list("tasks").find((t) => t.projectId === p.id)! };
+  return { p, t: (await list("tasks")).find((t) => t.projectId === p.id)! };
 }
-function act(action: string, id: string, extra: Record<string, unknown> = {}) {
+async function act(
+  action: string,
+  id: string,
+  extra: Record<string, unknown> = {},
+) {
   return command(
     action,
-    { id, version: get(id)!.version, ...extra },
+    { id, version: (await get(id))!.version, ...extra },
     actor,
     crypto.randomUUID(),
   );
 }
-function production(p: string, t: string) {
-  act("project-notes", p, {
+async function production(p: string, t: string) {
+  await act("project-notes", p, {
     materialNotes: "기준 자료 확인",
     instructions: "",
     budget: 10000,
   });
-  act("project-stage", p, { status: "planning" });
-  act("task-edit", t, {
+  await act("project-stage", p, { status: "planning" });
+  await act("task-edit", t, {
     brief: "차분한 제품 소개",
     assignee: "게시자",
     payout: 5000,
   });
-  act("project-stage", p, { status: "brief_review" });
-  act("project-stage", p, { status: "producing" });
+  await act("project-stage", p, { status: "brief_review" });
+  await act("project-stage", p, { status: "producing" });
 }
-const imageFile = path.join(process.env.DATA_DIR, "reference.png");
+const scratch = mkdtempSync(path.join(tmpdir(), "om-workflow-"));
+const imageFile = path.join(scratch, "reference.png");
 execFileSync(
   ffmpegStatic || "ffmpeg",
   [
@@ -104,10 +111,50 @@ execFileSync(
   { stdio: "ignore", windowsHide: true },
 );
 const png = readFileSync(imageFile);
-test("승인본 ZIP 구성, 변경 후 승인 무효화, 전달·게시·정산 경로", () => {
-  const { p, t } = setup();
-  production(p.id, t.id);
-  saveAsset(
+test("비공개 버킷에 저장되고 업로드 실패 시 DB에 기록하지 않음", async () => {
+  assert.equal(await bucketIsPrivate(), true);
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  const a = await saveAsset(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      category: "image",
+      name: "제품.png",
+      buffer: png,
+    },
+    actor,
+  );
+  assert.equal(await objectExists(String(a.storageName)), true);
+  assert.ok((await bytes(a)).equals(png));
+  // 업로드 실패를 흉내 낸다: 존재하지 않는 버킷으로 올리면 Storage가 거부하고 DB에는 기록하지 않는다.
+  const before = (await list("assets")).length;
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET;
+  process.env.SUPABASE_STORAGE_BUCKET = "missing-bucket-" + crypto.randomUUID();
+  try {
+    await assert.rejects(
+      saveAsset(
+        {
+          projectId: p.id,
+          taskId: t.id,
+          category: "copy",
+          name: "원고.md",
+          buffer: Buffer.from("x"),
+          text: "x",
+        },
+        actor,
+      ),
+      /업로드/,
+    );
+  } finally {
+    process.env.SUPABASE_STORAGE_BUCKET = bucket;
+  }
+  assert.equal((await list("assets")).length, before);
+});
+test("승인본 ZIP 구성, 변경 후 승인 무효화, 전달·게시·정산 경로", async () => {
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  await saveAsset(
     {
       projectId: p.id,
       taskId: t.id,
@@ -118,7 +165,7 @@ test("승인본 ZIP 구성, 변경 후 승인 무효화, 전달·게시·정산 
     },
     actor,
   );
-  saveAsset(
+  await saveAsset(
     {
       projectId: p.id,
       taskId: t.id,
@@ -128,12 +175,13 @@ test("승인본 ZIP 구성, 변경 후 승인 무효화, 전달·게시·정산 
     },
     actor,
   );
-  assert.throws(() => approvedBundle(p.id), /승인본/);
-  act("approve-task", t.id);
-  const bundle = approvedBundle(p.id);
+  await assert.rejects(approvedBundle(p.id), /승인본/);
+  await act("approve-task", t.id);
+  const bundle = await approvedBundle(p.id);
   assert.ok(bundle.entries.some((e) => e.path === "manifest.json"));
+  assert.ok(bundle.entries.some((e) => e.buffer.equals(png)));
   assert.ok(!bundle.entries.some((e) => e.buffer.includes(Buffer.from(actor))));
-  saveAsset(
+  await saveAsset(
     {
       projectId: p.id,
       taskId: t.id,
@@ -144,39 +192,38 @@ test("승인본 ZIP 구성, 변경 후 승인 무효화, 전달·게시·정산 
     },
     actor,
   );
-  assert.equal(get(t.id)!.status, "review");
-  assert.throws(() => approvedBundle(p.id), /승인본/);
-  act("approve-task", t.id);
-  act("project-stage", p.id, { status: "review" });
-  act("project-stage", p.id, { status: "ready" });
-  recordDelivery(
+  assert.equal((await get(t.id))!.status, "review");
+  await assert.rejects(approvedBundle(p.id), /승인본/);
+  await act("approve-task", t.id);
+  await act("project-stage", p.id, { status: "review" });
+  await act("project-stage", p.id, { status: "ready" });
+  await recordDelivery(
     { projectId: p.id, taskIds: [t.id], channel: "수동 전달" },
     actor,
   );
-  assert.equal(get(t.id)!.status, "delivered");
-  act("publication", t.id, {
+  assert.equal((await get(t.id))!.status, "delivered");
+  await act("publication", t.id, {
     link: "https://blog.naver.com/test/123",
     verified: false,
   });
-  assert.throws(
-    () => act("project-stage", p.id, { status: "completed" }),
+  await assert.rejects(
+    act("project-stage", p.id, { status: "completed" }),
     /게시물/,
   );
-  act("publication", t.id, {
+  await act("publication", t.id, {
     link: "https://blog.naver.com/test/123",
     verified: true,
   });
-  act("project-stage", p.id, { status: "completed" });
-  act("settle", p.id);
-  assert.equal(get(p.id)!.settled, true);
-  assert.throws(
-    () =>
-      act("cost", p.id, {
-        category: "other",
-        amount: 1,
-        description: "비용",
-        confirmed: true,
-      }),
+  await act("project-stage", p.id, { status: "completed" });
+  await act("settle", p.id);
+  assert.equal((await get(p.id))!.settled, true);
+  await assert.rejects(
+    act("cost", p.id, {
+      category: "other",
+      amount: 1,
+      description: "비용",
+      confirmed: true,
+    }),
     /마감/,
   );
 });
@@ -197,8 +244,8 @@ test("업로드 형식·엑셀 읽기, 중복 이미지 차단", async () => {
     await extractSheet(Buffer.from("제품,특징\n컵,가벼움"), "csv"),
     "제품,특징\n컵,가벼움",
   );
-  const { p, t } = setup();
-  saveAsset(
+  const { p, t } = await setup();
+  await saveAsset(
     {
       projectId: p.id,
       taskId: t.id,
@@ -208,69 +255,81 @@ test("업로드 형식·엑셀 읽기, 중복 이미지 차단", async () => {
     },
     actor,
   );
-  const second = create("tasks", { projectId: p.id, channel: "blog" });
-  assert.throws(
-    () =>
-      saveAsset(
-        {
-          projectId: p.id,
-          taskId: second.id,
-          category: "image",
-          name: "다른.png",
-          buffer: png,
-        },
-        actor,
-      ),
+  const second = await create("tasks", { projectId: p.id, channel: "blog" });
+  await assert.rejects(
+    saveAsset(
+      {
+        projectId: p.id,
+        taskId: second.id,
+        category: "image",
+        name: "다른.png",
+        buffer: png,
+      },
+      actor,
+    ),
     /중복/,
   );
 });
 test("영속 큐 예산·승인·중복 실행 방지와 원고 adapter", async () => {
-  const { p, t } = setup();
+  const { p, t } = await setup();
   process.env.ANTHROPIC_API_KEY = "test-not-real";
-  assert.throws(
-    () =>
-      enqueue(
-        {
-          projectId: p.id,
-          taskId: t.id,
-          type: "copy",
-          estimate: 1000,
-          key: crypto.randomUUID(),
-        },
-        actor,
-      ),
+  await assert.rejects(
+    enqueue(
+      {
+        projectId: p.id,
+        taskId: t.id,
+        type: "copy",
+        estimate: 1000,
+        key: crypto.randomUUID(),
+      },
+      actor,
+    ),
     /기획 승인/,
   );
-  production(p.id, t.id);
+  await production(p.id, t.id);
   const key = crypto.randomUUID();
-  const job = enqueue(
+  const job = await enqueue(
     { projectId: p.id, taskId: t.id, type: "copy", estimate: 1000, key },
     actor,
   );
   assert.equal(
-    enqueue(
-      { projectId: p.id, taskId: t.id, type: "copy", estimate: 1000, key },
-      actor,
+    (
+      await enqueue(
+        { projectId: p.id, taskId: t.id, type: "copy", estimate: 1000, key },
+        actor,
+      )
     ).id,
     job.id,
   );
-  assert.throws(
-    () =>
-      enqueue(
-        {
-          projectId: p.id,
-          taskId: t.id,
-          type: "copy",
-          estimate: 1000,
-          key: crypto.randomUUID(),
-        },
-        actor,
-      ),
+  await assert.rejects(
+    enqueue(
+      {
+        projectId: p.id,
+        taskId: t.id,
+        type: "copy",
+        estimate: 1000,
+        key: crypto.randomUUID(),
+      },
+      actor,
+    ),
     /이미 실행/,
   );
-  const claimed = claimJob("test-worker");
+  await assert.rejects(
+    enqueue(
+      {
+        projectId: p.id,
+        taskId: t.id,
+        type: "image",
+        estimate: 20000,
+        key: crypto.randomUUID(),
+      },
+      actor,
+    ),
+    /FAL_KEY|상한|기준 사진/,
+  );
+  const claimed = await claimJob("test-worker");
   assert.equal(claimed!.id, job.id);
-  assert.equal(claimJob("other-worker"), null);
+  assert.equal(await claimJob("other-worker"), null);
   const original = globalThis.fetch;
   globalThis.fetch = async () =>
     new Response(
@@ -286,18 +345,20 @@ test("영속 큐 예산·승인·중복 실행 방지와 원고 adapter", async 
     await executeProviderJob(claimed!);
   } finally {
     globalThis.fetch = original;
-    releaseLease("test-worker");
+    await releaseLease("test-worker", job.id);
   }
   assert.ok(
-    list("assets").some((a) => a.jobId === job.id && a.category === "copy"),
+    (await list("assets")).some(
+      (a) => a.jobId === job.id && a.category === "copy",
+    ),
   );
-  assert.ok(Array.isArray(get(job.id)!.calls));
-  update(job.id, { status: "succeeded" });
+  assert.ok(Array.isArray((await get(job.id))!.calls));
+  await update(job.id, { status: "succeeded" });
 });
 test("실제 ffmpeg 슬라이드·혼합형 편집 및 영상 승인", async () => {
-  const { p, t } = setup("clip");
-  production(p.id, t.id);
-  saveAsset(
+  const { p, t } = await setup("clip");
+  await production(p.id, t.id);
+  await saveAsset(
     {
       projectId: p.id,
       taskId: t.id,
@@ -307,7 +368,7 @@ test("실제 ffmpeg 슬라이드·혼합형 편집 및 영상 승인", async () 
     },
     actor,
   );
-  const job = enqueue(
+  const job = await enqueue(
     {
       projectId: p.id,
       taskId: t.id,
@@ -319,9 +380,11 @@ test("실제 ffmpeg 슬라이드·혼합형 편집 및 영상 승인", async () 
   );
   await slideshow(job);
   assert.ok(
-    list("assets").some((a) => a.jobId === job.id && a.mime === "video/mp4"),
+    (await list("assets")).some(
+      (a) => a.jobId === job.id && a.mime === "video/mp4",
+    ),
   );
-  const scene = list("assets").find(
+  const scene = (await list("assets")).find(
     (a) => a.jobId === job.id && a.mime === "video/mp4",
   )!;
   const snapshot = job.snapshot as { task: Record<string, unknown> };
@@ -333,30 +396,30 @@ test("실제 ffmpeg 슬라이드·혼합형 편집 및 영상 승인", async () 
         task: { ...snapshot.task, duration: 8, mode: "hybrid" },
       },
     },
-    bytes(scene),
+    await bytes(scene),
     2,
   );
   assert.ok(
-    list("assets").some(
+    (await list("assets")).some(
       (a) =>
         a.jobId === job.id &&
         a.current === true &&
         a.name === "혼합형-클립.mp4",
     ),
   );
-  act("approve-task", t.id);
-  assert.equal(get(t.id)!.status, "approved");
+  await act("approve-task", t.id);
+  assert.equal((await get(t.id))!.status, "approved");
+  await update(job.id, { status: "succeeded" });
 });
-
-test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구", async () => {
-  const { p, t } = setup();
-  production(p.id, t.id);
-  saveAsset(
+test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구 (새 생성 없음)", async () => {
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  await saveAsset(
     { projectId: p.id, category: "source", name: "기준.png", buffer: png },
     actor,
   );
   process.env.FAL_KEY = "test-not-real";
-  const job = enqueue(
+  const job = await enqueue(
     {
       projectId: p.id,
       taskId: t.id,
@@ -393,32 +456,99 @@ test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구",
     return new Response(new Uint8Array(png));
   };
   try {
-    await assert.rejects(executeProviderJob(job), /중복 요청/);
-    assert.equal(get(job.id)!.providerRequestId, "fal-test");
+    // 전체 실행기 경로: 수집 실패 → uncertain + 비용 확인 필요 기록, 요청 ID 보존.
+    const first = await runJobs({ owner: "test-runner" });
+    assert.equal(first.results[0]?.result, "uncertain");
+    const after = (await get(job.id))!;
+    assert.equal(after.status, "uncertain");
+    assert.equal(after.providerRequestId, "fal-test");
+    assert.match(String(after.error), /수집/);
+    assert.ok((await list("costs")).some((c) => c.jobId === job.id));
+    // 재개: 새 요청 없이 같은 요청 ID로 결과를 다시 수집한다.
     failDownload = false;
-    await executeProviderJob(get(job.id)!);
+    await act("resume-job", job.id);
+    const second = await runJobs({ owner: "test-runner" });
+    assert.equal(second.results[0]?.result, "succeeded");
     assert.equal(submitted, 1);
-    assert.equal(list("assets").filter((a) => a.jobId === job.id).length, 1);
-    await executeProviderJob(get(job.id)!);
-    assert.equal(submitted, 1);
-    const calls = get(job.id)!.calls as { provider: string }[];
+    assert.equal(
+      (await list("assets")).filter((a) => a.jobId === job.id).length,
+      1,
+    );
+    assert.equal(
+      (await list("costs")).filter((c) => c.jobId === job.id).length,
+      1,
+    );
+    const calls = (await get(job.id))!.calls as { provider: string }[];
     assert.equal(calls[0].provider, "fal");
   } finally {
     globalThis.fetch = original;
-    update(job.id, { status: "succeeded" });
   }
 });
-
-test("이전 공급사 영상 요청을 fal로 중복 제출하지 않음", async () => {
-  const { p, t } = setup("clip");
-  production(p.id, t.id);
-  saveAsset(
+test("서버리스 실행 제한 시간: fal 진행 중이면 요청 ID를 보존한 채 다음 실행으로 넘김", async () => {
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  await saveAsset(
     { projectId: p.id, category: "source", name: "기준.png", buffer: png },
     actor,
   );
-  update(t.id, { duration: 10, mode: "generated" });
+  const job = await enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "image",
+      estimate: 1000,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  const original = globalThis.fetch;
+  let submitted = 0,
+    polls = 0;
+  globalThis.fetch = async (url, init) => {
+    if (init?.method === "POST") {
+      submitted++;
+      return Response.json({
+        request_id: "fal-slow",
+        status_url: "https://queue.fal.run/test/status",
+        response_url: "https://queue.fal.run/test/result",
+      });
+    }
+    if (String(url).endsWith("/status")) {
+      polls++;
+      return Response.json({
+        status: polls > 1 ? "COMPLETED" : "IN_PROGRESS",
+      });
+    }
+    if (String(url).endsWith("/result"))
+      return Response.json({
+        images: [{ url: "https://v3b.fal.media/test.png" }],
+      });
+    return new Response(new Uint8Array(png));
+  };
+  try {
+    // 제한 시간 65초: 접수(60초 필요)는 가능하지만 진행 중 대기(30초 여유)는 불가 → yield.
+    const first = await runJobs({ owner: "tick-1", budgetMs: 65000 });
+    assert.equal(first.results[0]?.result, "yielded");
+    assert.equal(first.more, true);
+    assert.equal((await get(job.id))!.status, "pending");
+    assert.equal((await get(job.id))!.providerRequestId, "fal-slow");
+    const second = await runJobs({ owner: "tick-2" });
+    assert.equal(second.results[0]?.result, "succeeded");
+    assert.equal(submitted, 1);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+test("이전 공급사 영상 요청을 fal로 중복 제출하지 않음", async () => {
+  const { p, t } = await setup("clip");
+  await production(p.id, t.id);
+  await saveAsset(
+    { projectId: p.id, category: "source", name: "기준.png", buffer: png },
+    actor,
+  );
+  await update(t.id, { duration: 10, mode: "generated" });
   process.env.FAL_KEY = "test-not-real";
-  const job = enqueue(
+  const job = await enqueue(
     {
       projectId: p.id,
       taskId: t.id,
@@ -428,7 +558,7 @@ test("이전 공급사 영상 요청을 fal로 중복 제출하지 않음", asyn
     },
     actor,
   );
-  update(job.id, {
+  await update(job.id, {
     providerState: { response: { request_id: "legacy-request" } },
   });
   const original = globalThis.fetch;
@@ -436,24 +566,28 @@ test("이전 공급사 영상 요청을 fal로 중복 제출하지 않음", asyn
     throw new Error("must not call provider");
   };
   try {
-    await assert.rejects(executeProviderJob(get(job.id)!), /이전 공급사/);
+    await assert.rejects(
+      executeProviderJob((await get(job.id))!),
+      /이전 공급사/,
+    );
   } finally {
     globalThis.fetch = original;
-    update(job.id, { status: "uncertain" });
+    await update(job.id, { status: "uncertain" });
   }
 });
-
 test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", async () => {
-  const videoAsset = list("assets").find((a) => a.category === "video")!;
-  const videoBytes = bytes(videoAsset);
-  const { p, t } = setup("clip");
-  production(p.id, t.id);
-  saveAsset(
+  const videoAsset = (await list("assets")).find(
+    (a) => a.category === "video",
+  )!;
+  const videoBytes = await bytes(videoAsset);
+  const { p, t } = await setup("clip");
+  await production(p.id, t.id);
+  await saveAsset(
     { projectId: p.id, category: "source", name: "기준.png", buffer: png },
     actor,
   );
-  update(t.id, { duration: 10, mode: "generated" });
-  const job = enqueue(
+  await update(t.id, { duration: 10, mode: "generated" });
+  const job = await enqueue(
     {
       projectId: p.id,
       taskId: t.id,
@@ -491,20 +625,20 @@ test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", as
   try {
     await executeProviderJob(job);
     assert.ok(
-      list("assets").some((a) => a.jobId === job.id && a.category === "video"),
+      (await list("assets")).some(
+        (a) => a.jobId === job.id && a.category === "video",
+      ),
     );
   } finally {
     globalThis.fetch = original;
-    update(job.id, { status: "succeeded" });
+    await update(job.id, { status: "succeeded" });
   }
 });
-
 test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장과 기획", async () => {
-  const { p, t } = setup();
-  update(p.id, { status: "planning" });
+  const { p, t } = await setup();
+  await update(p.id, { status: "planning" });
   process.env.ANTHROPIC_API_KEY = "test-not-real";
-  delete process.env.GEMINI_API_KEY;
-  const job = enqueue(
+  const job = await enqueue(
     {
       projectId: p.id,
       type: "research",
@@ -595,27 +729,26 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
     await executeProviderJob(job);
     assert.equal(searches, 2);
     assert.equal(plain, 2);
-    assert.equal(get(p.id)!.status, "brief_review");
-    assert.equal(get(t.id)!.brief, "출처 기반 기획");
-    const checkpoints = get(job.id)!.checkpoints as {
+    assert.equal((await get(p.id))!.status, "brief_review");
+    assert.equal((await get(t.id))!.brief, "출처 기반 기획");
+    const checkpoints = (await get(job.id))!.checkpoints as {
       sources: { url: string; verified: boolean }[];
       citations: unknown[];
     };
     assert.equal(checkpoints.sources[0].url, "https://example.com/product");
     assert.equal(checkpoints.sources[0].verified, false);
     assert.ok(checkpoints.citations.length);
-    assert.equal(get(job.id)!.searchState, null);
+    assert.equal((await get(job.id))!.searchState, null);
     assert.ok(
-      (get(job.id)!.calls as { usage: { server_tool_use?: unknown } }[]).some(
-        (c) => c.usage.server_tool_use,
-      ),
+      (
+        (await get(job.id))!.calls as { usage: { server_tool_use?: unknown } }[]
+      ).some((c) => c.usage.server_tool_use),
     );
   } finally {
     globalThis.fetch = original;
-    update(job.id, { status: "succeeded" });
+    await update(job.id, { status: "succeeded" });
   }
 });
-
 test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않음", async () => {
   for (const content of [
     [
@@ -630,9 +763,9 @@ test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않�
     ],
     [{ type: "text", text: "출처 없는 조사" }],
   ]) {
-    const { p } = setup();
-    update(p.id, { status: "planning" });
-    const job = enqueue(
+    const { p } = await setup();
+    await update(p.id, { status: "planning" });
+    const job = await enqueue(
       {
         projectId: p.id,
         type: "research",
@@ -655,10 +788,10 @@ test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않�
     try {
       await assert.rejects(executeProviderJob(job), /검색/);
       assert.equal(count, 1);
-      assert.equal(get(p.id)!.status, "planning");
+      assert.equal((await get(p.id))!.status, "planning");
     } finally {
       globalThis.fetch = original;
-      update(job.id, { status: "failed" });
+      await update(job.id, { status: "failed" });
     }
   }
 });

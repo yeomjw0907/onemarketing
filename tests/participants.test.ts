@@ -1,9 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-process.env.DATA_DIR = mkdtempSync(path.join(tmpdir(), "om-participants-"));
+import "./helpers";
 const { save, command, projectCosts } = await import("../src/lib/domain");
 const { get, list } = await import("../src/lib/db");
 const actor = "participants@local";
@@ -13,10 +10,10 @@ const account = () => ({
   url: "https://blog.naver.com/participant-test",
   label: "메인 블로그",
 });
-function task() {
-  const c = save("customers", { name: "고객" }, actor),
-    product = save("products", { name: "제품", customerId: c.id }, actor),
-    price = save(
+async function task() {
+  const c = await save("customers", { name: "고객" }, actor),
+    product = await save("products", { name: "제품", customerId: c.id }, actor),
+    price = await save(
       "prices",
       {
         name: "블로그",
@@ -31,7 +28,7 @@ function task() {
       },
       actor,
     ),
-    contract = save(
+    contract = await save(
       "contracts",
       {
         name: "계약",
@@ -43,7 +40,7 @@ function task() {
       },
       actor,
     ),
-    p = save(
+    p = await save(
       "projects",
       {
         name: "프로젝트",
@@ -55,11 +52,11 @@ function task() {
       },
       actor,
     );
-  return { p, t: list("tasks").find((t) => t.projectId === p.id)! };
+  return { p, t: (await list("tasks")).find((t) => t.projectId === p.id)! };
 }
-test("참여자 등록·다중 계정·중복 계정 및 위험 URL 차단", () => {
+test("참여자 등록·다중 계정·중복 계정 및 위험 URL 차단", async () => {
   const a = account();
-  const p = save(
+  const p = await save(
     "participants",
     {
       name: "김참여",
@@ -76,44 +73,47 @@ test("참여자 등록·다중 계정·중복 계정 및 위험 URL 차단", () 
     actor,
   );
   assert.equal((p.accounts as unknown[]).length, 2);
-  assert.throws(
-    () =>
-      save(
-        "participants",
-        {
-          name: "중복",
-          accounts: [{ ...a, id: crypto.randomUUID(), url: a.url + "/" }],
-        },
-        actor,
-      ),
-    /다른 참여자/,
-  );
-  assert.throws(() =>
+  await assert.rejects(
     save(
       "participants",
-      { name: "위험", accounts: [{ ...a, url: "javascript:alert(1)" }] },
+      {
+        name: "중복",
+        accounts: [{ ...a, id: crypto.randomUUID(), url: a.url + "/" }],
+      },
       actor,
     ),
+    /다른 참여자/,
   );
-  assert.throws(
-    () => save("participants", { name: "중복내부", accounts: [a, a] }, actor),
+  await assert.rejects(
+    Promise.resolve().then(() =>
+      save(
+        "participants",
+        { name: "위험", accounts: [{ ...a, url: "javascript:alert(1)" }] },
+        actor,
+      ),
+    ),
+  );
+  await assert.rejects(
+    Promise.resolve().then(() =>
+      save("participants", { name: "중복내부", accounts: [a, a] }, actor),
+    ),
     /중복/,
   );
 });
-test("참여자 배정·채널 확인·기본 단가 변경 시 기존 보수 유지·지급 후 재배정 차단", () => {
+test("참여자 배정·채널 확인·기본 단가 변경 시 기존 보수 유지·지급 후 재배정 차단", async () => {
   const a = { ...account(), url: "https://blog.naver.com/assignment-test" },
-    p = save(
+    p = await save(
       "participants",
       { name: "배정 참여자", accounts: [a], blogRate: 8000 },
       actor,
     );
-  const { p: project, t } = task();
-  const edit = (extra: Record<string, unknown> = {}) =>
+  const { p: project, t } = await task();
+  const edit = async (extra: Record<string, unknown> = {}) =>
     command(
       "task-edit",
       {
         id: t.id,
-        version: get(t.id)!.version,
+        version: (await get(t.id))!.version,
         brief: "제품 소개",
         assignee: "",
         payout: 5000,
@@ -124,74 +124,75 @@ test("참여자 배정·채널 확인·기본 단가 변경 시 기존 보수 �
       actor,
       crypto.randomUUID(),
     );
-  const assigned = edit();
+  const assigned = await edit();
   assert.equal(assigned.participantId, p.id);
   assert.equal(assigned.payout, 5000);
   assert.equal(
     (assigned.participantSnapshot as { account: { url: string } }).account.url,
     a.url,
   );
-  save("participants", { ...p, blogRate: 12000 }, actor, p.id, p.version);
-  assert.equal(get(t.id)!.payout, 5000);
-  assert.throws(
-    () => edit({ participantAccountId: crypto.randomUUID() }),
+  await save("participants", { ...p, blogRate: 12000 }, actor, p.id, p.version);
+  assert.equal((await get(t.id))!.payout, 5000);
+  await assert.rejects(
+    edit({ participantAccountId: crypto.randomUUID() }),
     /계정/,
   );
-  command(
+  await command(
     "payout",
-    { id: t.id, version: get(t.id)!.version, paid: true },
+    { id: t.id, version: (await get(t.id))!.version, paid: true },
     actor,
     crypto.randomUUID(),
   );
-  assert.throws(() => edit({ payout: 9000 }), /지급 완료/);
-  assert.throws(
-    () => edit({ participantId: "", participantAccountId: "" }),
+  await assert.rejects(edit({ payout: 9000 }), /지급 완료/);
+  await assert.rejects(
+    edit({ participantId: "", participantAccountId: "" }),
     /지급 완료/,
   );
-  assert.equal(projectCosts(project).actual, 5000);
+  assert.equal((await projectCosts(project)).actual, 5000);
 });
-test("섭외 보류 참여자 신규 배정 차단과 과거 협업 이력 정산 검증", () => {
+test("섭외 보류 참여자 신규 배정 차단과 과거 협업 이력 정산 검증", async () => {
   const a = { ...account(), url: "https://blog.naver.com/paused-test" },
-    p = save(
+    p = await save(
       "participants",
       { name: "보류 참여자", status: "paused", accounts: [a] },
       actor,
     ),
-    { p: project, t } = task();
-  assert.throws(
-    () =>
-      command(
-        "task-edit",
-        {
-          id: t.id,
-          version: t.version,
-          brief: "",
-          assignee: "",
-          payout: 5000,
-          participantId: p.id,
-          participantAccountId: a.id,
-        },
-        actor,
-        crypto.randomUUID(),
-      ),
-    /새로 배정/,
-  );
-  assert.throws(() =>
-    save(
-      "participant_history",
+    { p: project, t } = await task();
+  await assert.rejects(
+    command(
+      "task-edit",
       {
+        id: t.id,
+        version: t.version,
+        brief: "",
+        assignee: "",
+        payout: 5000,
         participantId: p.id,
-        name: "과거 협업",
-        channel: "blog",
-        date: "2026-09-01",
-        amount: null,
-        paid: true,
-        paidDate: "",
+        participantAccountId: a.id,
       },
       actor,
+      crypto.randomUUID(),
+    ),
+    /새로 배정/,
+  );
+  await assert.rejects(
+    Promise.resolve().then(() =>
+      save(
+        "participant_history",
+        {
+          participantId: p.id,
+          name: "과거 협업",
+          channel: "blog",
+          date: "2026-09-01",
+          amount: null,
+          paid: true,
+          paidDate: "",
+        },
+        actor,
+      ),
     ),
   );
-  const h = save(
+  const h = await save(
     "participant_history",
     {
       participantId: p.id,
@@ -207,10 +208,16 @@ test("섭외 보류 참여자 신규 배정 차단과 과거 협업 이력 정�
   );
   assert.equal(h.participantId, p.id);
   assert.equal(h.paid, true);
-  assert.equal(projectCosts(project).actual, 5000);
-  save("participants", { ...p, notes: "수정된 메모" }, actor, p.id, p.version);
-  assert.throws(
-    () => save("participants", { ...p, name: "충돌" }, actor, p.id, p.version),
+  assert.equal((await projectCosts(project)).actual, 5000);
+  await save(
+    "participants",
+    { ...p, notes: "수정된 메모" },
+    actor,
+    p.id,
+    p.version,
+  );
+  await assert.rejects(
+    save("participants", { ...p, name: "충돌" }, actor, p.id, p.version),
     /수정/,
   );
 });
