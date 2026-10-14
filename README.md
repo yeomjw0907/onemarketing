@@ -62,3 +62,7 @@ HTTP 인수 검증은 `npm run build` 후 `npm run acceptance`(acceptance 스키
 현재 최초 A 범위인 Phase 1A~1C를 구현합니다. 게시자 포털(Phase 2), SNS 승인 후 예약 게시(Phase 3), 제한적 자동 운영(Phase 4)은 후속 범위입니다. wiki는 별도 운영합니다.
 
 설계: [명세서](docs/product-spec-v0.1.md), [개발 기록](docs/implementation-progress.md).
+
+참여자 등록 화면에 블로그 링크를 입력하고, 같은 참여자의 클립 계정은 링크 추가로 등록합니다. 참여자 목록에서 URL로 검색할 수 있습니다.
+
+Anthropic 키가 워크스페이스에 연결되지 않은 경우 `ANTHROPIC_WORKSPACE_ID`를 지정하세요. 워크스페이스에 연결된 키는 이 값을 비워도 됩니다. 모델 목록 조회 성공과 실제 유료 생성 성공은 별도로 검증합니다.

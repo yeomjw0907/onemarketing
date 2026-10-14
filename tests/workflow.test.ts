@@ -675,11 +675,17 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
     },
     actor,
   );
+  const previousWorkspace = process.env.ANTHROPIC_WORKSPACE_ID;
+  process.env.ANTHROPIC_WORKSPACE_ID = "wrk_test";
   const original = globalThis.fetch;
   let searches = 0,
     plain = 0;
   mockFetch(async (url, init) => {
     assert.equal(String(url), "https://api.anthropic.com/v1/messages");
+    assert.equal(
+      new Headers(init?.headers).get("anthropic-workspace-id"),
+      "wrk_test",
+    );
     const body = JSON.parse(String(init?.body));
     if (body.tools) {
       searches++;
@@ -774,6 +780,9 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
     );
   } finally {
     globalThis.fetch = original;
+    if (previousWorkspace === undefined)
+      delete process.env.ANTHROPIC_WORKSPACE_ID;
+    else process.env.ANTHROPIC_WORKSPACE_ID = previousWorkspace;
     await update(job.id, { status: "succeeded" });
   }
 });

@@ -82,3 +82,7 @@ Phase 1A 검증: TypeScript 통과, 도메인 테스트 2개 통과, production 
 - 서버리스 실행: 작업 등록·재개·화면 새로고침 시 `after()`로 처리, 제한 시간이 가까우면 request ID·체크포인트를 보존한 채 pending으로 돌려보내고(Yield) `/api/jobs/run` 연쇄 호출·Cron으로 이어간다. fal 결과 수집 실패는 uncertain으로 남기고 재개 시 새 생성 없이 같은 요청 ID로 수집한다. 별도 worker(`npm run worker`)는 같은 코드로 전용 서버에서만 사용한다.
 - 운영 SQLite에는 레코드가 없었고(세션 2건) `.data/backups/`에 백업했다. `.data/acceptance` 테스트 데이터는 이전하지 않았다. 이전 스크립트 `npm run db:import-sqlite`는 재실행 안전하며 원본을 삭제하지 않는다.
 - 상세: [Supabase 전환·서버리스 실행](supabase-migration.md). 검증 결과와 남은 설정은 같은 문서와 최종 보고에 기록한다.
+
+## 블로거 링크와 연동 확인
+
+참여자 등록 시 블로그 링크 입력란을 바로 표시하고, 블로그·클립 링크 추가 안내·주소 검색·상세 주소 표시를 보완했다. Supabase 실제 DB 연결 및 비공개 Storage 확인, fal 모델 조회 HTTP 200, 운영 비로그인 data/settings/jobs-run HTTP 401을 확인했다. Claude 모델 조회는 워크스페이스 미지정 키 오류 HTTP 400을 반환해 ANTHROPIC_WORKSPACE_ID 선택 헤더를 추가했다. 해당 ID 또는 워크스페이스 연결 키 입력 전 실제 Claude 사용 가능 확인은 미완료다. 테스트 22개·타입 검사·빌드 통과. 전체 포맷 검사는 기존 Supabase 전환 파일들의 포맷 차이로 미통과하며 이번 수정 파일은 별도 검사한다. 유료 생성은 미실행.

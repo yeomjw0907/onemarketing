@@ -31,7 +31,7 @@ const fresh = () => ({
   notes: "",
   blogRate: null,
   clipRate: null,
-  accounts: [],
+  accounts: [{ id: crypto.randomUUID(), channel: "blog", url: "", label: "" }],
 });
 const accountable = (t: RecordData) =>
   t.status !== "cancelled" ||
@@ -100,7 +100,20 @@ export default function Participants({
       const response = await fetch("/api/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, id, version, data: input }),
+        body: JSON.stringify({
+          kind,
+          id,
+          version,
+          data:
+            kind === "participants"
+              ? {
+                  ...input,
+                  accounts: input.accounts.filter(
+                    (a: Draft) => a.url.trim() || a.label.trim(),
+                  ),
+                }
+              : input,
+        }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "저장 실패");
@@ -277,7 +290,7 @@ export default function Participants({
               </label>
             </div>
             <div className="section-title" style={{ marginTop: 22 }}>
-              <h3>활동 계정</h3>
+              <h3>블로그·클립 링크</h3>
               <button
                 type="button"
                 onClick={() =>
@@ -295,9 +308,13 @@ export default function Participants({
                   })
                 }
               >
-                계정 추가
+                블로그·클립 링크 추가
               </button>
             </div>
+            <p className="hint">
+              블로그 주소를 붙여 넣으세요. 같은 참여자의 클립 링크는 링크 추가
+              후 채널을 선택하면 됩니다.
+            </p>
             {draft.accounts.map((a: Draft, i: number) => (
               <div className="row" key={a.id} style={{ margin: "12px 0" }}>
                 <select
@@ -321,11 +338,14 @@ export default function Participants({
                 </select>
                 <input
                   style={{ flex: 2 }}
-                  aria-label={"계정 링크 " + (i + 1)}
+                  aria-label={
+                    (a.channel === "blog" ? "블로그 링크 " : "계정 링크 ") +
+                    (i + 1)
+                  }
                   placeholder="https://blog.naver.com/..."
                   type="url"
                   value={a.url}
-                  required
+                  required={!!a.label}
                   onChange={(e) =>
                     setDraft({
                       ...draft,
@@ -392,7 +412,7 @@ export default function Participants({
           <div className="toolbar">
             <input
               aria-label="참여자 검색"
-              placeholder="이름·닉네임·관심 분야 검색"
+              placeholder="이름·닉네임·블로그 주소 검색"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -431,7 +451,13 @@ export default function Participants({
                     (p) =>
                       (!status || p.status === status) &&
                       (!query ||
-                        [p.name, p.nickname, p.specialties, p.contact]
+                        [
+                          p.name,
+                          p.nickname,
+                          p.specialties,
+                          p.contact,
+                          ...(p.accounts as Draft[]).map((a) => a.url),
+                        ]
                           .join(" ")
                           .toLowerCase()
                           .includes(query.toLowerCase())),
@@ -540,14 +566,14 @@ export default function Participants({
                 </p>
               </section>
               <section className="section">
-                <h2>활동 계정</h2>
+                <h2>블로그·클립 링크</h2>
                 {(participant.accounts as Draft[]).map((a) => (
                   <div className="amountline" key={a.id}>
                     <span>
                       {channels[a.channel]} · {a.label || "기본 계정"}
                     </span>
                     <a href={a.url} target="_blank" rel="noreferrer">
-                      계정 열기 ↗
+                      {a.url} ↗
                     </a>
                   </div>
                 ))}
