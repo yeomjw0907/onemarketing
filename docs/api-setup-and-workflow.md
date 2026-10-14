@@ -1,0 +1,80 @@
+# API 준비와 워크플로우 전환 인계
+
+- 결정일: 2026-10-14 (Asia/Seoul)
+- 사용자 승인: Claude 웹 검색 조사, Claude 기획·원고, fal 이미지·영상으로 진행.
+- 최초 반영은 문서만 수행. 이후 사용자 요청으로 코드 전환도 반영했다. 실 API 품질·청구 검증은 별도다.
+
+## 목표 흐름
+
+제품 사진·확인된 사실·브랜드 규칙 → Claude 웹 검색 조사와 출처 → Claude 분석·게시물별 기획 → 운영자 기획 승인 → Claude 원고·대본·장면 설계 → fal 이미지 → 영상용 이미지 승인 → fal 영상 장면 → 자체 FFmpeg 조립 → 결과물 검수·부분 수정 → 승인본 전달.
+
+Claude의 장면 설계에는 연결 원고/대본 버전과 문단, 장면 ID, 기준 사진, 구도·무드, 보존할 제품 특징, 금지 요소, 영상 움직임과 길이를 포함한다. fal은 기존 대화나 Claude의 응답을 자동으로 알지 못하므로 각 생성 호출에 필요한 맥락을 전달한다. 조사 결과를 검증된 제품 효능으로 취급하지 않는다.
+
+## 모델 선택
+
+| 역할 | 기본 후보 | 비교·선택 후보 |
+| --- | --- | --- |
+| 검색 조사 | Claude Sonnet 5.5 웹 검색 | 정확한 ID는 계정·검색 지원 확인 후 설정 |
+| 분석·기획·원고·장면 설계 | Claude Sonnet 5.5 | 중요한 기획만 Opus 5.5 선택 검토 |
+| 이미지 편집 | fal GPT Image 2.5 Sunburst 편집 | fal Nano Banana Pro 편집 |
+| 이미지 기반 영상 | fal Seedance 2.5 | fal Kling 3.0 Pro |
+| 자막·가격·로고·영상 조립 | 자체 FFmpeg | 외부 생성 키 불필요 |
+
+공급사 구성은 확정 방향이고 모델은 샘플 검증 전 후보다. 모델별 실제 ID·스키마·접근 권한·가격을 확인한 뒤 운영 설정에 고정한다. 비교 후보는 자동으로 추가 호출하지 않는다. 동일 제품에서 제품 보존, 원고와 장면의 일치, 성공률, 수정 횟수, 대기 시간, 승인 결과물당 실제 비용을 비교한다.
+
+## 필요한 API 키: 총 2개
+
+| 서비스 | 서버 환경변수 | 발급 위치 | 용도 |
+| --- | --- | --- | --- |
+| Anthropic Claude | `ANTHROPIC_API_KEY` | [Claude Console](https://platform.claude.com/)의 API Keys | 분석·기획·원고·장면 설계 |
+| fal | `FAL_KEY` | [fal Dashboard](https://fal.ai/dashboard)의 Keys | 이미지·영상 생성 |
+
+신규 목표 흐름에는 OpenAI 키와 Higgsfield ID/secret이 필요하지 않다. GPT Image도 fal에서 호출하므로 fal 키를 사용한다. 코드와 `.env.example`도 신규 흐름으로 전환했다. 과거 생성 기록·비용은 보존하고 이전 공급사의 미완료 요청은 별도 확인한다.
+
+### 발급·설정 순서
+
+1. Claude Console에서 API 키를 생성하고 API 결제·잔액·한도를 확인한다.
+2. fal Dashboard에서 API 호출용 키를 생성하고 사용할 이미지·영상 모델의 접근과 잔액을 확인한다.
+3. 실제 키는 채팅이나 문서에 붙이지 않고 로컬 `.env.local` 또는 배포 비밀 설정에 직접 입력한다. 발급 완료 여부만 공유하면 된다. 웹/worker가 사용하는 환경변수 이름을 코드 담당자와 맞춘다.
+4. 코드 전환이 끝난 뒤 서버와 worker를 재시작하고 소량 검증한다. 키의 존재와 실제 호출 성공은 구분한다.
+
+아래는 전환 후 필요한 키 이름 안내다. 기존 `.env.local`을 통째로 교체하지 말고 해당 항목만 추가·수정한다. APP_URL·관리자·저장소 설정은 별도다.
+
+```dotenv
+ANTHROPIC_API_KEY=
+FAL_KEY=
+```
+
+웹 서비스 구독과 API 이용료는 구분한다. 결제 등록·충전은 사용자가 각 공급사 화면에서 진행하며 이 문서는 특정 충전 금액이나 유료 호출을 실행한 기록이 아니다.
+
+## 코드 담당자 인계
+
+- `src/lib/providers.ts`: Claude 웹 검색 조사 유지, GPT 기획을 Claude로 교체, OpenAI 직접 이미지와 Higgsfield 영상을 fal adapter로 교체. 이미지·영상에 원고/대본 기반 장면 설계와 버전 전달.
+- `src/lib/jobs.ts`: 역할별 필수 키 검사 변경. 기획 승인·예산 예약·중복 실행 방지 유지. 영상 입력은 승인된 장면 이미지 버전으로 고정.
+- `src/app/api/settings/route.ts`, `src/components/workspace.tsx`: 키 상태·공급사·모델 표시를 새 구성에 맞춤. 키 원문은 응답에 포함하지 않음.
+- `.env.example`, `package.json`, 잠금 파일: 새 키·모델 설정과 fal 의존성 반영. 더 이상 사용하지 않는 의존성은 실제 참조 확인 후 정리.
+- fal 접수 직후 request ID·모델·입력 버전 저장. 타임아웃이나 worker 재시작 시 기존 요청 조회. 결과 저장 실패 시 생성 없이 파일 수집 재시도. 공급사 내부 재시도와 앱 재제출 구분.
+- 비용에는 공급사 `fal`과 실제 모델 ID를 함께 기록. 접수·상태 조회·결과 수집을 여러 생성 비용으로 중복 계산하지 않음. 과거 OpenAI/Higgsfield 결과와 비용 기록 보존.
+- 모델마다 다른 기준 이미지 필드, 비율, 길이, 해상도, 오디오 옵션을 검증. 공통 입력을 그대로 모든 모델에 전달하지 않음.
+- 테스트의 공급사 모의 응답·키 검사·요청 재개·예산·승인 버전 경로를 갱신. README의 현재 코드 상태 안내는 코드 전환에 맞춰 동기화.
+
+## 소량 검증 순서
+
+1. 대표 제품 1개로 Claude 웹 검색 조사와 출처 저장 확인.
+2. Claude 기획 1건을 승인하고 원고·대본·장면 설계 생성. 제품 사실과 금지 표현 확인.
+3. 기본 이미지 모델로 1장 생성·저장하고 제품 외형 검수. 비교는 필요 시 별도 실행.
+4. 승인 이미지를 사용해 지원되는 짧은 영상 1장면 생성. 요청 ID 저장·상태 조회·파일 수집 확인.
+5. FFmpeg 자막·로고 합성 후 검수. 공급사 실제 청구와 프로젝트 비용 대조.
+6. 작업 중단 후 기존 요청 재조회, 실패 장면만 재생성, 승인본 보존 검증.
+
+## 공식 자료
+
+- [Claude API](https://platform.claude.com/docs/en/api/overview)
+- [Claude 모델](https://platform.claude.com/docs/en/models/overview)
+- [fal 비동기 요청](https://fal.ai/docs/documentation/model-apis/inference/queue)
+- [GPT Image 편집](https://fal.ai/models/openai/gpt-image-2.5/sunburst/edit)
+- [Nano Banana Pro 편집](https://fal.ai/models/fal-ai/nano-banana-pro/edit)
+- [Seedance 영상](https://fal.ai/models/bytedance/seedance-2.5/image-to-video)
+- [Kling 영상](https://fal.ai/models/fal-ai/kling-video/v3/pro/image-to-video)
+
+2026-10-14 추가 결정: Gemini를 제거하고 Claude 웹 검색으로 조사·출처 수집까지 통합했다. 필요한 키는 ANTHROPIC_API_KEY와 FAL_KEY 두 개다. 웹 검색은 조직 설정에서 허용해야 하며, 출처 없는 결과와 검색 도구 오류는 기획으로 넘기지 않는다. 토큰·검색 도구 사용량을 기록하고 API 크레딧 적용·실제 청구는 Console에서 확인한다.

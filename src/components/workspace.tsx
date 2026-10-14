@@ -1776,7 +1776,7 @@ export default function Workspace() {
             <section className="section">
               <h2>AI 연결 상태</h2>
               <div className="row">
-                {["openai", "anthropic", "gemini", "higgsfield"].map((k) => (
+                {["anthropic", "fal"].map((k) => (
                   <span
                     className={"badge " + (config[k] ? "green" : "orange")}
                     key={k}

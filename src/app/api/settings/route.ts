@@ -4,13 +4,8 @@ export async function GET() {
     await requireActor();
     return Response.json(
       {
-        openai: !!process.env.OPENAI_API_KEY,
         anthropic: !!process.env.ANTHROPIC_API_KEY,
-        gemini: !!process.env.GEMINI_API_KEY,
-        higgsfield: !!(
-          process.env.HIGGSFIELD_API_KEY_ID &&
-          process.env.HIGGSFIELD_API_KEY_SECRET
-        ),
+        fal: !!process.env.FAL_KEY,
         defaultEstimates: {
           research: Number(process.env.ESTIMATE_RESEARCH_KRW || 3000),
           copy: Number(process.env.ESTIMATE_COPY_KRW || 500),

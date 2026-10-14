@@ -347,3 +347,318 @@ test("실제 ffmpeg 슬라이드·혼합형 편집 및 영상 승인", async () 
   act("approve-task", t.id);
   assert.equal(get(t.id)!.status, "approved");
 });
+
+test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구", async () => {
+  const { p, t } = setup();
+  production(p.id, t.id);
+  saveAsset(
+    { projectId: p.id, category: "source", name: "기준.png", buffer: png },
+    actor,
+  );
+  process.env.FAL_KEY = "test-not-real";
+  const job = enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "image",
+      estimate: 1000,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  const original = globalThis.fetch;
+  let submitted = 0;
+  let failDownload = true;
+  globalThis.fetch = async (url, init) => {
+    const target = String(url);
+    if (init?.method === "POST") {
+      submitted++;
+      assert.ok(target.startsWith("https://queue.fal.run/openai/"));
+      const input = JSON.parse(String(init.body));
+      assert.equal(input.num_images, 1);
+      assert.ok(input.image_urls[0].startsWith("data:image/png;base64,"));
+      return Response.json({
+        request_id: "fal-test",
+        status_url: "https://queue.fal.run/test/status",
+        response_url: "https://queue.fal.run/test/result",
+      });
+    }
+    if (target.endsWith("/status"))
+      return Response.json({ status: "COMPLETED" });
+    if (target.endsWith("/result"))
+      return Response.json({
+        images: [{ url: "https://v3b.fal.media/test.png" }],
+      });
+    if (failDownload) throw new Error("download interrupted");
+    return new Response(new Uint8Array(png));
+  };
+  try {
+    await assert.rejects(executeProviderJob(job), /중복 요청/);
+    assert.equal(get(job.id)!.providerRequestId, "fal-test");
+    failDownload = false;
+    await executeProviderJob(get(job.id)!);
+    assert.equal(submitted, 1);
+    assert.equal(list("assets").filter((a) => a.jobId === job.id).length, 1);
+    await executeProviderJob(get(job.id)!);
+    assert.equal(submitted, 1);
+    const calls = get(job.id)!.calls as { provider: string }[];
+    assert.equal(calls[0].provider, "fal");
+  } finally {
+    globalThis.fetch = original;
+    update(job.id, { status: "succeeded" });
+  }
+});
+
+test("이전 공급사 영상 요청을 fal로 중복 제출하지 않음", async () => {
+  const { p, t } = setup("clip");
+  production(p.id, t.id);
+  saveAsset(
+    { projectId: p.id, category: "source", name: "기준.png", buffer: png },
+    actor,
+  );
+  update(t.id, { duration: 10, mode: "generated" });
+  process.env.FAL_KEY = "test-not-real";
+  const job = enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "video",
+      estimate: 1000,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  update(job.id, {
+    providerState: { response: { request_id: "legacy-request" } },
+  });
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("must not call provider");
+  };
+  try {
+    await assert.rejects(executeProviderJob(get(job.id)!), /이전 공급사/);
+  } finally {
+    globalThis.fetch = original;
+    update(job.id, { status: "uncertain" });
+  }
+});
+
+test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", async () => {
+  const videoAsset = list("assets").find((a) => a.category === "video")!;
+  const videoBytes = bytes(videoAsset);
+  const { p, t } = setup("clip");
+  production(p.id, t.id);
+  saveAsset(
+    { projectId: p.id, category: "source", name: "기준.png", buffer: png },
+    actor,
+  );
+  update(t.id, { duration: 10, mode: "generated" });
+  const job = enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "video",
+      estimate: 7000,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (init?.method === "POST") {
+      assert.equal(
+        String(url),
+        "https://queue.fal.run/bytedance/seedance-2.5/image-to-video",
+      );
+      const input = JSON.parse(String(init.body));
+      assert.equal(input.duration, "10");
+      assert.equal(input.resolution, "720p");
+      assert.equal(input.aspect_ratio, "auto");
+      return Response.json({
+        request_id: "fal-video",
+        status_url: "https://queue.fal.run/test/status",
+        response_url: "https://queue.fal.run/test/result",
+      });
+    }
+    if (String(url).endsWith("/status"))
+      return Response.json({ status: "COMPLETED" });
+    if (String(url).endsWith("/result"))
+      return Response.json({
+        video: { url: "https://v3b.fal.media/test.mp4" },
+      });
+    return new Response(new Uint8Array(videoBytes));
+  };
+  try {
+    await executeProviderJob(job);
+    assert.ok(
+      list("assets").some((a) => a.jobId === job.id && a.category === "video"),
+    );
+  } finally {
+    globalThis.fetch = original;
+    update(job.id, { status: "succeeded" });
+  }
+});
+
+test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장과 기획", async () => {
+  const { p, t } = setup();
+  update(p.id, { status: "planning" });
+  process.env.ANTHROPIC_API_KEY = "test-not-real";
+  delete process.env.GEMINI_API_KEY;
+  const job = enqueue(
+    {
+      projectId: p.id,
+      type: "research",
+      estimate: 1000,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  const original = globalThis.fetch;
+  let searches = 0,
+    plain = 0;
+  globalThis.fetch = async (url, init) => {
+    assert.equal(String(url), "https://api.anthropic.com/v1/messages");
+    const body = JSON.parse(String(init?.body));
+    if (body.tools) {
+      searches++;
+      assert.equal(body.tools[0].name, "web_search");
+      assert.equal(body.tools[0].max_uses, 5);
+      if (searches === 1)
+        return Response.json({
+          id: "search-1",
+          stop_reason: "pause_turn",
+          usage: { server_tool_use: { web_search_requests: 1 } },
+          content: [
+            {
+              type: "server_tool_use",
+              id: "srvtoolu_1",
+              name: "web_search",
+              input: { query: "제품 시장" },
+            },
+          ],
+        });
+      assert.equal(body.messages[1].role, "assistant");
+      return Response.json({
+        id: "search-2",
+        stop_reason: "end_turn",
+        usage: {
+          input_tokens: 200,
+          output_tokens: 100,
+          server_tool_use: { web_search_requests: 1 },
+        },
+        content: [
+          {
+            type: "web_search_tool_result",
+            tool_use_id: "srvtoolu_1",
+            content: [
+              {
+                type: "web_search_result",
+                url: "https://example.com/product",
+                title: "제품 자료",
+              },
+            ],
+          },
+          {
+            type: "text",
+            text: "검색으로 확인한 제품 정보",
+            citations: [
+              {
+                type: "web_search_result_location",
+                url: "https://example.com/product",
+                title: "제품 자료",
+                cited_text: "확인 정보",
+              },
+            ],
+          },
+        ],
+      });
+    }
+    plain++;
+    return Response.json({
+      id: "claude-" + plain,
+      stop_reason: "end_turn",
+      usage: { input_tokens: 100, output_tokens: 100 },
+      content: [
+        {
+          type: "text",
+          text:
+            plain === 1
+              ? "검증 요점"
+              : JSON.stringify({
+                  tasks: [{ id: t.id, brief: "출처 기반 기획" }],
+                }),
+        },
+      ],
+    });
+  };
+  try {
+    await executeProviderJob(job);
+    assert.equal(searches, 2);
+    assert.equal(plain, 2);
+    assert.equal(get(p.id)!.status, "brief_review");
+    assert.equal(get(t.id)!.brief, "출처 기반 기획");
+    const checkpoints = get(job.id)!.checkpoints as {
+      sources: { url: string; verified: boolean }[];
+      citations: unknown[];
+    };
+    assert.equal(checkpoints.sources[0].url, "https://example.com/product");
+    assert.equal(checkpoints.sources[0].verified, false);
+    assert.ok(checkpoints.citations.length);
+    assert.equal(get(job.id)!.searchState, null);
+    assert.ok(
+      (get(job.id)!.calls as { usage: { server_tool_use?: unknown } }[]).some(
+        (c) => c.usage.server_tool_use,
+      ),
+    );
+  } finally {
+    globalThis.fetch = original;
+    update(job.id, { status: "succeeded" });
+  }
+});
+
+test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않음", async () => {
+  for (const content of [
+    [
+      {
+        type: "web_search_tool_result",
+        content: {
+          type: "web_search_tool_result_error",
+          error_code: "too_many_requests",
+        },
+      },
+      { type: "text", text: "검색 실패" },
+    ],
+    [{ type: "text", text: "출처 없는 조사" }],
+  ]) {
+    const { p } = setup();
+    update(p.id, { status: "planning" });
+    const job = enqueue(
+      {
+        projectId: p.id,
+        type: "research",
+        estimate: 1000,
+        key: crypto.randomUUID(),
+      },
+      actor,
+    );
+    const original = globalThis.fetch;
+    let count = 0;
+    globalThis.fetch = async () => {
+      count++;
+      return Response.json({
+        id: "search-error",
+        stop_reason: "end_turn",
+        content,
+        usage: { input_tokens: 100 },
+      });
+    };
+    try {
+      await assert.rejects(executeProviderJob(job), /검색/);
+      assert.equal(count, 1);
+      assert.equal(get(p.id)!.status, "planning");
+    } finally {
+      globalThis.fetch = original;
+      update(job.id, { status: "failed" });
+    }
+  }
+});

@@ -9,7 +9,7 @@
 
 고객 → 계약 → 월별 제공 계획 → 프로젝트 → 게시 작업 → 결과물 버전 → 검수 → 전달 → 게시 확인 → 정산으로 연결되는 워크플로우다.
 
-초기에는 고정된 절차를 구현한다. 자유롭게 노드를 연결하는 범용 워크플로우 빌더는 만들지 않는다. GPT는 기획·제작 판단을 보조하고, 상태 전환·가격 계산·예산 제한·승인 권한은 애플리케이션이 보장한다.
+초기에는 고정된 절차를 구현한다. 자유롭게 노드를 연결하는 범용 워크플로우 빌더는 만들지 않는다. Claude는 기획·제작 판단을 보조하고, 상태 전환·가격 계산·예산 제한·승인 권한은 애플리케이션이 보장한다.
 
 ```mermaid
 flowchart LR
@@ -37,8 +37,8 @@ flowchart LR
 | 상품 구성 | 채널·수량을 유동적으로 변경. 155는 기본 패키지 후보이며 고정 제약이 아님 |
 | 가격 | 판매가·게시자 지급 단가를 운영자가 등록·수정 |
 | 비용 | 예상/실제 AI 제작비, 지급액, 기타 직접 비용과 마진 관리 |
-| AI 역할 | GPT 총괄, GPT 이미지, Claude 원고, Gemini + Claude 조사 |
-| 영상 | Seedance 2.5 / Higgsfield 활용을 검토. 구체 공급 경로는 테스트 후 확정 |
+| AI 역할 | Claude 웹 검색 조사, Claude 분석·기획·원고·장면 설계, fal 이미지·영상 생성 |
+| 미디어 공급사 | fal로 통합. 이미지 GPT Image 2.5 편집, 영상 Seedance 2.5를 기본 후보로 두고 실측 후 모델 확정 |
 | 검수 | 운영자가 검수·승인 |
 | 자료 전달 | 초기 운영자가 블로거·클립 게시자에게 수동 전달 |
 | 후속 기능 | 게시자 포털과 SNS 승인 후 자동 게시 |
@@ -165,8 +165,8 @@ Phase 1A~1C가 합쳐져 최초 A 범위를 완성한다. 1A만으로 AI 제작 
 
 ## 9. 조사·기획
 
-- Gemini가 검색 기반 자료와 출처를 수집하고 Claude가 소구점·고객 질문·근거 부족을 정리한다.
-- GPT가 제품 사실·금지사항·목적·구성을 바탕으로 게시물별 기획안을 만든다.
+- Claude가 웹 검색 기반 자료와 출처를 수집하고 소구점·고객 질문·근거 부족을 정리한다.
+- Claude가 제품 사실·금지사항·목적·구성을 바탕으로 게시물별 기획안을 만든다. 기본 후보는 Claude Sonnet 5.5이며, 중요한 기획만 Opus 5.5로 선택 검토한다. GPT 기획 호출은 신규 목표 흐름에서 제외한다.
 - 기획안에는 채널, 타깃, 키워드, 제목 방향, 소구점, 원고 구조, 이미지 장면, 영상 구성, 예상 비용을 포함한다.
 - 검색량·블로그 순위 등 실제 데이터가 없으면 추정 수치를 만들지 않는다. 키워드 후보와 검증된 검색량을 구분한다.
 - 조사 자료에는 URL·수집일·주장·확인 상태를 둔다. 출처 접근 실패·자료 충돌은 운영자 확인 대상으로 표시한다.
@@ -179,7 +179,17 @@ Phase 1A~1C가 합쳐져 최초 A 범위를 완성한다. 1A만으로 AI 제작 
 
 Claude가 기획안별 원고를 작성한다. 제목·본문·이미지 삽입 위치·필수 문구·게시 메모를 분리한다. 제품 사실/금지 표현/글 간 유사도를 확인한다. 경험이 없는 정보형 글을 사용 후기로 생성하지 않는다.
 
+### 장면 설계와 맥락 전달
+
+- Claude가 완성 원고·대본을 기준으로 이미지 삽입 위치와 영상 장면별 생성 지시를 정리한다.
+- 장면에는 원고/대본 버전, 연결 문단, 장면 ID, 목적, 구도, 무드, 제품 보존 요소, 금지 표현, 기준 사진 ID, 영상 움직임·길이를 저장한다.
+- fal이 대화나 원고를 자동으로 공유받는다고 가정하지 않는다. 각 호출에 필요한 브랜드·제품 사실·장면 지시·기준 사진을 명시적으로 전달한다.
+- 원고나 장면 지시 변경 시 영향받는 이미지·영상만 새 버전으로 제작·검수한다.
+
 ### 이미지
+
+- 공급사는 fal로 통합한다. 기본 후보는 GPT Image 2.5 편집이며 Nano Banana Pro 편집을 비교 후보로 둔다. 모델 ID·지원 옵션은 계정 접근과 샘플 검증 후 고정한다.
+- 제품 기준 사진과 Claude의 장면 지시로 생성한다. 영상에 사용할 이미지는 제품 외형·구도를 먼저 승인한다.
 
 - 글당 기본 3~5장을 제안하되 실제 수량은 계약 항목에서 결정한다. 총 30장은 고정하지 않는다.
 - 각 게시 작업에 무드·색감·장면 가이드를 저장한다. 동일 글 안의 일관성을 검수한다.
@@ -192,7 +202,7 @@ Claude가 기획안별 원고를 작성한다. 제목·본문·이미지 삽입 
 
 슬라이드형 / 생성 장면을 섞는 혼합형 / 생성형을 구분한다. 장면 생성과 최종 편집을 분리해 자막·배경음·로고·전환·비율 변환을 조립한다. 기본 출력 제안은 세로 9:16 MP4이며 길이·해상도는 계약 항목에 고정한다.
 
-Seedance는 모델, Higgsfield는 공급 플랫폼이다. 초기 연동 후보는 Higgsfield API의 Seedance 2.5이며 공식 직접 API와 접근성·같은 설정의 비용을 비교한다. 웹 구독/무제한 상품과 API 비용은 구분한다.
+Seedance는 모델, fal은 공급 플랫폼이다. 영상 공급사를 Higgsfield에서 fal로 전환한다. 기본 후보는 Seedance 2.5 image-to-video, 비교 후보는 Kling 3.0 Pro image-to-video다. 승인된 이미지와 장면별 움직임 지시를 입력하고 짧은 장면을 생성한 뒤 자체 FFmpeg로 조립한다. 최종 영상 전체를 한 번의 생성 요청으로 처리하는 것을 기본으로 삼지 않는다. 장면 길이·비율·해상도·오디오 옵션은 모델 스키마에 맞춰 검증한다. 정확한 자막·가격·로고는 자체 합성하고 음악 사용 범위를 확인한다. 웹 구독/무제한 상품과 API 비용은 구분한다.
 
 최종 영상 승인 전 제품 왜곡·자막·음악 사용 범위·빈 장면·비율을 확인한다. 공급사 임시 다운로드 URL에만 의존하지 않고 자체 파일 저장소로 수집한다.
 
@@ -268,7 +278,8 @@ PC는 사이드바+넓은 작업 영역, 비교 화면은 2열, 목록은 표 �
 - 웹: Next.js + TypeScript, PC용 접근성 컴포넌트와 자체 디자인 토큰.
 - 저장: PostgreSQL, 비공개 객체 저장소, 운영자 인증.
 - 실행: 영속 작업 큐 + 별도 생성/영상 편집 worker. 웹 요청을 장시간 열어두거나 브라우저가 켜져 있어야 작업이 유지되는 구조를 피한다.
-- 공급사: GPT/Claude/Gemini/영상 공급사 adapter로 입력·결과·비용 기록을 정규화한다. 초기부터 범용 플러그인 플랫폼까지 만들지는 않는다.
+- 공급사: Claude/fal adapter로 입력·결과·비용 기록을 정규화한다. fal 내부 모델과 공급사를 구분해 기록한다. 초기부터 범용 플러그인 플랫폼까지 만들지는 않는다.
+- fal 요청은 접수 후 request ID를 영속 저장하고 상태 조회·결과 수집으로 처리한다. 우리 큐는 승인·예산·작업 버전을, fal 큐는 외부 생성을 담당한다. 공급사 내부 재시도와 애플리케이션 재시도를 구분해 중복 제출을 막는다.
 - 영상 조립: 서버 편집 작업에서 자막·장면·로고를 렌더링한다. 구체 실행 환경은 샘플 길이/처리시간 측정 후 선택한다.
 
 핵심 데이터: customers, brands, products, knowledge_versions, source_files, catalog_items, price_versions, quotes, quote_lines, contracts, contract_slots, projects, publication_tasks, briefs, asset_versions, asset_assignments, approvals, generation_jobs, cost_entries, delivery_batches, publication_checks, payout_entries, audit_events.
@@ -315,7 +326,7 @@ PC는 사이드바+넓은 작업 영역, 비교 화면은 2열, 목록은 표 �
 13. 1280px PC, 키보드 탐색, 빈 상태·일부 오류·느린 네트워크에서 주요 업무가 가능하다.
 14. 다른 고객 파일 접근, 만료 링크, 중복 요청, 승인 버전 충돌, 백업 복원 경로를 검증한다.
 
-자동 검증은 금액·상태·권한·중복 요청에 집중한다. AI 연동은 모의 응답과 실제 소규모 샘플을 구분한다. 제품 외형·한국어 원고·영상 품질은 사람 검수로 확인한다. 아직 테스트나 실 API 실행을 수행하지 않았다.
+자동 검증은 금액·상태·권한·중복 요청에 집중한다. AI 연동은 모의 응답과 실제 소규모 샘플을 구분한다. 제품 외형·한국어 원고·영상 품질은 사람 검수로 확인한다. 신규 Claude/fal 흐름의 실 API 품질·청구 검증은 미완료다. 기존 구현 검증 이력은 implementation-progress.md를 따른다.
 
 ## 17. 남은 확인 사항
 
@@ -333,12 +344,16 @@ PC는 사이드바+넓은 작업 영역, 비교 화면은 2열, 목록은 표 �
 
 - TDS Mobile 소개: https://tossmini-docs.toss.im/tds-mobile/
 - TDS Mobile 시작하기: https://tossmini-docs.toss.im/tds-mobile/start/
-- OpenAI 도구: https://developers.openai.com/api/docs/guides/tools
-- OpenAI 이미지 생성: https://developers.openai.com/api/docs/guides/image-generation
-- Gemini 검색: https://ai.google.dev/gemini-api/docs/google-search/
 - Claude 가격: https://platform.claude.com/docs/en/about-claude/pricing
 - Seedance 2.5: https://seed.bytedance.com/en/seedance2_5
-- Higgsfield API 안내: https://higgsfield.ai/creator-hub/help-center/integrations/what-is-the-higgsfield-api
-- Higgsfield API 가격: https://open.higgsfield.ai/pricing
+- Claude 모델: https://platform.claude.com/docs/en/models/overview
+- fal 비동기 요청: https://fal.ai/docs/documentation/model-apis/inference/queue
+- fal GPT Image 편집: https://fal.ai/models/openai/gpt-image-2.5/sunburst/edit
+- fal Nano Banana Pro 편집: https://fal.ai/models/fal-ai/nano-banana-pro/edit
+- fal Seedance: https://fal.ai/models/bytedance/seedance-2.5/image-to-video
+- fal Kling: https://fal.ai/models/fal-ai/kling-video/v3/pro/image-to-video
+- API 키 준비·코드 전환 인계: [api-setup-and-workflow.md](api-setup-and-workflow.md)
 
 모델·가격·연동 지원은 변경될 수 있으므로 구현 시 다시 확인한다. 이 문서는 공급사 가격이나 제작 품질을 보장하지 않는다.
+
+2026-10-14 추가 결정: Gemini를 제거하고 Claude 웹 검색으로 조사·출처 수집까지 통합했다. 필요한 키는 ANTHROPIC_API_KEY와 FAL_KEY 두 개다. 웹 검색은 조직 설정에서 허용해야 하며, 출처 없는 결과와 검색 도구 오류는 기획으로 넘기지 않는다. 토큰·검색 도구 사용량을 기록하고 API 크레딧 적용·실제 청구는 Console에서 확인한다.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createHiggsfieldClient } from "@higgsfield/client/v2";
+import sharp from "sharp";
 import { recordCall, jobInput, jobResult } from "./jobs";
 import { requireRecord } from "./domain";
 import { get, list, update, create, db } from "./db";
@@ -103,75 +103,137 @@ async function claude(job: RecordData, prompt: string) {
   if (!text) throw new ProviderError("원고 응답이 비어 있습니다.");
   return text as string;
 }
-async function gpt(job: RecordData, prompt: string) {
-  const model = process.env.OPENAI_MODEL || "gpt-6-sol";
-  const response = await request("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + key("OPENAI_API_KEY"),
+type SearchBlock = {
+  type: string;
+  text?: string;
+  citations?: {
+    type: string;
+    url?: string;
+    title?: string;
+    cited_text?: string;
+  }[];
+  content?: SearchBlock[] | { type: string; error_code?: string };
+  url?: string;
+  title?: string;
+};
+async function searchClaude(job: RecordData) {
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
+  const saved = requireRecord(job.id).searchState as
+    { model: string; messages: unknown[]; blocks: SearchBlock[] } | undefined;
+  const messages = saved?.messages || [
+    {
+      role: "user",
+      content: `웹 검색을 반드시 사용해 다음 제품의 시장·경쟁제품·구매 질문·키워드 후보를 조사하세요. 출처를 인용하고 확인된 사실과 불확실한 주장을 구분하세요. 검색량은 추정하지 마세요. 기준일: ${new Date().toISOString().slice(0, 10)}.\n${context(job)}`,
     },
-    body: JSON.stringify({
-      model,
-      instructions: safeSystem,
-      input: prompt,
-      max_output_tokens: 10000,
-    }),
-  });
-  const r = await response.json();
-  recordCall(job.id, "openai", model, r.id, r.usage);
-  if (r.status !== "completed")
-    throw new ProviderError("기획 응답이 완료되지 않았습니다.");
-  return r.output
-    ?.flatMap(
-      (o: { content?: { type: string; text: string }[] }) => o.content || [],
-    )
-    .filter((c: { type: string }) => c.type === "output_text")
-    .map((c: { text: string }) => c.text)
-    .join("\n") as string;
+  ];
+  const blocks: SearchBlock[] = saved?.blocks || [];
+  const activeModel = saved?.model || model;
+  for (let turn = 0; turn < 3; turn++) {
+    const r = await (
+      await request("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key("ANTHROPIC_API_KEY"),
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: activeModel,
+          max_tokens: 6000,
+          system: safeSystem,
+          messages,
+          tools: [
+            { type: "web_search_20250305", name: "web_search", max_uses: 5 },
+          ],
+        }),
+      })
+    ).json();
+    recordCall(job.id, "anthropic", activeModel, r.id, r.usage);
+    const content = (r.content || []) as SearchBlock[];
+    blocks.push(...content);
+    messages.push({ role: "assistant", content });
+    jobResult(job.id, {
+      searchState: { model: activeModel, messages, blocks },
+    });
+    if (r.stop_reason === "pause_turn") continue;
+    jobResult(job.id, { searchState: null });
+    if (r.stop_reason !== "end_turn")
+      throw new ProviderError(
+        "검색 응답이 완료되지 않았습니다. 조사 내역을 확인하세요.",
+      );
+    const sources = new Map<
+      string,
+      {
+        url: string;
+        title: string;
+        citedText?: string;
+        collectedAt: string;
+        verified: false;
+      }
+    >();
+    const add = (
+      url: string | undefined,
+      title: string | undefined,
+      citedText?: string,
+    ) => {
+      if (!url || !/^https?:\/\//.test(url)) return;
+      sources.set(url, {
+        url,
+        title: title || url,
+        citedText,
+        collectedAt: new Date().toISOString(),
+        verified: false,
+      });
+    };
+    const visit = (block: SearchBlock) => {
+      if (
+        block.type === "web_search_tool_result" &&
+        block.content &&
+        !Array.isArray(block.content)
+      )
+        throw new ProviderError(
+          "Claude 웹 검색 도구 오류입니다. 검색 권한·한도·실행 내역을 확인하세요.",
+        );
+      if (block.type === "web_search_result") add(block.url, block.title);
+      for (const citation of block.citations || [])
+        add(citation.url, citation.title, citation.cited_text);
+      if (Array.isArray(block.content)) block.content.forEach(visit);
+    };
+    blocks.forEach(visit);
+    const text = blocks
+      .filter((b) => b.type === "text")
+      .map((b) => b.text || "")
+      .join("\n");
+    if (!text || !sources.size)
+      throw new ProviderError(
+        "웹 검색 출처를 확보하지 못했습니다. 출처 없는 조사로 기획을 진행하지 않습니다.",
+      );
+    return {
+      text,
+      sources: [...sources.values()],
+      citations: blocks
+        .filter((b) => b.type === "text")
+        .map((b) => ({ text: b.text, citations: b.citations || [] })),
+    };
+  }
+  throw new ProviderError(
+    "Claude 검색이 계속 진행 중입니다. 저장된 검색 대화에서 재개하세요.",
+    true,
+  );
 }
 async function research(job: RecordData) {
-  let current = requireRecord(job.id, "jobs");
+  const current = requireRecord(job.id, "jobs");
   let checkpoints = (current.checkpoints || {}) as Record<string, unknown>;
   if (!checkpoints.search) {
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-    const r = await (
-      await request(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": key("GEMINI_API_KEY"),
-          },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: safeSystem }] },
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `다음 제품의 시장·경쟁제품·구매 질문·키워드 후보를 조사하세요. 출처를 명확히 하고 검색량은 추정하지 마세요.\n${context(job)}`,
-                  },
-                ],
-              },
-            ],
-            tools: [{ google_search: {} }],
-          }),
-        },
-      )
-    ).json();
-    recordCall(job.id, "gemini", model, null, r.usageMetadata);
-    const candidate = r.candidates?.[0];
-    const text = candidate?.content?.parts
-      ?.map((p: { text?: string }) => p.text || "")
-      .join("\n");
-    if (!text) throw new ProviderError("조사 응답이 비어 있습니다.");
+    const result = await searchClaude(job);
     checkpoints = {
       ...checkpoints,
-      search: text,
-      sources: candidate?.groundingMetadata?.groundingChunks || [],
+      search: result.text,
+      sources: result.sources,
+      citations: result.citations,
+      searchProvider: "anthropic",
     };
-    jobResult(job.id, { checkpoints });
+    jobResult(job.id, { checkpoints, searchState: null });
   }
   if (!checkpoints.analysis) {
     const analysis = await claude(
@@ -184,7 +246,7 @@ async function research(job: RecordData) {
   const project = requireRecord(job.projectId as string, "projects"),
     tasks = list("tasks").filter((t) => t.projectId === project.id);
   if (!checkpoints.plan) {
-    const plan = await gpt(
+    const plan = await claude(
       job,
       `아래 작업 각각에 서로 다른 콘셉트·소구점·키워드·원고 구성·이미지 장면·영상 대본 방향을 지정하세요. 같은 글 안 이미지 무드를 통일하고 다른 글과 차별화하세요. 반드시 JSON만 반환: {"tasks":[{"id":"원래 작업 id","brief":"기획 내용"}]}. 작업: ${JSON.stringify(tasks.map((t) => ({ id: t.id, name: t.name, channel: t.channel, images: t.images, duration: t.duration })))}\n제품 자료: ${context(job)}\n조사 분석: ${checkpoints.analysis}`,
     );
@@ -254,36 +316,19 @@ async function image(job: RecordData) {
     .map((id) => requireRecord(id, "assets"))
     .find((a) => String(a.mime).startsWith("image/"));
   if (!source) throw new ProviderError("제품 기준 사진이 없습니다.");
-  const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2.5-sunburst";
-  const form = new FormData();
-  form.set("model", model);
-  form.set(
-    "prompt",
-    `${safeSystem}\n제품 외형·로고·패키지 표기를 정확히 보존하며 기획에 맞는 마케팅 이미지를 만드세요. 새 글자는 넣지 마세요. ${context(job)}\n이미지 장면 순번: ${list("assets").filter((a) => a.taskId === job.taskId && a.category === "image").length + 1}`,
-  );
-  form.set(
-    "image[]",
-    new Blob([new Uint8Array(bytes(source))], { type: String(source.mime) }),
-    String(source.name),
-  );
-  form.set("n", "1");
-  form.set("size", "1024x1536");
-  form.set("quality", "medium");
-  const r = await (
-    await request(
-      "https://api.openai.com/v1/images/edits",
-      {
-        method: "POST",
-        headers: { Authorization: "Bearer " + key("OPENAI_API_KEY") },
-        body: form,
-      },
-      300000,
-    )
-  ).json();
-  recordCall(job.id, "openai", model, null, r.usage);
-  const b64 = r.data?.[0]?.b64_json;
-  if (!b64) throw new ProviderError("이미지 결과가 비어 있습니다.");
-  const imageBuffer = Buffer.from(b64, "base64");
+  const model =
+    process.env.FAL_IMAGE_MODEL || "openai/gpt-image-2.5/sunburst/edit";
+  const result = await falGenerate(job, model, {
+    prompt: `${safeSystem}\n제품 외형·로고·패키지 표기를 보존하고 새 글자는 넣지 마세요. ${context(job)}\n${mediaContext(job)}\n장면 순번: ${list("assets").filter((a) => a.taskId === job.taskId && a.category === "image").length + 1}`,
+    image_urls: [sourceData(source)],
+    image_size: { width: 1024, height: 1536 },
+    quality: "medium",
+    num_images: 1,
+    output_format: "png",
+  });
+  const url = (result.images as { url: string }[] | undefined)?.[0]?.url;
+  if (!url) throw new ProviderError("이미지 결과가 비어 있습니다.", true);
+  const imageBuffer = await downloadRemote(url);
   saveAsset(
     {
       projectId: String(job.projectId),
@@ -328,75 +373,148 @@ async function downloadRemote(url: string) {
   }
   return Buffer.concat(chunks);
 }
-async function video(job: RecordData) {
-  const credentials =
-    key("HIGGSFIELD_API_KEY_ID") + ":" + key("HIGGSFIELD_API_KEY_SECRET");
-  const client = createHiggsfieldClient({
-    credentials,
-    maxRetries: 0,
-    timeout: 120000,
+function sourceData(asset: RecordData) {
+  return `data:${asset.mime};base64,${bytes(asset).toString("base64")}`;
+}
+function mediaContext(job: RecordData) {
+  const copies = list("assets").filter(
+    (a) =>
+      a.taskId === job.taskId && a.category === "copy" && a.current === true,
+  );
+  return JSON.stringify({
+    scripts: copies.map((a) => ({
+      id: a.id,
+      version: a.version,
+      text: a.text,
+    })),
   });
-  const state = (requireRecord(job.id).providerState || {}) as Record<
-    string,
-    unknown
-  >;
-  let response: any = state.response;
-  if (!response) {
-    const s = jobInput(job);
-    const source = s.sourceAssets
-      .map((id) => requireRecord(id))
-      .find((a) => String(a.mime).startsWith("image/"));
-    if (!source) throw new ProviderError("기준 사진이 없습니다.");
-    const imageUrl = await client.agents.media.upload(
-      bytes(source),
-      String(source.mime).split("/")[1],
-      "image",
+}
+type FalState = {
+  provider: "fal";
+  model: string;
+  request_id: string;
+  status_url: string;
+  response_url: string;
+  input: Record<string, unknown>;
+};
+async function falGenerate(
+  job: RecordData,
+  model: string,
+  input: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const headers = {
+    Authorization: "Key " + key("FAL_KEY"),
+    "Content-Type": "application/json",
+  };
+  const saved = requireRecord(job.id).providerState as
+    Partial<FalState> | undefined;
+  if (saved && Object.keys(saved).length && saved.provider !== "fal")
+    throw new ProviderError(
+      "이전 공급사 요청이 남아 있습니다. 기존 실행·비용을 확인한 후 새 작업을 등록하세요.",
+      true,
     );
-    const model =
-      process.env.HIGGSFIELD_MODEL || "bytedance/seedance-2.5/image-to-video";
-    response = await client.subscribe(model, {
-      input: {
-        prompt: `Preserve product identity. Create a vertical marketing scene, no added text. ${context(job)}`,
-        image_url: imageUrl,
-        duration:
-          s.task?.mode === "hybrid"
-            ? Math.min(6, Math.max(4, Math.floor(Number(s.task.duration) / 3)))
-            : Number(s.task?.duration || 10),
-        resolution: "720p",
-        aspect_ratio: "9:16",
-        generate_audio: false,
-      },
-      withPolling: false,
-    });
+  let state = saved as FalState | undefined;
+  if (!state?.request_id) {
+    const queued = await (
+      await request(`https://queue.fal.run/${model}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(input),
+      })
+    ).json();
+    if (!queued.request_id || !queued.status_url || !queued.response_url)
+      throw new ProviderError(
+        "fal 접수 결과를 확인하지 못했습니다. 실행 내역을 확인하세요.",
+        true,
+      );
+    state = {
+      provider: "fal",
+      model,
+      request_id: queued.request_id,
+      status_url: queued.status_url,
+      response_url: queued.response_url,
+      input,
+    };
     jobResult(job.id, {
-      providerState: { response },
-      providerRequestId: response.request_id,
+      providerState: state,
+      providerRequestId: state.request_id,
     });
-    recordCall(job.id, "higgsfield", model, response.request_id, null);
+    recordCall(job.id, "fal", model, state.request_id, null);
   }
+  const safeUrl = (value: string) => {
+    const url = new URL(value);
+    if (url.origin !== "https://queue.fal.run" || url.username || url.password)
+      throw new ProviderError("fal 상태 주소를 확인할 수 없습니다.", true);
+    return url.href;
+  };
   const started = Date.now();
-  while (!["completed", "failed", "nsfw"].includes(response.status)) {
+  while (true) {
+    let status;
+    try {
+      status = await (
+        await request(safeUrl(state.status_url), { headers })
+      ).json();
+    } catch {
+      throw new ProviderError(
+        "fal 기존 요청 상태 확인이 필요합니다. 새 요청 없이 재조회하세요.",
+        true,
+      );
+    }
+    if (status.status === "COMPLETED") break;
+    if (!["IN_QUEUE", "IN_PROGRESS"].includes(status.status))
+      throw new ProviderError("fal 요청 상태를 확인할 수 없습니다.", true);
     if (Date.now() - started > 30 * 60_000)
       throw new ProviderError(
-        "영상 생성이 계속 진행 중입니다. 기존 요청을 재조회하세요.",
+        "fal 생성이 진행 중입니다. 기존 요청을 재조회하세요.",
         true,
       );
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    const url = new URL(response.status_url);
-    if (url.origin !== "https://api.higgsfield.ai")
-      throw new ProviderError("영상 상태 주소를 확인할 수 없습니다.", true);
-    response = await (
-      await request(url.href, {
-        headers: { Authorization: "Key " + credentials },
-      })
-    ).json();
-    jobResult(job.id, { providerState: { response } });
   }
-  if (response.status !== "completed")
+  try {
+    return await (
+      await request(safeUrl(state.response_url), { headers })
+    ).json();
+  } catch {
     throw new ProviderError(
-      "영상 공급사에서 생성이 실패했습니다. 청구 내역을 확인하세요.",
+      "fal 결과 수집에 실패했습니다. 기존 요청의 결과·청구를 확인하세요.",
+      true,
     );
-  const url = response.video?.url;
+  }
+}
+async function video(job: RecordData) {
+  const s = jobInput(job);
+  const approved = list("assets").find(
+    (a) =>
+      a.taskId === job.taskId &&
+      a.category === "image" &&
+      a.current === true &&
+      Array.isArray(s.task?.approvedAssets) &&
+      s.task.approvedAssets.includes(a.id),
+  );
+  const source =
+    approved ||
+    s.sourceAssets
+      .map((id) => requireRecord(id))
+      .find((a) => String(a.mime).startsWith("image/"));
+  if (!source) throw new ProviderError("기준 사진이 없습니다.");
+  const duration =
+    s.task?.mode === "hybrid"
+      ? Math.min(6, Math.max(4, Math.floor(Number(s.task.duration) / 3)))
+      : Number(s.task?.duration || 10);
+  if (!Number.isInteger(duration) || duration < 4 || duration > 30)
+    throw new ProviderError("Seedance 영상 길이는 4~30초여야 합니다.");
+  const model =
+    process.env.FAL_VIDEO_MODEL || "bytedance/seedance-2.5/image-to-video";
+  const result = await falGenerate(job, model, {
+    prompt: `Preserve product identity. Create a vertical marketing scene, no added text. ${context(job)}\n${mediaContext(job)}`,
+    image_url: `data:image/png;base64,${(await sharp(bytes(source)).resize(720, 1280, { fit: "contain", background: "#ffffff" }).png().toBuffer()).toString("base64")}`,
+    duration: String(duration),
+    resolution: "720p",
+    aspect_ratio: "auto",
+    generate_audio: false,
+    end_user_id: String(s.project.customerId || s.project.id),
+  });
+  const url = (result.video as { url: string } | undefined)?.url;
   if (!url) throw new ProviderError("영상 결과 주소가 없습니다.", true);
   const buffer = await downloadRemote(url);
   const task = jobInput(job).task;

@@ -23,11 +23,7 @@ export function enqueue(input: unknown, actor: string) {
     if (body.type === "research") {
       if (!["planning", "brief_review"].includes(String(p.status)))
         throw new Error("기획 단계에서 조사할 수 있습니다.");
-      for (const key of [
-        "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "GEMINI_API_KEY",
-      ])
+      for (const key of ["ANTHROPIC_API_KEY"])
         if (!process.env[key]) throw new Error(`${key} 설정이 필요합니다.`);
     } else {
       if (!["producing", "review"].includes(String(p.status)))
@@ -55,14 +51,12 @@ export function enqueue(input: unknown, actor: string) {
         body.type === "copy"
           ? "ANTHROPIC_API_KEY"
           : body.type === "image"
-            ? "OPENAI_API_KEY"
+            ? "FAL_KEY"
             : body.type === "video"
-              ? "HIGGSFIELD_API_KEY_ID"
+              ? "FAL_KEY"
               : null;
       if (needed && !process.env[needed])
         throw new Error(`${needed} 설정이 필요합니다.`);
-      if (body.type === "video" && !process.env.HIGGSFIELD_API_KEY_SECRET)
-        throw new Error("영상 API secret 설정이 필요합니다.");
       if (
         ["image", "video"].includes(body.type) &&
         !list("assets").some(
