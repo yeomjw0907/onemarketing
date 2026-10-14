@@ -58,7 +58,7 @@ npm run dev -- --hostname 127.0.0.1 --port 3107
 1. `POST /api/jobs`(등록)·`resume-job`·`GET /api/data`(화면 새로고침)에서 `after()`로 같은 함수 실행 안에 작업 처리를 예약한다. 브라우저가 닫혀도 함수는 `maxDuration`(300초)까지 계속 돈다.
 2. 한 실행은 `JOB_TICK_BUDGET_MS`(기본 240초) 안에서 가능한 작업을 처리하고, Claude 호출 전·fal 대기 중 남은 시간이 부족하면 작업을 `pending`으로 돌려보낸다(Yield). 저장한 request ID·체크포인트로 다음 실행에서 이어간다. 새 비용을 만들지 않는다.
 3. 남은 작업이 있으면 `/api/jobs/run`을 `Authorization: Bearer CRON_SECRET`으로 다시 호출해 연쇄 실행한다(`APP_URL`, `CRON_SECRET` 필요). Vercel 배포 보호(SSO)가 켜져 있으면 `VERCEL_AUTOMATION_BYPASS_SECRET`이 있어야 자기 호출이 통과한다(프로젝트 설정 → Deployment Protection → Protection Bypass for Automation).
-4. `vercel.json`의 Cron(`0 3 * * *`, `GET /api/jobs/run`)이 안전망이다. Hobby 플랜은 Cron이 하루 1회로 제한되어 일 1회로 두었고, Pro 플랜이면 `*/10 * * * *` 등으로 줄일 수 있다. 연쇄 호출·화면 새로고침 트리거가 주 경로다.
+4. `vercel.json`의 Cron(`*/10 * * * *`, `GET /api/jobs/run`)이 안전망이다(Vercel Pro 플랜). 연쇄 호출·화면 새로고침 트리거가 주 경로이며, Cron은 연쇄가 끊긴 작업을 10분 안에 다시 집는다.
 5. 작업별 lease로 중복 처리를 막는다. lease가 만료된 running 작업은 request ID·체크포인트가 있으면 재개하고, 없으면 `uncertain`(공급사 비용 확인 필요)으로 남긴다.
 
 `JOB_RUNNER=worker`로 두면 서버리스 트리거를 끄고 `npm run worker`만 사용한다(전용 서버 배포용).
