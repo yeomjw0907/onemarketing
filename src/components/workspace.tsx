@@ -1,4 +1,5 @@
 "use client";
+import { shootingTargetOptions } from "@/lib/media-guidance";
 import Participants from "./participants";
 import Dashboard from "./dashboard";
 import PostingSets from "./posting-sets";
@@ -2361,6 +2362,31 @@ export default function Workspace() {
                   <Field label="이번 작업 요청" full>
                     {area("instructions")}
                   </Field>
+                  <Field label="촬영 대상 (선택)">
+                    <select
+                      value={draft.shootingTarget || ""}
+                      onChange={(e) =>
+                        setDraft({ ...draft, shootingTarget: e.target.value })
+                      }
+                    >
+                      <option value="">자동 · 자료에 맞춰 판단</option>
+                      {shootingTargetOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="이미지·영상 추가 요청 (선택)" full>
+                    {area(
+                      "mediaInstructions",
+                      "예: 밝은 낮 시간대, 자연스러운 색감. 실제 구조를 유지하고 인파를 과장하지 마세요.",
+                    )}
+                    <p className="hint">
+                      비워두면 자료에 맞춰 자동 기획합니다. 변경 사항은 다음
+                      기획·생성 요청부터 반영됩니다.
+                    </p>
+                  </Field>
                   <Field label="희망 키워드 (선택 · 쉼표로 구분)" full>
                     {input("preferredKeywords")}
                     <p className="hint">
@@ -2486,6 +2512,31 @@ export default function Workspace() {
                   </Field>
                   <Field label="이번 프로젝트 요청" full>
                     {area("instructions")}
+                  </Field>
+                  <Field label="촬영 대상 (선택)">
+                    <select
+                      value={draft.shootingTarget || ""}
+                      onChange={(e) =>
+                        setDraft({ ...draft, shootingTarget: e.target.value })
+                      }
+                    >
+                      <option value="">자동 · 자료에 맞춰 판단</option>
+                      {shootingTargetOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="이미지·영상 추가 요청 (선택)" full>
+                    {area(
+                      "mediaInstructions",
+                      "예: 밝은 낮 시간대, 자연스러운 색감. 실제 구조를 유지하고 인파를 과장하지 마세요.",
+                    )}
+                    <p className="hint">
+                      비워두면 자료에 맞춰 자동 기획합니다. 변경 사항은 다음
+                      기획·생성 요청부터 반영됩니다.
+                    </p>
                   </Field>
                   <Field label="희망 키워드 (선택 · 쉼표로 구분)" full>
                     {input("preferredKeywords")}

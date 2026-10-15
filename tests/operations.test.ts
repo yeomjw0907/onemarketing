@@ -307,3 +307,37 @@ test("자료 체크리스트: 접수 자동 인식·확인 분리·중복 키 �
   assert.equal(summary.unpaidCount, 1);
   assert.equal(summary.rows[0].next, "기획 단계 시작");
 });
+
+test("촬영 대상·추가 요청 저장, 기존 수정 호환, 자동 기획 전환과 입력 검증", async () => {
+  const { p } = await fixture();
+  const base = { materialNotes: "확인", instructions: "", budget: 10000 };
+  await act("project-notes", p, {
+    ...base,
+    shootingTarget: "factory",
+    mediaInstructions: "  설비 연결부를 보존하고 밝은 낮 분위기로  ",
+  });
+  assert.equal((await get(p.id))!.shootingTarget, "factory");
+  assert.equal(
+    (await get(p.id))!.mediaInstructions,
+    "설비 연결부를 보존하고 밝은 낮 분위기로",
+  );
+  await act("project-notes", p, base);
+  assert.equal((await get(p.id))!.shootingTarget, "factory");
+  assert.equal(
+    (await get(p.id))!.mediaInstructions,
+    "설비 연결부를 보존하고 밝은 낮 분위기로",
+  );
+  await assert.rejects(
+    act("project-notes", p, { ...base, shootingTarget: "invalid" }),
+  );
+  await assert.rejects(
+    act("project-notes", p, { ...base, mediaInstructions: "a".repeat(5001) }),
+  );
+  await act("project-notes", p, {
+    ...base,
+    shootingTarget: "",
+    mediaInstructions: "",
+  });
+  assert.equal((await get(p.id))!.shootingTarget, "");
+  assert.equal((await get(p.id))!.mediaInstructions, "");
+});

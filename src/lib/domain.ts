@@ -1,3 +1,4 @@
+import { shootingTargets } from "./media-guidance";
 import { z } from "zod";
 import { materialItems } from "./material-checklist";
 import {
@@ -112,6 +113,8 @@ const project = z.object({
   due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   instructions: text.default(""),
   preferredKeywords: z.string().trim().max(1000).default(""),
+  shootingTarget: z.enum(shootingTargets).default(""),
+  mediaInstructions: z.string().trim().max(5000).default(""),
   budget: amount,
 });
 const schemas = {
@@ -446,6 +449,14 @@ export function command(
             .trim()
             .max(1000)
             .parse(input.preferredKeywords ?? row.preferredKeywords ?? ""),
+          shootingTarget: z
+            .enum(shootingTargets)
+            .parse(input.shootingTarget ?? row.shootingTarget ?? ""),
+          mediaInstructions: z
+            .string()
+            .trim()
+            .max(5000)
+            .parse(input.mediaInstructions ?? row.mediaInstructions ?? ""),
           budget: amount.parse(input.budget),
         },
         Number(input.version),

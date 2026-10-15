@@ -491,6 +491,8 @@ test("fal 이미지 결과 수집 실패 후 기존 요청 재조회로 복구 (
       const input = JSON.parse(String(init.body));
       assert.equal(input.num_images, 1);
       assert.ok(input.image_urls[0].startsWith("data:image/png;base64,"));
+      assert.match(input.prompt, /과한 HDR/);
+      assert.match(input.prompt, /자료와 조사에 맞춰 자동 기획/);
       return Response.json({
         request_id: "fal-test",
         status_url: "https://queue.fal.run/test/status",
@@ -650,6 +652,13 @@ test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", as
   const videoBytes = await bytes(videoAsset);
   const { p, t } = await setup("clip");
   await production(p.id, t.id);
+  await act("project-notes", p.id, {
+    materialNotes: "확인",
+    instructions: "",
+    budget: 10000,
+    shootingTarget: "factory",
+    mediaInstructions: "연결부를 강조",
+  });
   await saveAsset(
     { projectId: p.id, category: "source", name: "기준.png", buffer: png },
     actor,
@@ -673,6 +682,10 @@ test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", as
         "https://queue.fal.run/bytedance/seedance-2.5/image-to-video",
       );
       const input = JSON.parse(String(init.body));
+      assert.match(input.prompt, /과한 HDR/);
+      assert.match(input.prompt, /공장·설비의 실제 구조/);
+      assert.match(input.prompt, /연결부를 강조/);
+      assert.match(input.prompt, /절제된 카메라 움직임/);
       assert.equal(input.duration, "10");
       assert.equal(input.resolution, "720p");
       assert.equal(input.aspect_ratio, "auto");

@@ -1,3 +1,4 @@
+import { mediaGuidance } from "./media-guidance";
 import { z } from "zod";
 import sharp from "sharp";
 import { recordCall, jobInput, jobResult } from "./jobs";
@@ -149,6 +150,8 @@ async function context(job: RecordData) {
       preserve: knowledge.product.preserve,
     },
     instructions: project.instructions,
+    shootingTarget: project.shootingTarget || "auto",
+    mediaDirection: mediaGuidance(project, task?.channel === "clip"),
     preferredKeywords: project.preferredKeywords || "",
     recommendedKeywords: project.recommendedKeywords || null,
     keywordPolicy:
@@ -488,7 +491,7 @@ async function image(job: RecordData) {
     ? currentImages.findIndex((a) => a.id === job.replaceAssetId) + 1
     : currentImages.length + 1;
   const result = await falGenerate(job, model, async () => ({
-    prompt: `${safeSystem}\n제품 외형·로고·패키지 표기를 보존하고 새 글자는 넣지 마세요. ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
+    prompt: `${safeSystem}\n${mediaGuidance(s.project)} ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
     image_urls: [await sourceData(source!)],
     image_size: { width: 1024, height: 1536 },
     quality: "medium",
@@ -723,7 +726,7 @@ async function video(job: RecordData) {
   const model =
     process.env.FAL_VIDEO_MODEL || "bytedance/seedance-2.5/image-to-video";
   const result = await falGenerate(job, model, async () => ({
-    prompt: `Preserve product identity. Create a vertical marketing scene, no added text. ${await context(job)}\n${await mediaContext(job)}`,
+    prompt: `Preserve subject identity. Create a vertical marketing scene, no added text. ${mediaGuidance(s.project, true)} ${await context(job)}\n${await mediaContext(job)}`,
     image_url: `data:image/png;base64,${(
       await sharp(await bytes(source!))
         .resize(720, 1280, { fit: "contain", background: "#ffffff" })
