@@ -24,10 +24,12 @@ export default function PostingSets({
   const accounts = (participant?.accounts || []) as Account[];
   const tasks = data.tasks.filter((t) => t.projectId === project.id);
   const sets = data.posting_sets.filter(
-    (s) => s.projectId === project.id && s.status !== "cancelled",
+    (s) =>
+      s.projectId === project.id && !s.workSlotId && s.status !== "cancelled",
   );
   const available = tasks.filter(
     (t) =>
+      !t.workSlotId &&
       !t.postingSetId &&
       t.payoutStatus !== "paid" &&
       !t.payoutCommitted &&
@@ -67,11 +69,11 @@ export default function PostingSets({
   return (
     <section className="section">
       <div className="section-title">
-        <h2>참여자 게시 세트 · 통합 보수</h2>
+        <h2>체험단 게시 세트 · 통합 보수</h2>
         <span>{sets.length}세트</span>
       </div>
       <p className="hint">
-        한 참여자에게 블로그 1건과 클립 1건을 배정합니다. 두 게시물 확인 후 세트
+        한 체험단에게 블로그 1건과 클립 1건을 배정합니다. 두 게시물 확인 후 세트
         보수를 한 번 지급합니다.
       </p>
       {sets.map((set) => {
@@ -136,7 +138,7 @@ export default function PostingSets({
                   className="button-link"
                   href={`/api/deliveries?projectId=${project.id}&setId=${set.id}`}
                 >
-                  참여자 전달 ZIP
+                  체험단 전달 ZIP
                 </a>
               )}
               <button
@@ -151,7 +153,7 @@ export default function PostingSets({
                       body: JSON.stringify({
                         projectId: project.id,
                         taskIds: [set.blogTaskId, set.clipTaskId],
-                        channel: "참여자 게시 세트",
+                        channel: "체험단 게시 세트",
                         note: `${set.participantName}에게 전달`,
                       }),
                     });
@@ -182,7 +184,7 @@ export default function PostingSets({
             </div>
             {!ready && (
               <p className="hint">
-                두 작업을 승인하면 참여자 전용 ZIP을 받을 수 있습니다.
+                두 작업을 승인하면 체험단 전용 ZIP을 받을 수 있습니다.
               </p>
             )}
             {!paid && !verified && (
@@ -219,13 +221,13 @@ export default function PostingSets({
               }}
             >
               <label>
-                참여자
+                체험단
                 <select
                   required
                   value={participantId}
                   onChange={(e) => setParticipantId(e.target.value)}
                 >
-                  <option value="">참여자 선택</option>
+                  <option value="">체험단 선택</option>
                   {data.participants
                     .filter((p) => p.status === "active")
                     .map((p) => (
@@ -285,7 +287,7 @@ export default function PostingSets({
                 (!accounts.some((a) => a.channel === "blog") ||
                   !accounts.some((a) => a.channel === "clip")) && (
                   <p className="hint">
-                    참여자 관리에서 블로그·클립 계정을 모두 등록해 주세요.
+                    체험단 관리에서 블로그·클립 계정을 모두 등록해 주세요.
                   </p>
                 )}
               <label>
@@ -296,12 +298,13 @@ export default function PostingSets({
                   min={0}
                   max={1e12}
                   step={1}
-                  defaultValue={10000}
+                  defaultValue={Number(participant?.bundleRate ?? 7000)}
+                  key={participantId}
                   required
                 />
               </label>
               <label>
-                참여자 게시 지침
+                체험단 게시 지침
                 <textarea
                   name="instructions"
                   rows={3}

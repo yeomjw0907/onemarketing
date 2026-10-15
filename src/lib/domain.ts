@@ -1,3 +1,4 @@
+import { salesCartSchema, cartQuote } from "./sales-cart";
 import { shootingTargets } from "./media-guidance";
 import { z } from "zod";
 import { materialItems } from "./material-checklist";
@@ -97,7 +98,8 @@ const line = z.object({
 const contract = z.object({
   name,
   customerId: name,
-  lines: z.array(line).min(1).max(30),
+  lines: z.array(line).max(30).default([]),
+  packages: salesCartSchema.optional(),
   discount: amount.default(0),
   months: z.number().int().min(1).max(36),
   setsPerMonth: z.number().int().min(1).max(30),
@@ -207,10 +209,27 @@ export function save(
           "확정 계약은 직접 변경할 수 없습니다. 새 계약으로 등록하세요.",
         );
       await requireRecord(String(data.customerId), "customers");
-      const calculation = await quote(
-        data.lines as { priceId: string; quantity: number }[],
-        Number(data.discount),
-      );
+      if (
+        !(data.packages as unknown[] | undefined)?.length &&
+        !(data.lines as unknown[]).length
+      )
+        throw new Error("장바구니에 상품을 담으세요.");
+      const calculation = (data.packages as unknown[] | undefined)?.length
+        ? cartQuote(
+            await list("prices"),
+            salesCartSchema.parse(data.packages),
+            Number(data.discount),
+            {
+              blog:
+                Number(process.env.ESTIMATE_COPY_KRW || 500) +
+                3 * Number(process.env.ESTIMATE_IMAGE_KRW || 2000),
+              clip: Number(process.env.ESTIMATE_VIDEO_KRW || 15000),
+            },
+          )
+        : await quote(
+            data.lines as { priceId: string; quantity: number }[],
+            Number(data.discount),
+          );
       if (calculation.cost === null)
         throw new Error("지급 단가와 AI 예상 비용을 먼저 입력하세요.");
       if (data.budget !== null && calculation.sale > Number(data.budget))
@@ -272,26 +291,71 @@ export function save(
     if (kind === "projects") {
       const c = await requireRecord(String(data.contractId), "contracts");
       let order = 0;
-      for (const l of c.snapshots as RecordData[])
-        for (let i = 0; i < Number(l.quantity); i++)
-          await create("tasks", {
-            projectId: row.id,
-            customerId: c.customerId,
-            name: `${l.name} ${i + 1}`,
-            channel: l.channel,
-            images: l.images,
-            duration: l.duration,
-            mode: l.mode,
-            payout: l.payout,
-            payoutStatus: "pending",
-            status: "planned",
-            order: ++order,
-            brief: "",
-            assignee: "",
-            link: "",
-            deliveryVersion: [],
-            paidAt: null,
-          });
+      if (Array.isArray(c.packageSnapshots)) {
+        for (const pack of c.packageSnapshots as Record<string, any>[])
+          for (let i = 0; i < pack.quantity; i++) {
+            const slot = await create("work_slots", {
+              projectId: row.id,
+              customerId: c.customerId,
+              type: pack.type,
+              name: `${pack.label} ${i + 1}`,
+              amount: pack.reward,
+              participantId: null,
+              status: "unassigned",
+              taskIds: [],
+            });
+            const ids: string[] = [];
+            for (const item of [pack.blog, pack.clip].filter(Boolean)) {
+              const t = await create("tasks", {
+                projectId: row.id,
+                customerId: c.customerId,
+                workSlotId: slot.id,
+                name: `${pack.label} ${i + 1} · ${item.channel === "blog" ? "블로그" : "클립"}`,
+                channel: item.channel,
+                images: item.channel === "blog" ? 3 : 0,
+                duration: item.channel === "clip" ? 10 : 0,
+                mode: item.channel === "clip" ? "generated" : item.mode,
+                payout:
+                  item.channel === "blog"
+                    ? pack.reward
+                    : pack.type === "bundle"
+                      ? 0
+                      : pack.reward,
+                payoutStatus: "pending",
+                status: "planned",
+                order: ++order,
+                brief: "",
+                assignee: "",
+                link: "",
+                deliveryVersion: [],
+                paidAt: null,
+              });
+              ids.push(t.id);
+            }
+            await update(slot.id, { taskIds: ids });
+          }
+      } else {
+        for (const l of c.snapshots as RecordData[])
+          for (let i = 0; i < Number(l.quantity); i++)
+            await create("tasks", {
+              projectId: row.id,
+              customerId: c.customerId,
+              name: `${l.name} ${i + 1}`,
+              channel: l.channel,
+              images: l.images,
+              duration: l.duration,
+              mode: l.mode,
+              payout: l.payout,
+              payoutStatus: "pending",
+              status: "planned",
+              order: ++order,
+              brief: "",
+              assignee: "",
+              link: "",
+              deliveryVersion: [],
+              paidAt: null,
+            });
+      }
     }
     await audit(actor, id ? "update" : "create", row.id);
     return row;
@@ -354,7 +418,43 @@ export function command(
       !["reopen-settlement", "import-source"].includes(action)
     )
       throw new Error("정산 마감한 프로젝트입니다. 먼저 마감을 취소하세요.");
-    if (action === "posting-set-create") {
+    if (action === "work-slot-assign" || action === "work-slot-pay") {
+      const module = await import("./work-slots");
+      result =
+        action === "work-slot-assign"
+          ? await module.assignWorkSlot(row, input, actor)
+          : await module.payWorkSlot(row, input, actor);
+    } else if (action === "posting-feedback") {
+      if (
+        row.kind !== "tasks" ||
+        !row.participantId ||
+        !["delivered", "submitted", "verified"].includes(String(row.status)) ||
+        row.payoutStatus === "paid"
+      )
+        throw new Error("미지급 게시 작업의 수정 요청만 기록할 수 있습니다.");
+      const note = name.parse(input.note);
+      result = await update(
+        row.id,
+        {
+          postingRevisionCount: Number(row.postingRevisionCount || 0) + 1,
+          postingFeedback: note,
+          status: row.link ? "submitted" : "delivered",
+          verifiedAt: null,
+          verifiedBy: null,
+          qualityScore: null,
+        },
+        Number(input.version),
+      );
+      await create("participant_events", {
+        participantId: row.participantId,
+        projectId: row.projectId,
+        taskId: row.id,
+        type: "revision",
+        occurredAt: new Date().toISOString(),
+        actor,
+        note,
+      });
+    } else if (action === "posting-set-create") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
       if (row.version !== Number(input.version))
         throw new Error("새로고침 후 다시 시도하세요.");
@@ -362,6 +462,8 @@ export function command(
     } else if (action === "posting-set-pay") {
       result = await payPostingSet(row, input, actor);
     } else if (action === "posting-set-dissolve") {
+      if (row.workSlotId)
+        throw new Error("슬롯·배정 화면에서 담당자를 변경하세요.");
       result = await dissolvePostingSet(row, input);
     } else if (action === "materials-update") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
@@ -469,6 +571,13 @@ export function command(
       const assignment = await participantAssignment(row, input);
       const newPayout = optionalAmount.parse(input.payout);
       if (
+        row.workSlotId &&
+        (newPayout !== row.payout ||
+          assignment.participantId !== row.participantId ||
+          assignment.participantAccountId !== row.participantAccountId)
+      )
+        throw new Error("슬롯·배정 화면에서 체험단과 보수를 관리하세요.");
+      if (
         row.postingSetId &&
         (newPayout !== row.payout ||
           assignment.participantId !== row.participantId ||
@@ -573,24 +682,61 @@ export function command(
       if ((await list("tasks")).some((t) => t.id !== id && t.link === link))
         throw new Error("이미 등록된 게시 링크입니다.");
       if (
-        row.postingSetId &&
+        (row.postingSetId || row.workSlotId) &&
         row.payoutStatus === "paid" &&
         (input.verified !== true || link !== row.link)
       )
         throw new Error(
           "지급한 세트의 게시 링크를 변경하려면 먼저 세트 지급을 취소하세요.",
         );
+      const now = new Date().toISOString();
+      const sameLink = link === row.link;
+      const qualityScore =
+        input.qualityScore === undefined
+          ? sameLink
+            ? (row.qualityScore ?? null)
+            : null
+          : z.number().int().min(1).max(5).nullable().parse(input.qualityScore);
       result = await update(
         id,
         {
           link,
           status: input.verified === true ? "verified" : "submitted",
-          verifiedAt: input.verified === true ? new Date().toISOString() : null,
+          submittedAt: sameLink && row.submittedAt ? row.submittedAt : now,
+          firstSubmittedAt: row.firstSubmittedAt || now,
+          verifiedAt:
+            input.verified === true
+              ? sameLink && row.verifiedAt
+                ? row.verifiedAt
+                : now
+              : null,
+          firstVerifiedAt:
+            input.verified === true
+              ? row.firstVerifiedAt || now
+              : row.firstVerifiedAt || null,
+          qualityScore: input.verified === true ? qualityScore : null,
+          qualityNotes: text.parse(
+            input.qualityNotes ?? row.qualityNotes ?? "",
+          ),
           verifiedBy: input.verified === true ? actor : null,
         },
         Number(input.version),
       );
+      if (row.participantId)
+        await create("participant_events", {
+          participantId: row.participantId,
+          projectId: row.projectId,
+          taskId: row.id,
+          type: input.verified === true ? "verification" : "submission",
+          occurredAt: now,
+          actor,
+          link,
+          qualityScore: input.verified === true ? qualityScore : null,
+          note: input.verified === true ? "게시 확인" : "게시 링크 접수",
+        });
     } else if (action === "payout") {
+      if (row.workSlotId)
+        throw new Error("슬롯·배정 화면에서 지급을 처리하세요.");
       if (row.postingSetId)
         throw new Error("참여자 게시 세트에서 통합 지급을 처리하세요.");
       if (row.kind !== "tasks" || row.payout === null)

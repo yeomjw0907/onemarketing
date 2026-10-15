@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import { requireActor, sameOrigin } from "@/lib/auth";
 import {
   approvedBundle,
+  workSlotBundle,
   participantBundle,
   recordDelivery,
 } from "@/lib/deliveries";
@@ -15,14 +16,17 @@ export async function GET(request: Request) {
     const projectId = url.searchParams.get("projectId");
     if (!projectId) throw new Error("프로젝트를 선택하세요.");
     const setId = url.searchParams.get("setId");
-    const bundle = setId
-      ? await participantBundle(projectId, setId)
-      : await approvedBundle(
-          projectId,
-          url.searchParams.getAll("taskId").length
-            ? url.searchParams.getAll("taskId")
-            : undefined,
-        );
+    const slotId = url.searchParams.get("slotId");
+    const bundle = slotId
+      ? await workSlotBundle(projectId, slotId)
+      : setId
+        ? await participantBundle(projectId, setId)
+        : await approvedBundle(
+            projectId,
+            url.searchParams.getAll("taskId").length
+              ? url.searchParams.getAll("taskId")
+              : undefined,
+          );
     const archive = new ZipArchive({ zlib: { level: 5 } });
     const stream = Readable.toWeb(archive) as ReadableStream<Uint8Array>;
     for (const entry of bundle.entries)

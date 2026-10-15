@@ -128,6 +128,31 @@ export async function participantBundle(projectId: string, setId: string) {
   });
   return { ...bundle, filename: `${bundle.project.name}_${name}_게시세트.zip` };
 }
+export async function workSlotBundle(projectId: string, slotId: string) {
+  const slot = await requireRecord(slotId, "work_slots");
+  if (slot.projectId !== projectId || !slot.participantId)
+    throw new Error("배정된 동일 프로젝트의 슬롯을 선택하세요.");
+  const bundle = await approvedBundle(projectId, slot.taskIds as string[]);
+  if (
+    bundle.tasks.some(
+      (t) => t.workSlotId !== slot.id || t.participantId !== slot.participantId,
+    )
+  )
+    throw new Error("슬롯 배정을 확인하세요.");
+  bundle.entries.push({
+    path: "체험단_게시안내.txt",
+    buffer: Buffer.from(
+      `담당자: ${slot.participantName}\n프로젝트: ${bundle.project.name}\n구성: ${slot.name}\n약정 보수: ${slot.amount}원 (슬롯의 게시물 모두 확인 후 1회 지급)\n게시 마감: ${bundle.project.due || "운영자와 협의"}\n원고의 광고·협찬 표시는 유지하고 게시 후 링크를 운영자에게 전달해 주세요.\n`,
+    ),
+  });
+  const name = String(slot.participantName)
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+    .slice(0, 80);
+  return {
+    ...bundle,
+    filename: `${bundle.project.name}_${name}_${slot.type}.zip`,
+  };
+}
 export function recordDelivery(input: unknown, actor: string) {
   const body = z
     .object({
@@ -135,13 +160,27 @@ export function recordDelivery(input: unknown, actor: string) {
       taskIds: z.array(z.string()).min(1),
       channel: z.string().trim().min(1).max(100),
       note: z.string().max(2000).default(""),
+      postingDeadlineAt: z.string().datetime({ offset: true }).optional(),
     })
     .parse(input);
   return transaction(async () => {
     await lock("project-operations:" + body.projectId);
+    await lock("assets:" + body.projectId);
     const bundle = await approvedBundle(body.projectId, body.taskIds);
     if (bundle.project.settled || bundle.project.status === "cancelled")
       throw new Error("마감·취소한 프로젝트에는 전달을 기록할 수 없습니다.");
+    for (const task of bundle.tasks)
+      if (task.workSlotId) {
+        const slot = await requireRecord(String(task.workSlotId), "work_slots");
+        if (
+          !slot.participantId ||
+          task.participantId !== slot.participantId ||
+          !(slot.taskIds as string[]).every((id) => body.taskIds.includes(id))
+        )
+          throw new Error(
+            "슬롯의 담당자를 배정하고 슬롯 전체 파일을 함께 전달하세요.",
+          );
+      }
     const row = await create("deliveries", {
       ...body,
       actor,
@@ -159,6 +198,34 @@ export function recordDelivery(input: unknown, actor: string) {
         deliveryVersion: task.approvedAssets,
         deliveredAt: row.createdAt,
       });
+    for (const task of bundle.tasks)
+      if (task.participantId) {
+        const deadline =
+          body.postingDeadlineAt ||
+          (typeof task.postingDeadlineAt === "string"
+            ? task.postingDeadlineAt
+            : null) ||
+          (/^\d{4}-\d{2}-\d{2}$/.test(String(bundle.project.due))
+            ? new Date(
+                String(bundle.project.due) + "T23:59:59+09:00",
+              ).toISOString()
+            : null);
+        await update(task.id, {
+          requestedAt: task.requestedAt || row.createdAt,
+          postingDeadlineAt: deadline,
+        });
+        await create("participant_events", {
+          participantId: task.participantId,
+          projectId: body.projectId,
+          taskId: task.id,
+          type: "request",
+          occurredAt: row.createdAt,
+          actor,
+          deliveryId: row.id,
+          note: body.note || "파일 전달·게시 요청",
+          postingDeadlineAt: deadline,
+        });
+      }
     const p = bundle.project;
     if (p.status === "ready") await update(p.id, { status: "publishing" });
     await audit(actor, "delivery-recorded", p.id, { deliveryId: row.id });

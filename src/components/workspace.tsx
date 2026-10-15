@@ -1,6 +1,9 @@
 "use client";
 import { shootingTargetOptions } from "@/lib/media-guidance";
 import Participants from "./participants";
+import SalesCartBuilder from "./sales-cart";
+import WorkSlots from "./work-slots";
+import { cartQuote } from "@/lib/sales-cart";
 import Dashboard from "./dashboard";
 import AiCosts from "./ai-costs";
 import PostingSets from "./posting-sets";
@@ -53,7 +56,7 @@ const empty = () =>
 const menus = [
   ["overview", "현황", LayoutDashboard],
   ["customers", "고객·제품", Users],
-  ["participants", "참여자 관리", Users],
+  ["participants", "체험단 관리", Users],
   ["library", "자료실", FolderOpen],
   ["contracts", "계약·견적", FileText],
   ["projects", "프로젝트", Layers],
@@ -79,6 +82,7 @@ const tabs = [
   "전달·게시",
   "비용·기록",
   "생성 브리핑",
+  "슬롯·배정",
 ];
 const status = (value: unknown) =>
   stageLabels[String(value)] || String(value || "미정");
@@ -320,6 +324,8 @@ export default function Workspace() {
     let values = { ...draft };
     if (modal === "contracts") {
       values.vatIncluded = values.taxChoice === "inclusive";
+      if (values.cartMode) values.lines = [];
+      else delete values.packages;
     }
     const id = values.id,
       version = values.version;
@@ -492,13 +498,31 @@ export default function Workspace() {
   const find = (kind: Kind, id: unknown) => data[kind].find((r) => r.id === id);
   const pname = (id: unknown) => String(find("projects", id)?.name || "");
   const cname = (id: unknown) => String(find("customers", id)?.name || "");
-  const previewSale =
-    (draft.lines || []).reduce(
-      (sum: number, line: Draft) =>
-        sum +
-        Number(find("prices", line.priceId)?.sale || 0) * Number(line.quantity),
-      0,
-    ) - Number(draft.discount || 0);
+  let cartPreview: ReturnType<typeof cartQuote> | null = null;
+  if (draft.cartMode) {
+    try {
+      cartPreview = cartQuote(
+        data.prices,
+        draft.packages || [],
+        Number(draft.discount || 0),
+        {
+          blog:
+            Number(config.defaultEstimates?.copy || 500) +
+            3 * Number(config.defaultEstimates?.image || 2000),
+          clip: Number(config.defaultEstimates?.video || 15000),
+        },
+      );
+    } catch {}
+  }
+  const previewSale = draft.cartMode
+    ? cartPreview?.sale || 0
+    : (draft.lines || []).reduce(
+        (sum: number, line: Draft) =>
+          sum +
+          Number(find("prices", line.priceId)?.sale || 0) *
+            Number(line.quantity),
+        0,
+      ) - Number(draft.discount || 0);
   const previewNet =
     draft.taxChoice === "inclusive"
       ? Math.round(previewSale / 1.1)
@@ -507,16 +531,18 @@ export default function Workspace() {
     const price = find("prices", line.priceId);
     return price && price.payout !== null && price.aiEstimate !== null;
   });
-  const previewCost = previewKnown
-    ? (draft.lines || []).reduce((sum: number, line: Draft) => {
-        const price = find("prices", line.priceId)!;
-        return (
-          sum +
-          (Number(price.payout) + Number(price.aiEstimate)) *
-            Number(line.quantity)
-        );
-      }, 0)
-    : null;
+  const previewCost = draft.cartMode
+    ? (cartPreview?.cost ?? null)
+    : previewKnown
+      ? (draft.lines || []).reduce((sum: number, line: Draft) => {
+          const price = find("prices", line.priceId)!;
+          return (
+            sum +
+            (Number(price.payout) + Number(price.aiEstimate)) *
+              Number(line.quantity)
+          );
+        }, 0)
+      : null;
   const filtered = (rows: RecordData[]) =>
     rows.filter(
       (r) =>
@@ -876,7 +902,7 @@ export default function Workspace() {
                 </td>
                 <td>
                   {t.participantId
-                    ? button(String(t.assignee || "참여자"), () =>
+                    ? button(String(t.assignee || "체험단"), () =>
                         navigate("participants", String(t.participantId)),
                       )
                     : String(t.assignee || "미배정")}
@@ -1272,6 +1298,34 @@ export default function Workspace() {
                   open("contracts", {
                     name: "",
                     customerId: "",
+                    cartMode: true,
+                    packages: [],
+                    blogPriceId:
+                      data.prices.find(
+                        (p) =>
+                          p.channel === "blog" &&
+                          p.images === 3 &&
+                          Number(p.sale) > 0,
+                      )?.id ||
+                      data.prices.find(
+                        (p) => p.channel === "blog" && p.images === 3,
+                      )?.id ||
+                      "",
+                    clipPriceId:
+                      data.prices.find(
+                        (p) =>
+                          p.channel === "clip" &&
+                          p.duration === 10 &&
+                          p.mode === "generated" &&
+                          Number(p.sale) > 0,
+                      )?.id ||
+                      data.prices.find(
+                        (p) =>
+                          p.channel === "clip" &&
+                          p.duration === 10 &&
+                          p.mode === "generated",
+                      )?.id ||
+                      "",
                     lines: data.prices.length
                       ? [{ priceId: data.prices[0].id, quantity: 1 }]
                       : [],
@@ -1295,7 +1349,7 @@ export default function Workspace() {
                 <thead>
                   <tr>
                     <th>계약 / 고객</th>
-                    <th>슬롯당 판매액</th>
+                    <th>진행 회차당 판매액</th>
                     <th>제공 계획</th>
                     <th>진행</th>
                     <th>작업</th>
@@ -1313,7 +1367,14 @@ export default function Workspace() {
                         <small>공급가액 · VAT {money(c.vat)}</small>
                       </td>
                       <td>
-                        {String(c.months)}개월 × 월 {String(c.setsPerMonth)}건
+                        {String(c.months)}개월 × 월 {String(c.setsPerMonth)}회
+                        {Array.isArray(c.packageSnapshots) && (
+                          <small>
+                            {(c.packageSnapshots as Draft[])
+                              .map((p) => `${p.label} × ${p.quantity}`)
+                              .join(" · ")}
+                          </small>
+                        )}
                       </td>
                       <td>
                         {
@@ -1433,6 +1494,7 @@ export default function Workspace() {
               </div>
               <div className="row">
                 <Badge value={project.status} />
+                {button("체험단 빠른 배정", () => setTab(7))}
                 {button("자료·예산 메모", () => open("notes", { ...project }))}
               </div>
             </div>
@@ -1663,6 +1725,20 @@ export default function Workspace() {
                 }
                 estimates={config.defaultEstimates || {}}
                 reload={async () => setData(await api("/api/data"))}
+              />
+            )}
+            {tab === 7 && (
+              <WorkSlots
+                project={project}
+                data={data}
+                reload={async () => setData(await api("/api/data"))}
+                onPublication={(t) =>
+                  open("publication", {
+                    ...t,
+                    verified: t.status === "verified",
+                    qualityScore: t.qualityScore ?? null,
+                  })
+                }
               />
             )}
             {tab === 3 && (
@@ -2179,10 +2255,49 @@ export default function Workspace() {
                       { id: "budget", name: "예산 우선" },
                     ])}
                   </Field>
-                  <Field label="슬롯당 예산 상한 · 선택">
+                  <Field label="진행 회차당 예산 상한 · 선택">
                     {input("budget", "number")}
                   </Field>
-                  <div className="full">
+                  <div className="full row">
+                    <button
+                      type="button"
+                      onClick={() => setDraft({ ...draft, cartMode: true })}
+                    >
+                      슬롯 장바구니
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDraft({ ...draft, cartMode: false })}
+                    >
+                      기존 개별 상품 견적
+                    </button>
+                  </div>
+                  {draft.cartMode && (
+                    <SalesCartBuilder
+                      prices={data.prices}
+                      value={draft.packages || []}
+                      blogId={draft.blogPriceId || ""}
+                      clipId={draft.clipPriceId || ""}
+                      onChange={(packages) => setDraft({ ...draft, packages })}
+                      onPrice={(channel, id) =>
+                        setDraft({
+                          ...draft,
+                          [channel === "blog" ? "blogPriceId" : "clipPriceId"]:
+                            id,
+                          packages: (draft.packages || []).map((p: Draft) => ({
+                            ...p,
+                            ...(channel === "blog" && p.type !== "clip"
+                              ? { blogPriceId: id }
+                              : {}),
+                            ...(channel === "clip" && p.type !== "blog"
+                              ? { clipPriceId: id }
+                              : {}),
+                          })),
+                        })
+                      }
+                    />
+                  )}
+                  <div className="full" hidden={Boolean(draft.cartMode)}>
                     {(draft.lines || []).map((l: Draft, i: number) => (
                       <div className="row" style={{ marginTop: 10 }} key={i}>
                         <select
@@ -2291,14 +2406,14 @@ export default function Workspace() {
                       </div>
                     )}
                   </div>
-                  <Field label="슬롯당 할인액">
+                  <Field label="진행 회차당 할인액">
                     {input("discount", "number")}
                   </Field>
                   <Field label="시작 월">{input("startMonth", "month")}</Field>
                   <Field label="계약 기간 · 개월">
                     {input("months", "number")}
                   </Field>
-                  <Field label="월 제공 슬롯 수">
+                  <Field label="월 진행 횟수 · 장바구니 구성 반복">
                     {input("setsPerMonth", "number")}
                   </Field>
                   <Field label="세금 입력 기준">
@@ -2327,15 +2442,17 @@ export default function Workspace() {
                           : ""}
                       </strong>
                     </div>
-                    슬롯당 판매액{" "}
+                    진행 회차당 판매액{" "}
                     {money(
-                      (draft.lines || []).reduce(
-                        (s: number, l: Draft) =>
-                          s +
-                          Number(find("prices", l.priceId)?.sale || 0) *
-                            l.quantity,
-                        0,
-                      ) - Number(draft.discount || 0),
+                      (draft.cartMode
+                        ? cartPreview?.total || 0
+                        : (draft.lines || []).reduce(
+                            (s: number, l: Draft) =>
+                              s +
+                              Number(find("prices", l.priceId)?.sale || 0) *
+                                l.quantity,
+                            0,
+                          )) - Number(draft.discount || 0),
                     )}{" "}
                     · 확정 후 단가를 고정합니다.
                   </div>
@@ -2362,10 +2479,10 @@ export default function Workspace() {
                         .map((p) => ({ id: p.id, name: p.name })),
                     )}
                   </Field>
-                  <Field label="제공 슬롯">
+                  <Field label="계약 진행 회차">
                     {
                       <select
-                        aria-label="제공 슬롯"
+                        aria-label="계약 진행 회차"
                         value={draft.slot}
                         onChange={(e) =>
                           setDraft({ ...draft, slot: Number(e.target.value) })
@@ -2455,12 +2572,12 @@ export default function Workspace() {
                   <Field label="기획안" full>
                     {area("brief")}
                   </Field>
-                  <Field label="등록된 참여자">
+                  <Field label="등록된 체험단">
                     <select
                       value={draft.participantId || ""}
                       disabled={
                         draft.payoutStatus === "paid" ||
-                        Boolean(draft.postingSetId)
+                        Boolean(draft.postingSetId || draft.workSlotId)
                       }
                       onChange={(e) => {
                         const p = find("participants", e.target.value);
@@ -2496,7 +2613,7 @@ export default function Workspace() {
                         value={draft.participantAccountId || ""}
                         disabled={
                           draft.payoutStatus === "paid" ||
-                          Boolean(draft.postingSetId)
+                          Boolean(draft.postingSetId || draft.workSlotId)
                         }
                         onChange={(e) =>
                           setDraft({
@@ -2522,8 +2639,11 @@ export default function Workspace() {
                     <Field label="기존 담당자명">{input("assignee")}</Field>
                   )}
                   <Field label="지급액">
-                    {draft.postingSetId ? (
-                      <p>세트 통합 보수에 포함 · 전달·게시 탭에서 관리</p>
+                    {draft.postingSetId || draft.workSlotId ? (
+                      <p>
+                        슬롯 또는 세트 보수에 포함 · 슬롯·배정 / 전달·게시에서
+                        관리
+                      </p>
                     ) : (
                       input("payout", "number")
                     )}
@@ -2534,7 +2654,7 @@ export default function Workspace() {
                         type="button"
                         disabled={
                           draft.payoutStatus === "paid" ||
-                          Boolean(draft.postingSetId)
+                          Boolean(draft.postingSetId || draft.workSlotId)
                         }
                         onClick={() => {
                           const p = find("participants", draft.participantId);
@@ -2543,13 +2663,13 @@ export default function Workspace() {
                               ? p?.blogRate
                               : p?.clipRate;
                           if (rate === null || rate === undefined) {
-                            setError("참여자 기본 지급액이 미정입니다.");
+                            setError("체험단 기본 지급액이 미정입니다.");
                             return;
                           }
                           setDraft({ ...draft, payout: rate });
                         }}
                       >
-                        참여자 기본 지급액 적용
+                        체험단 기본 지급액 적용
                       </button>
                       <p className="hint">
                         현재 작업 금액만 변경합니다. 단가를 바꿔도 다른 작업의
@@ -2653,6 +2773,32 @@ export default function Workspace() {
               )}
               {modal === "publication" && (
                 <>
+                  <Field label="게시 품질 평가 (선택)">
+                    <select
+                      value={draft.qualityScore ?? ""}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          qualityScore: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
+                    >
+                      <option value="">미평가</option>
+                      {[5, 4, 3, 2, 1].map((n) => (
+                        <option key={n} value={n}>
+                          {n}점 ·{" "}
+                          {n === 5
+                            ? "요청대로 정확"
+                            : n === 1
+                              ? "누락·오류 많음"
+                              : "운영자 평가"}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="검수 메모">{area("qualityNotes")}</Field>
                   <Field label="게시 링크" full>
                     {input("link", "url")}
                   </Field>

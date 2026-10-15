@@ -6,6 +6,7 @@ import type { RecordData } from "./types";
 export async function createPostingSet(
   project: RecordData,
   input: Record<string, unknown>,
+  options: { allowMultiple?: boolean; workSlotId?: string } = {},
 ) {
   const body = z
     .object({
@@ -46,6 +47,7 @@ export async function createPostingSet(
   )
     throw new Error("이미 세트에 연결된 작업입니다.");
   if (
+    !options.allowMultiple &&
     (await list("posting_sets")).some(
       (s) =>
         s.projectId === project.id &&
@@ -56,6 +58,12 @@ export async function createPostingSet(
     throw new Error(
       "이 참여자는 이미 이 프로젝트의 게시 세트를 배정받았습니다.",
     );
+  if (
+    [blog, clip].some(
+      (t) => t.workSlotId && t.workSlotId !== options.workSlotId,
+    )
+  )
+    throw new Error("슬롯·배정 화면에서 묶음 담당자를 배정하세요.");
   const assignments = [];
   for (const [task, accountId] of [
     [blog, body.blogAccountId],

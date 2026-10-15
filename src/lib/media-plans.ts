@@ -100,7 +100,18 @@ export async function mediaBinding(
     .update(
       JSON.stringify({
         project,
-        task,
+        task: {
+          id: task.id,
+          name: task.name,
+          channel: task.channel,
+          brief: task.brief,
+          briefApprovedAt: task.briefApprovedAt,
+          feedback: task.feedback,
+          images: task.images,
+          duration: task.duration,
+          mode: task.mode,
+          approvedAssets: task.approvedAssets,
+        },
         assets: assets.map((a) => [a.id, a.version, a.sha256, a.current]),
         type,
         replaceAssetId: replaceAssetId || null,

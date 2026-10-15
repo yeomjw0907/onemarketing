@@ -1,5 +1,9 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import {
+  elapsedLabel,
+  participantPerformance,
+} from "@/lib/participant-performance";
 import { Plus, ArrowLeft, ExternalLink, X } from "lucide-react";
 import {
   money,
@@ -26,11 +30,14 @@ const fresh = () => ({
   name: "",
   nickname: "",
   contact: "",
+  phone: "",
+  email: "",
   status: "active",
   specialties: "",
   notes: "",
-  blogRate: null,
-  clipRate: null,
+  blogRate: 3000,
+  clipRate: 3000,
+  bundleRate: 7000,
   accounts: [{ id: crypto.randomUUID(), channel: "blog", url: "", label: "" }],
 });
 const accountable = (t: RecordData) =>
@@ -52,6 +59,7 @@ export default function Participants({
 }) {
   const [query, setQuery] = useState(""),
     [status, setStatus] = useState(""),
+    [sort, setSort] = useState("name"),
     [editing, setEditing] = useState(false),
     [draft, setDraft] = useState<Draft>(fresh),
     [history, setHistory] = useState<Draft | null>(null),
@@ -177,7 +185,19 @@ export default function Participants({
     );
   }
   function begin(p?: RecordData) {
-    setDraft(p ? { ...p, accounts: structuredClone(p.accounts) } : fresh());
+    setDraft(
+      p
+        ? {
+            ...p,
+            blogRate: p.blogRate ?? 3000,
+            clipRate: p.clipRate ?? 3000,
+            bundleRate: p.bundleRate ?? 7000,
+            phone: p.phone || "",
+            email: p.email || "",
+            accounts: structuredClone(p.accounts),
+          }
+        : fresh(),
+    );
     setEditing(true);
     setHistory(null);
     setError("");
@@ -218,13 +238,13 @@ export default function Participants({
               }}
             >
               <ArrowLeft size={15} />
-              참여자 목록
+              체험단 목록
             </button>
           )}
           <h1 style={participant ? { marginTop: 16 } : undefined}>
             {participant
               ? String(participant.nickname || participant.name)
-              : "참여자 관리"}
+              : "체험단 관리"}
           </h1>
           <p>
             {participant
@@ -234,7 +254,7 @@ export default function Participants({
         </div>
         <button className="primary" onClick={() => begin(participant)}>
           <Plus size={16} />
-          {participant ? "프로필 수정" : "참여자 등록"}
+          {participant ? "프로필 수정" : "체험단 등록"}
         </button>
       </div>
       {error && (
@@ -244,7 +264,7 @@ export default function Participants({
       )}
       {editing && (
         <section className="section">
-          <h2>{draft.id ? "참여자 수정" : "새 참여자 등록"}</h2>
+          <h2>{draft.id ? "체험단 수정" : "새 체험단 등록"}</h2>
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault();
@@ -254,7 +274,9 @@ export default function Participants({
             <div className="fields">
               {field("name", "이름")}
               {field("nickname", "닉네임")}
-              {field("contact", "연락처")}
+              {field("phone", "전화번호", "tel")}
+              {field("email", "이메일", "email")}
+              {field("contact", "기타 연락처 · 카톡 등")}
               {field("specialties", "관심 분야 · 쉼표로 구분")}
               <label>
                 활동 상태
@@ -278,6 +300,7 @@ export default function Participants({
                 "number",
               )}
               {field("clipRate", "클립 기본 지급액 · 미정이면 빈칸", "number")}
+              {field("bundleRate", "블로그+클립 통합 지급액", "number")}
               <label className="full">
                 내부 메모
                 <textarea
@@ -312,7 +335,7 @@ export default function Participants({
               </button>
             </div>
             <p className="hint">
-              블로그 주소를 붙여 넣으세요. 같은 참여자의 클립 링크는 링크 추가
+              블로그 주소를 붙여 넣으세요. 같은 체험단의 클립 링크는 링크 추가
               후 채널을 선택하면 됩니다.
             </p>
             {draft.accounts.map((a: Draft, i: number) => (
@@ -386,7 +409,7 @@ export default function Participants({
               </div>
             ))}
             <p className="hint">
-              새 작업에는 활동 중인 참여자만 배정할 수 있어요. 기본 단가 변경은
+              새 작업에는 활동 중인 체험단만 배정할 수 있어요. 기본 단가 변경은
               이전 작업에 소급되지 않습니다.
             </p>
             <div
@@ -401,7 +424,7 @@ export default function Participants({
                 취소
               </button>
               <button className="primary" disabled={busy}>
-                {busy ? "저장 중…" : "참여자 저장"}
+                {busy ? "저장 중…" : "체험단 저장"}
               </button>
             </div>
           </form>
@@ -411,7 +434,7 @@ export default function Participants({
         <>
           <div className="toolbar">
             <input
-              aria-label="참여자 검색"
+              aria-label="체험단 검색"
               placeholder="이름·닉네임·블로그 주소 검색"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -428,16 +451,25 @@ export default function Participants({
                 </option>
               ))}
             </select>
+            <label>
+              정렬
+              <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="name">이름순</option>
+                <option value="speed">평균 링크 접수 빠른순</option>
+                <option value="quality">품질 평가 높은순</option>
+              </select>
+            </label>
           </div>
           <div className="tablewrap">
             <table>
               <thead>
                 <tr>
                   {[
-                    "참여자",
+                    "체험단",
                     "활동 계정",
                     "분야 / 상태",
                     "참여 이력",
+                    "평균 링크 접수 / 품질",
                     "미지급 합계",
                     "관리",
                   ].map((s) => (
@@ -456,14 +488,30 @@ export default function Participants({
                           p.nickname,
                           p.specialties,
                           p.contact,
+                          p.phone,
+                          p.email,
                           ...(p.accounts as Draft[]).map((a) => a.url),
                         ]
                           .join(" ")
                           .toLowerCase()
                           .includes(query.toLowerCase())),
                   )
+                  .sort((a, b) => {
+                    const x = participantPerformance(data.tasks, a.id),
+                      y = participantPerformance(data.tasks, b.id);
+                    return sort === "speed"
+                      ? (x.averageResponseMs ?? Infinity) -
+                          (y.averageResponseMs ?? Infinity)
+                      : sort === "quality"
+                        ? (y.averageQuality ?? -1) - (x.averageQuality ?? -1)
+                        : String(a.name).localeCompare(String(b.name), "ko");
+                  })
                   .map((p) => {
                     const s = summary(p.id);
+                    const performance = participantPerformance(
+                      data.tasks,
+                      p.id,
+                    );
                     return (
                       <tr key={p.id}>
                         <td>
@@ -486,6 +534,17 @@ export default function Participants({
                         </td>
                         <td>{s.count}건</td>
                         <td>
+                          {elapsedLabel(performance.averageResponseMs)}
+                          <small>
+                            {performance.averageQuality === null
+                              ? "미평가"
+                              : performance.averageQuality.toFixed(1) +
+                                " / 5점"}{" "}
+                            · 접수 {performance.submitted}건 / 평가{" "}
+                            {performance.qualityCount}건
+                          </small>
+                        </td>
+                        <td>
                           {money(s.unpaid)}
                           {s.missing && <small>미정 금액 별도</small>}
                         </td>
@@ -506,7 +565,7 @@ export default function Participants({
             </table>
             {!data.participants.length && (
               <div className="empty">
-                <h3>첫 참여자를 등록하세요</h3>등록 후 프로젝트 작업에서
+                <h3>첫 체험단를 등록하세요</h3>등록 후 프로젝트 작업에서
                 담당자와 게시 계정을 선택할 수 있어요.
               </div>
             )}
@@ -534,26 +593,79 @@ export default function Participants({
               값입니다.
             </div>
           )}
+          {(() => {
+            const p = participantPerformance(data.tasks, selected);
+            return (
+              <section className="section">
+                <h2>요청·응답·검수 지표</h2>
+                <div className="stats">
+                  {[
+                    [
+                      "요청 → 링크 접수",
+                      elapsedLabel(p.averageResponseMs),
+                      `${p.submitted}건 기준`,
+                    ],
+                    [
+                      "링크 접수 → 운영자 확인",
+                      elapsedLabel(p.averageReviewMs),
+                      "운영자 검수 시간 분리",
+                    ],
+                    [
+                      "기한 내 링크 접수",
+                      p.deadlineCount
+                        ? `${p.onTime}/${p.deadlineCount}건`
+                        : "기록 없음",
+                      `미접수 지연 ${p.overdue}건`,
+                    ],
+                    [
+                      "품질·수정",
+                      p.averageQuality === null
+                        ? "미평가"
+                        : `${p.averageQuality.toFixed(1)} / 5점`,
+                      `${p.qualityCount}건 평가 · 게시 수정 요청 ${p.revisionCount}회`,
+                    ],
+                  ].map(([label, value, hint]) => (
+                    <div className="stat" key={label}>
+                      <span>{label}</span>
+                      <strong>{value}</strong>
+                      <small>{hint}</small>
+                    </div>
+                  ))}
+                </div>
+                <p className="hint">
+                  게시 작업 기준입니다. 요청 시각이 기록된 작업만 속도를
+                  계산하며, 링크 접수는 운영자가 입력한 시각입니다. 실제 업로드
+                  시각과 다를 수 있습니다. 품질은 운영자의 선택 평가이며
+                  미평가를 0점으로 계산하지 않습니다.
+                </p>
+              </section>
+            );
+          })()}
           <div className="tabs">
-            {["프로필", "참여 이력", "정산 이력"].map((label, i) => (
-              <button
-                key={label}
-                className={tab === i ? "active" : ""}
-                onClick={() => setTab(i)}
-              >
-                {label}
-              </button>
-            ))}
+            {["프로필", "참여 이력", "정산 이력", "요청·응답 기록"].map(
+              (label, i) => (
+                <button
+                  key={label}
+                  className={tab === i ? "active" : ""}
+                  onClick={() => setTab(i)}
+                >
+                  {label}
+                </button>
+              ),
+            )}
           </div>
           {tab === 0 && (
             <div className="split">
               <section className="section">
                 <h2>기본 정보</h2>
                 {[
-                  ["연락처", participant.contact],
+                  ["전화번호", participant.phone],
+                  ["이메일", participant.email],
+                  ["기타 연락처", participant.contact],
                   ["관심 분야", participant.specialties],
                   ["블로그 기본 지급액", money(participant.blogRate)],
                   ["클립 기본 지급액", money(participant.clipRate)],
+                  ["블로그+클립 지급액", money(participant.bundleRate ?? 7000)],
                 ].map(([k, v]) => (
                   <div className="amountline" key={String(k)}>
                     <span className="muted">{String(k)}</span>
@@ -580,7 +692,62 @@ export default function Participants({
               </section>
             </div>
           )}
-          {tab !== 0 && (
+          {tab === 3 && (
+            <section className="section">
+              <h2>요청·응답·확인 이력</h2>
+              <div className="tablewrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>시각</th>
+                      <th>종류</th>
+                      <th>작업·내용</th>
+                      <th>평가</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.participant_events
+                      .filter((e) => e.participantId === selected)
+                      .map((e) => (
+                        <tr key={e.id}>
+                          <td>
+                            {new Date(
+                              String(e.occurredAt || e.createdAt),
+                            ).toLocaleString("ko-KR", {
+                              timeZone: "Asia/Seoul",
+                            })}
+                          </td>
+                          <td>
+                            {{
+                              assignment: "배정",
+                              request: "게시 요청",
+                              submission: "링크 접수",
+                              verification: "게시 확인",
+                              revision: "게시 수정 요청",
+                            }[String(e.type)] || String(e.type)}
+                          </td>
+                          <td>
+                            {String(
+                              data.tasks.find((t) => t.id === e.taskId)?.name ||
+                                data.work_slots.find((s) => s.id === e.slotId)
+                                  ?.name ||
+                                "",
+                            )}{" "}
+                            · {String(e.note || "")}
+                          </td>
+                          <td>
+                            {typeof e.qualityScore === "number"
+                              ? `${e.qualityScore} / 5점`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+          {(tab === 1 || tab === 2) && (
             <>
               <div className="section-title">
                 <h2>{tab === 1 ? "참여한 작업" : "지급·미지급 내역"}</h2>
@@ -619,6 +786,7 @@ export default function Participants({
                       {[
                         "작업 / 고객·제품",
                         "게시·진행 상태",
+                        "요청 / 링크 접수 / 확인",
                         "지급액",
                         "지급 상태 / 일자",
                         "관리",
@@ -675,6 +843,21 @@ export default function Participants({
                             ) : null}
                           </td>
                           <td>
+                            {[t.requestedAt, t.submittedAt, t.verifiedAt].map(
+                              (v, i) => (
+                                <small style={{ display: "block" }} key={i}>
+                                  {["요청", "접수", "확인"][i]}:{" "}
+                                  {v
+                                    ? new Date(String(v)).toLocaleString(
+                                        "ko-KR",
+                                        { timeZone: "Asia/Seoul" },
+                                      )
+                                    : "미기록"}
+                                </small>
+                              ),
+                            )}
+                          </td>
+                          <td>
                             {t.postingSetId
                               ? "세트 보수에 포함"
                               : money(t.payout)}
@@ -704,7 +887,7 @@ export default function Participants({
                                 busy ||
                                 p?.settled === true ||
                                 t.payout === null ||
-                                Boolean(t.postingSetId)
+                                Boolean(t.postingSetId || t.workSlotId)
                               }
                               onClick={() => payout(t)}
                             >
@@ -742,6 +925,7 @@ export default function Participants({
                             "링크 미등록"
                           )}
                         </td>
+                        <td>시각 미기록 · 과거 이력</td>
                         <td>{money(h.amount)}</td>
                         <td>
                           {h.paid ? "지급 완료" : "지급 예정"}
