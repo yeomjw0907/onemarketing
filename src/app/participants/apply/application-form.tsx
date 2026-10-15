@@ -3,7 +3,10 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import ApplicationFields, {
   freshApplication,
 } from "@/components/participant-application-fields";
-import type { ApplicationDraft } from "@/lib/participant-application-schema";
+import {
+  applicationSchema,
+  type ApplicationDraft,
+} from "@/lib/participant-application-schema";
 import styles from "./application.module.css";
 import ChannelIcon from "@/components/channel-icon";
 export default function ApplicationForm({
@@ -54,6 +57,22 @@ export default function ApplicationForm({
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
+    const parsed = applicationSchema.safeParse(draft);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      setError(issue?.message || "신청 내용을 확인해주세요.");
+      const input = e.currentTarget.querySelector<HTMLInputElement>(
+        `[data-field="${issue?.path.join(".")}"]`,
+      );
+      if (input) {
+        input.setCustomValidity(issue.message);
+        input.dispatchEvent(new Event("invalid", { cancelable: true }));
+        input.focus();
+      }
+      return;
+    }
+    setError("");
+    setDraft(parsed.data);
     websiteRef.current = new FormData(e.currentTarget).get("website");
     setPopup("confirm");
   }
@@ -117,6 +136,21 @@ export default function ApplicationForm({
                 aria-describedby="terms-scroll-hint"
               >
                 <div>
+                  <section
+                    className={styles.conditions}
+                    style={{ borderTop: 0 }}
+                  >
+                    <h3>
+                      콘텐츠는 원마케팅이 만들고,
+                      <br />
+                      업로드는 참여자가 합니다.
+                    </h3>
+                    <p style={{ fontWeight: 400 }}>
+                      블로그 원고·이미지부터 클립 영상까지 원마케팅이 제작해
+                      전달합니다. 참여자는 업로드 안내에 따라 본인 계정에
+                      게시하고 게시물 링크를 제출해주세요.
+                    </p>
+                  </section>
                   <section className={styles.channel}>
                     <h3
                       style={{ display: "flex", alignItems: "center", gap: 12 }}
@@ -144,6 +178,18 @@ export default function ApplicationForm({
                       기본 보수 기준이며, 실제 협업 보수와 지급 조건은 참여 전
                       개별 안내합니다.
                     </p>
+                    <div className={styles.rewardNote}>
+                      <strong>
+                        꾸준한 협업에는 추가 보수도 협의할 수 있어요.
+                      </strong>
+                      <p>
+                        블로그 규모와 콘텐츠 품질, 업로드 기한 준수, 게시물 유지
+                        여부 등을 종합적으로 검토합니다. 성실하게 참여해주신
+                        분께는 이후 체험단 우선 참여 기회와 보수 인상을 제안할
+                        수 있습니다. 적용 여부와 금액은 참여 전에 개별
+                        안내합니다.
+                      </p>
+                    </div>
                   </section>
                   {["인스타그램", "페이스북", "링크드인", "유튜브"].map(
                     (channel) => (
@@ -176,6 +222,16 @@ export default function ApplicationForm({
                   <section className={styles.conditions}>
                     <h3>참여 전 꼭 확인해주세요</h3>
                     <ul>
+                      <li>
+                        원마케팅이 제작한 콘텐츠와 업로드 방법을 전달합니다.
+                        참여자는 내용을 확인한 후 안내된 기한과 조건에 맞춰
+                        게시하고 링크를 제출해주세요.
+                      </li>
+                      <li>
+                        블로그 규모와 참여 이행 내역에 따라 추가 보수를 협의할
+                        수 있습니다. 보수 인상은 자동 적용되지 않으며, 적용
+                        여부와 금액은 참여 전에 개별 안내합니다.
+                      </li>
                       <li>
                         참여가 확정된 작업은 안내된 기한과 업로드 조건을
                         지켜주세요.

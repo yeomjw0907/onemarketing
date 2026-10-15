@@ -44,7 +44,7 @@ export async function submitApplication(input: unknown) {
         JSON.stringify({
           ...envelope.data,
           consentAt: new Date().toISOString(),
-          consentVersion: "2026-10-15-payment-v2",
+          consentVersion: "2026-10-15-creator-terms-v3",
         }),
       ],
     );

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { participantPaymentSchema } from "./participant-payment";
+import { normalizeApplicationAccount } from "./application-accounts";
 
 export const applicationChannels = {
   blog: "네이버 블로그",
@@ -30,28 +31,43 @@ export const applicationSchema = z
     payment: participantPaymentSchema.optional(),
     accounts: z
       .array(
-        z.object({
-          id: z.string().uuid(),
-          channel: z.enum([
-            "blog",
-            "clip",
-            "instagram",
-            "facebook",
-            "linkedin",
-            "youtube",
-            "other",
-          ]),
-          url: z
-            .string()
-            .trim()
-            .url()
-            .max(2048)
-            .refine(
-              (v) => ["https:", "http:"].includes(new URL(v).protocol),
-              "웹 계정 주소를 입력하세요.",
-            ),
-          label: z.string().trim().max(100).default(""),
-        }),
+        z
+          .object({
+            id: z.string().uuid(),
+            channel: z.enum([
+              "blog",
+              "clip",
+              "instagram",
+              "facebook",
+              "linkedin",
+              "youtube",
+              "other",
+            ]),
+            url: z
+              .string()
+              .trim()
+              .min(1, "활동 계정을 입력해주세요.")
+              .max(2048),
+            label: z.string().trim().max(100).default(""),
+          })
+          .transform((account, ctx) => {
+            try {
+              return {
+                ...account,
+                url: normalizeApplicationAccount(account.channel, account.url),
+              };
+            } catch (error) {
+              ctx.addIssue({
+                code: "custom",
+                path: ["url"],
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "활동 계정을 확인해주세요.",
+              });
+              return z.NEVER;
+            }
+          }),
       )
       .min(1, "활동 계정을 하나 이상 입력하세요.")
       .max(10),

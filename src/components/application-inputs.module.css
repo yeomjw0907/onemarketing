@@ -1,6 +1,157 @@
 .email {
   position: relative;
 }
+.field label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field input {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  background: #f2f4f6;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px;
+  line-height: 22px;
+  transition:
+    background 0.15s,
+    outline 0.15s;
+}
+.field input:focus {
+  outline: 2px solid #3182f6;
+  outline-offset: 0;
+  background: #fff;
+}
+.field input[aria-invalid="true"] {
+  outline: 2px solid #f04452;
+  background: #fff5f5;
+}
+.required {
+  color: #3182f6;
+}
+.fieldHelp,
+.fieldError {
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 8px 0 0;
+}
+.fieldHelp {
+  color: #6b7684;
+}
+.fieldError {
+  color: #d32f3e;
+}
+.fieldGrid {
+  display: grid;
+  gap: 22px;
+}
+.section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #e9edf2;
+}
+.section h3 {
+  font-size: 17px;
+  margin: 0 0 16px;
+}
+.account {
+  display: grid;
+  gap: 18px;
+  padding: 0 0 24px;
+}
+.account + .account {
+  padding-top: 24px;
+  border-top: 1px solid #e9edf2;
+}
+.accountHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.accountHeader > div {
+  flex: 1;
+}
+.accountHeader .label {
+  margin-top: 0;
+}
+.paymentOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.paymentOptions button {
+  min-height: 52px;
+  background: #f2f4f6;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 15px;
+  justify-content: center;
+}
+.paymentOptions button[aria-pressed="true"] {
+  border-color: #3182f6;
+  background: #f2f7ff;
+  color: #2563eb;
+  font-weight: 700;
+}
+.bank {
+  position: relative;
+}
+.bank > .field input {
+  padding-right: 52px;
+}
+.bankOpen {
+  position: absolute;
+  right: 10px;
+  top: 34px;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+}
+.bankDialog {
+  border: 0;
+  border-radius: 20px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 75svh;
+  padding: 24px;
+  color: #191f28;
+}
+.bankDialog::backdrop {
+  background: #191f2866;
+}
+.bankList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 16px;
+}
+.bankList button {
+  min-height: 48px;
+  text-align: left;
+  justify-content: flex-start;
+  border: 0;
+  background: #f2f4f6;
+  font-size: 14px;
+}
+.bankList button[aria-pressed="true"] {
+  color: #2563eb;
+  background: #f2f7ff;
+}
+@media (max-width: 700px) {
+  .bankDialog {
+    position: fixed;
+    inset: auto 0 0;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
 .email input {
   background: #f2f4f6;
   border: 1px solid transparent;

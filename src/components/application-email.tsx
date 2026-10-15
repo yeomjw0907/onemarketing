@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import ApplicationInput from "./application-input";
 import styles from "./application-inputs.module.css";
 const domains = [
   "gmail.com",
@@ -37,35 +38,34 @@ export default function ApplicationEmail({
         if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
       }}
     >
-      <label>
-        이메일
-        <input
-          ref={ref}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder="onecation@gmail.com"
-          maxLength={254}
-          value={value}
-          onFocus={() => setFocused(true)}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setFocused(true);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setFocused(false);
-            if (e.key === "ArrowDown" && suggestions.length) {
-              e.preventDefault();
-              e.currentTarget
-                .closest(`.${styles.email}`)
-                ?.querySelector<HTMLButtonElement>("button")
-                ?.focus();
-            }
-          }}
-        />
-      </label>
+      <ApplicationInput
+        label="이메일"
+        inputRef={ref}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder="onecation@gmail.com"
+        maxLength={254}
+        value={value}
+        onFocus={() => setFocused(true)}
+        onChange={(next) => {
+          onChange(next);
+          setFocused(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setFocused(false);
+          if (e.key === "ArrowDown" && suggestions.length) {
+            e.preventDefault();
+            e.currentTarget
+              .closest(`.${styles.email}`)
+              ?.querySelector<HTMLButtonElement>("button")
+              ?.focus();
+          }
+        }}
+      />
+
       {suggestions.length > 0 && (
         <div
           className={styles.suggestions}

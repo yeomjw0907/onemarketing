@@ -176,3 +176,28 @@ test("동의·웹 주소·중복 계정 검사와 하루 접수 제한", async (
     /오늘 신청/,
   );
 });
+
+test("인스타그램 아이디는 신청 저장·승인 단계 모두 표준 프로필 URL로 보존된다", async () => {
+  const input = application();
+  input.data.phone = "010-2222-3333";
+  input.data.accounts[0].channel = "instagram";
+  input.data.accounts[0].url = "@onecation_approval";
+  const applicationRow = await submitApplication(input);
+  const stored = (await listApplications()).find(
+    (a) => a.id === applicationRow.id,
+  )!;
+  assert.equal(
+    stored.data.accounts[0].url,
+    "https://www.instagram.com/onecation_approval/",
+  );
+  const approved = await reviewApplication(
+    { id: applicationRow.id, version: 1, action: "approve", data: input.data },
+    actor,
+  );
+  const participant = await get(approved.participantId!);
+  assert.equal(
+    (participant?.accounts as { url: string }[])[0].url,
+    stored.data.accounts[0].url,
+  );
+  assert.deepEqual(participant?.payment, input.data.payment);
+});

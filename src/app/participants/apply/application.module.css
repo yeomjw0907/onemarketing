@@ -244,3 +244,18 @@
   color: #6b7684;
   margin: 16px 0;
 }
+.rewardNote {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f2f7ff;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.rewardNote strong {
+  color: #2563eb;
+}
+.rewardNote p {
+  margin: 8px 0 0;
+  color: #6b7684;
+}
