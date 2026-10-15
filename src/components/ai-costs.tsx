@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   aiCostLedger,
   aiTypeLabels,
@@ -9,6 +9,7 @@ import {
   usd,
 } from "@/lib/ai-cost-ledger";
 import { money, type DatabaseView } from "@/lib/types";
+import { toKrw, type ExchangeRate } from "@/lib/currency";
 import { anthropicPricingSource } from "@/lib/anthropic-cost";
 export default function AiCosts({
   data,
@@ -19,6 +20,89 @@ export default function AiCosts({
   projectId?: string;
   onReload: () => Promise<void>;
 }) {
+  const [fx, setFx] = useState<ExchangeRate | null>(null),
+    [fxBusy, setFxBusy] = useState(false),
+    [fxError, setFxError] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    setFxBusy(true);
+    fetch("/api/exchange-rate", { signal: controller.signal })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "환율 조회 실패");
+        if (!controller.signal.aborted) {
+          setFx(data);
+          setFxError("");
+        }
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted)
+          setFxError(e instanceof Error ? e.message : "환율 조회 실패");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setFxBusy(false);
+      });
+    return () => controller.abort();
+  }, []);
+  async function refreshFx() {
+    setFxBusy(true);
+    setFxError("");
+    try {
+      const response = await fetch("/api/exchange-rate", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "환율 조회 실패");
+      setFx(data);
+    } catch (e) {
+      setFxError(e instanceof Error ? e.message : "환율 조회 실패");
+    } finally {
+      setFxBusy(false);
+    }
+  }
+  function krw(value: number | null) {
+    const amount = toKrw(value, fx?.rate || null);
+    return amount === null
+      ? value === null
+        ? "—"
+        : fxBusy
+          ? "환율 조회 중"
+          : "환산 불가"
+      : "약 " + money(amount);
+  }
+  function amount(value: number | null, exact = false) {
+    return (
+      <>
+        {usd(value, exact)}
+        {value !== null && (
+          <small className="muted" style={{ display: "block" }}>
+            {krw(value)}
+          </small>
+        )}
+      </>
+    );
+  }
+  function cardAmount(value: number | null) {
+    return (
+      <>
+        {fx && value !== null ? krw(value) : usd(value)}
+        {value !== null && (
+          <small
+            className="muted"
+            style={{
+              display: "block",
+              fontSize: 13,
+              fontWeight: 400,
+              lineHeight: 1.6,
+            }}
+          >
+            {fx ? usd(value) : krw(value)}
+          </small>
+        )}
+      </>
+    );
+  }
+  function amountText(value: number | null, exact = false) {
+    return usd(value, exact) + (value === null ? "" : ` (${krw(value)})`);
+  }
   const today = koreanDay(new Date()),
     month = today.slice(0, 7);
   const [from, setFrom] = useState(""),
@@ -84,8 +168,15 @@ export default function AiCosts({
   function figures(t: ReturnType<typeof totalAiCosts>) {
     return (
       <>
-        <td>{usd(t.actualCount ? t.actualUsd : null)}</td>
-        <td>{usd(t.estimatedCount ? t.estimatedUsd : null)}</td>
+        <td>{amount(t.actualCount ? t.actualUsd : null)}</td>
+        <td>{amount(t.estimatedCount ? t.estimatedUsd : null)}</td>
+        <td>
+          {krw(
+            t.actualCount + t.estimatedCount
+              ? Math.round((t.actualUsd + t.estimatedUsd) * 1e9) / 1e9
+              : null,
+          )}
+        </td>
         <td>{t.confirmedKrwCount ? money(t.confirmedKrw) : "—"}</td>
         <td>
           {t.pendingCount
@@ -103,30 +194,58 @@ export default function AiCosts({
           {busy ? "fal 청구 확인 중…" : "fal 실제 청구 확인 · 최근 90일"}
         </button>
       </div>
+      <div className="row">
+        <p className="hint">
+          {fx ? (
+            <>
+              적용 환율: 1 USD ={" "}
+              {fx.rate.toLocaleString("ko-KR", { maximumFractionDigits: 4 })}원
+              · 기준일 {fx.date} ·{" "}
+              <a href={fx.sourceUrl} target="_blank" rel="noreferrer">
+                {fx.source}
+              </a>
+              {fx.stale ? " · 재조회 실패: 마지막 확인 환율 사용" : ""}
+            </>
+          ) : fxBusy ? (
+            "기준 환율을 조회하고 있습니다."
+          ) : (
+            "환율 미확인 · USD로 표시합니다."
+          )}
+        </p>
+        <button disabled={fxBusy} onClick={refreshFx}>
+          {fxBusy ? "환율 조회 중…" : "환율 재조회"}
+        </button>
+      </div>
+      {fxError && (
+        <p role="alert">
+          {fxError}
+          {fx ? " 마지막 확인 환율로 환산합니다." : ""}
+        </p>
+      )}
       <div className="stats">
         {[
           [
-            "오늘 실제 청구 USD",
-            usd(daily.actualCount ? daily.actualUsd : null),
+            "오늘 실제 청구 · 원화환산",
+            cardAmount(daily.actualCount ? daily.actualUsd : null),
             today,
           ],
           [
-            "이번 달 실제 청구 USD",
-            usd(monthly.actualCount ? monthly.actualUsd : null),
+            "이번 달 실제 청구 · 원화환산",
+            cardAmount(monthly.actualCount ? monthly.actualUsd : null),
             month,
           ],
           [
-            "누적 실제 청구 USD",
-            usd(lifetime.actualCount ? lifetime.actualUsd : null),
+            "누적 실제 청구 · 원화환산",
+            cardAmount(lifetime.actualCount ? lifetime.actualUsd : null),
             "저장된 공급사 청구액",
           ],
           [
             "선택 범위 Claude 사용량 추정",
-            usd(total.estimatedCount ? total.estimatedUsd : null),
+            cardAmount(total.estimatedCount ? total.estimatedUsd : null),
             "크레딧·할인 반영 전, 실제 청구 별도",
           ],
-        ].map(([label, value, sub]) => (
-          <div className="stat" key={label}>
+        ].map(([label, value, sub], index) => (
+          <div className="stat" key={index}>
             <span>{label}</span>
             <strong>{value}</strong>
             <small>{sub}</small>
@@ -224,23 +343,25 @@ export default function AiCosts({
       )}
       <p className="hint">
         선택 범위 합계: 실제 청구{" "}
-        {usd(total.actualCount ? total.actualUsd : null, true)} · 사용량 추정{" "}
-        {usd(total.estimatedCount ? total.estimatedUsd : null, true)} · 원화
-        확정 {money(total.confirmedKrw)} · 청구 확인 필요 {total.pendingCount}건
+        {amountText(total.actualCount ? total.actualUsd : null, true)} · 사용량
+        추정{" "}
+        {amountText(total.estimatedCount ? total.estimatedUsd : null, true)} ·
+        원화 확정 {money(total.confirmedKrw)} · 청구 확인 필요{" "}
+        {total.pendingCount}건
         {total.pendingCount ? ` (원화 잠정 ${money(total.pendingKrw)})` : ""}
       </p>
       <p>
         <strong>
           선택 범위 예상 총사용 비용:{" "}
-          {usd(
+          {amountText(
             Math.round((total.actualUsd + total.estimatedUsd) * 1e9) / 1e9,
             true,
           )}
         </strong>
         <span className="hint">
           {" "}
-          · 실제 USD + 추정 USD · 확정 청구 합계가 아니며 원화·미확인 비용은
-          제외
+          · 실제 USD + 추정 USD · 확정 청구 합계가 아니며 직접 기록한
+          원화·미확인 비용은 제외
         </span>
       </p>
       <div className="tablewrap">
@@ -250,8 +371,9 @@ export default function AiCosts({
             <tr>
               {[
                 "종류",
-                "실제 USD",
-                "추정 USD",
+                "실제 청구 · USD / 원화환산",
+                "사용량 추정 · USD / 원화환산",
+                "예상 합계 · 환산원화",
                 "확정 원화",
                 "미확인 · 원화 잠정",
               ].map((s) => (
@@ -296,8 +418,9 @@ export default function AiCosts({
             <tr>
               {[
                 group === "individual" ? "요청·작업" : "집계 기준",
-                "실제 USD",
-                "추정 USD",
+                "실제 청구 · USD / 원화환산",
+                "사용량 추정 · USD / 원화환산",
+                "예상 합계 · 환산원화",
                 "확정 원화",
                 "미확인 · 원화 잠정",
               ].map((s) => (
@@ -346,8 +469,15 @@ export default function AiCosts({
                           )}
                         </details>
                       </td>
-                      <td>{usd(r.actualUsd, true)}</td>
-                      <td>{usd(r.estimatedUsd, true)}</td>
+                      <td>{amount(r.actualUsd, true)}</td>
+                      <td>{amount(r.estimatedUsd, true)}</td>
+                      <td>
+                        {krw(
+                          r.actualUsd !== null || r.estimatedUsd !== null
+                            ? (r.actualUsd || 0) + (r.estimatedUsd || 0)
+                            : null,
+                        )}
+                      </td>
                       <td>
                         {r.confirmedKrw === null ? "—" : money(r.confirmedKrw)}
                       </td>
@@ -403,11 +533,14 @@ export default function AiCosts({
       {message && <p role="status">{message}</p>}
       {error && <p role="alert">{error}</p>}
       <p className="hint">
-        USD와 원화는 환율 없이 합산하지 않습니다. 실제 청구가 확인되면 같은
-        요청의 원화 잠정 금액은 이 집계에서 제외합니다. 날짜는 한국 시간의
-        공급사 청구 발생일 또는 API 응답·비용 등록일이며, 청구 조회일은
-        아닙니다. 실패·재생성 비용도 기록이 있으면 포함합니다. 이 플랫폼의
-        요청만 집계하므로 fal에서 별도로 실행한 작업은 포함되지 않습니다.
+        환산원화는 표시된 최신 확인 환율을 모든 기간에 동일 적용한 참고
+        금액입니다. 실제 카드 결제액이나 회계상 확정 원가가 아니며 기존 원화
+        예산·정산을 변경하지 않습니다. 합계는 USD 합산 후 원 단위로
+        반올림합니다. 실제 청구가 확인되면 같은 요청의 원화 잠정 금액은 이
+        집계에서 제외합니다. 날짜는 한국 시간의 공급사 청구 발생일 또는 API
+        응답·비용 등록일이며, 청구 조회일은 아닙니다. 실패·재생성 비용도 기록이
+        있으면 포함합니다. 이 플랫폼의 요청만 집계하므로 fal에서 별도로 실행한
+        작업은 포함되지 않습니다.
       </p>
       <p className="hint">
         Claude는 API 사용량과{" "}
