@@ -7,6 +7,7 @@ import { bytes, saveAsset, imageFingerprint } from "./assets";
 import { ensureTime, remainingMs, Yield } from "./worker";
 import type { RecordData } from "./types";
 import { hybrid } from "./video";
+import { jobLog } from "./job-logs";
 export class ProviderError extends Error {
   constructor(
     message: string,
@@ -16,10 +17,38 @@ export class ProviderError extends Error {
   }
 }
 async function request(url: string, init: RequestInit = {}, timeout = 180000) {
+  const host = new URL(url).hostname;
+  const provider =
+    host === "api.anthropic.com"
+      ? "anthropic"
+      : host === "queue.fal.run"
+        ? "fal"
+        : "media";
+  const operation =
+    provider === "anthropic"
+      ? "Claude messages"
+      : provider === "fal"
+        ? init.method === "POST"
+          ? "fal 생성 요청"
+          : url.includes("/status")
+            ? "fal 상태 조회"
+            : "fal 결과 조회"
+        : "생성 파일 다운로드";
+  const started = Date.now();
+  await jobLog("api_request", `${init.method || "GET"} ${operation}`, {
+    provider,
+  });
   try {
     const r = await fetch(url, {
       ...init,
       signal: AbortSignal.timeout(timeout),
+    });
+    await jobLog("api_response", `${operation} · HTTP ${r.status}`, {
+      provider,
+      status: r.status,
+      durationMs: Date.now() - started,
+      level: r.ok ? "info" : "error",
+      requestId: r.headers.get("request-id") || undefined,
     });
     if (!r.ok) {
       throw new ProviderError(
@@ -30,6 +59,11 @@ async function request(url: string, init: RequestInit = {}, timeout = 180000) {
     return r;
   } catch (e) {
     if (e instanceof ProviderError) throw e;
+    await jobLog("api_error", `${operation} · 응답 확인 실패`, {
+      provider,
+      durationMs: Date.now() - started,
+      level: "warn",
+    });
     throw new ProviderError(
       "외부 응답을 확인하지 못했습니다. 중복 요청 전 공급사 실행 내역을 확인하세요.",
       true,
@@ -95,6 +129,10 @@ async function context(job: RecordData) {
 async function claude(job: RecordData, prompt: string) {
   ensureTime(claudeBudget);
   const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
+  await jobLog("model", "Claude 응답 요청 준비", {
+    provider: "anthropic",
+    model,
+  });
   const response = await request("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: anthropicHeaders(),
@@ -143,6 +181,10 @@ async function searchClaude(job: RecordData) {
   ];
   const blocks: SearchBlock[] = saved?.blocks || [];
   const activeModel = saved?.model || model;
+  await jobLog("model", "Claude 웹 검색 요청 준비", {
+    provider: "anthropic",
+    model: activeModel,
+  });
   for (let turn = 0; turn < 3; turn++) {
     ensureTime(claudeBudget);
     const r = await (
@@ -234,6 +276,7 @@ async function searchClaude(job: RecordData) {
   );
 }
 async function research(job: RecordData) {
+  await jobLog("research", "Claude 웹 검색과 조사 체크포인트를 확인합니다.");
   const current = await requireRecord(job.id, "jobs");
   let checkpoints = (current.checkpoints || {}) as Record<string, unknown>;
   if (!checkpoints.search) {
@@ -248,6 +291,7 @@ async function research(job: RecordData) {
     await jobResult(job.id, { checkpoints, searchState: null });
   }
   if (!checkpoints.analysis) {
+    await jobLog("analysis", "Claude 조사 결과 분석 중");
     const analysis = await claude(
       job,
       `자료에서 확인된 소구점·고객 질문·불확실한 주장을 구분하고 기획에 쓸 요점을 정리하세요.\n${await context(job)}\n검색 결과:\n${checkpoints.search}\n출처:\n${JSON.stringify(checkpoints.sources)}`,
@@ -258,6 +302,7 @@ async function research(job: RecordData) {
   const project = await requireRecord(job.projectId as string, "projects"),
     tasks = (await list("tasks")).filter((t) => t.projectId === project.id);
   if (!checkpoints.plan) {
+    await jobLog("planning", "Claude 게시물별 기획 작성 중");
     const plan = await claude(
       job,
       `아래 작업 각각에 서로 다른 콘셉트·소구점·키워드·원고 구성·이미지 장면·영상 대본 방향을 지정하세요. 같은 글 안 이미지 무드를 통일하고 다른 글과 차별화하세요. 반드시 JSON만 반환: {"tasks":[{"id":"원래 작업 id","brief":"기획 내용"}]}. 작업: ${JSON.stringify(tasks.map((t) => ({ id: t.id, name: t.name, channel: t.channel, images: t.images, duration: t.duration })))}\n제품 자료: ${await context(job)}\n조사 분석: ${checkpoints.analysis}`,
@@ -300,6 +345,7 @@ async function research(job: RecordData) {
   });
 }
 async function copy(job: RecordData) {
+  await jobLog("copy", "Claude 원고 작성 · 저장한 응답이 있으면 재사용합니다.");
   const checkpoint = (await requireRecord(job.id)).outputText;
   const text =
     typeof checkpoint === "string"
@@ -446,6 +492,13 @@ async function falGenerate(
       true,
     );
   let state = saved as FalState | undefined;
+  await jobLog(
+    "generation",
+    state?.request_id
+      ? "저장된 fal 요청을 재조회합니다. 새 생성 요청은 보내지 않습니다."
+      : "fal 모델 입력 준비 중",
+    { provider: "fal", model, requestId: state?.request_id },
+  );
   if (!state?.request_id) {
     ensureTime(60000);
     const input = await buildInput();
@@ -475,6 +528,11 @@ async function falGenerate(
       providerSubmittedAt: new Date().toISOString(),
     });
     await recordCall(job.id, "fal", model, state.request_id, null);
+    await jobLog("submitted", "fal 생성 요청 접수 완료", {
+      provider: "fal",
+      model,
+      requestId: state.request_id,
+    });
   }
   const safeUrl = (value: string) => {
     const url = new URL(value);
@@ -485,6 +543,7 @@ async function falGenerate(
   const submittedAt = Date.parse(
     String((await requireRecord(job.id)).providerSubmittedAt || ""),
   );
+  let lastStatus = "";
   while (true) {
     let status;
     try {
@@ -496,6 +555,14 @@ async function falGenerate(
         "fal 기존 요청 상태 확인이 필요합니다. 새 요청 없이 재조회하세요.",
         true,
       );
+    }
+    if (status.status !== lastStatus) {
+      await jobLog("provider_status", `fal 상태: ${status.status}`, {
+        provider: "fal",
+        model,
+        requestId: state.request_id,
+      });
+      lastStatus = status.status;
     }
     if (status.status === "COMPLETED") break;
     if (!["IN_QUEUE", "IN_PROGRESS"].includes(status.status))

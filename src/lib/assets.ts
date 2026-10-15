@@ -8,6 +8,7 @@ import { audit, create, list, update, transaction, lock } from "./db";
 import { getObject, putObject, removeObjects } from "./storage";
 import { requireRecord } from "./domain";
 import type { RecordData } from "./types";
+import { jobLog } from "./job-logs";
 export function storageName(a: RecordData) {
   const name = String(a.storageName);
   if (!/^[a-f0-9-]+\.[a-z0-9]+$/.test(name))
@@ -162,6 +163,11 @@ export async function saveAsset(
   // 업로드가 성공한 뒤에만 DB에 기록한다. DB 기록이 실패하면 올린 객체를 정리한다.
   const storageName = randomUUID() + "." + ext;
   await putObject(storageName, input.buffer, mime);
+  if (input.jobId)
+    await jobLog(
+      "storage",
+      `Supabase 비공개 저장소 업로드 완료 · ${input.category} · ${input.buffer.length} bytes`,
+    );
   try {
     return await transaction(async () => {
       await lock("assets:" + project.id);

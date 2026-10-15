@@ -710,7 +710,13 @@ export function command(
       if (
         row.kind !== "jobs" ||
         !["uncertain", "failed"].includes(String(row.status)) ||
-        !(state?.response || state?.request_id)
+        !(
+          state?.response ||
+          state?.request_id ||
+          row.searchState ||
+          typeof row.outputText === "string" ||
+          Object.keys((row.checkpoints as object) || {}).length
+        )
       )
         throw new Error("저장된 생성 요청이 있는 작업만 재조회할 수 있습니다.");
       result = await update(

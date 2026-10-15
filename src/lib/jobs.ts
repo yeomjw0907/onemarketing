@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jobLog } from "./job-logs";
 import {
   create,
   get,
@@ -137,6 +138,7 @@ export function enqueue(input: unknown, actor: string) {
       jobId: row.id,
       type: body.type,
     });
+    await jobLog("queued", "실행 대기열에 등록했습니다.", {}, row);
     return row;
   });
 }
@@ -167,11 +169,11 @@ export async function hasRunnableJobs() {
 }
 // 작업별 lease. 서버리스 실행과 별도 worker가 함께 돌아도 같은 작업을 동시에 처리하지 않는다.
 // lease가 만료된 running 작업은 재개 가능하면 이어서 처리하고, 아니면 공급사 실행·비용 확인이 필요한 uncertain으로 남긴다.
-export function claimJob(owner: string) {
+export function claimJob(owner: string, jobId?: string) {
   return transaction(async () => {
     await lock("jobs:claim");
     const now = Date.now();
-    const jobs = await list("jobs");
+    const jobs = (await list("jobs")).filter((j) => !jobId || j.id === jobId);
     const leases = new Map(
       (
         await query<{ key: string; owner: string; expires: string | number }>(
@@ -264,6 +266,16 @@ export async function recordCall(
     ...(Array.isArray(j.calls) ? j.calls : []),
     { provider, model, requestId, usage, at: new Date().toISOString() },
   ];
+  await jobLog(
+    "call_recorded",
+    "공급사 호출 내역 저장",
+    {
+      provider,
+      model,
+      requestId: typeof requestId === "string" ? requestId : undefined,
+    },
+    j,
+  );
   return update(jobId, { calls });
 }
 export function jobResult(jobId: string, patch: Record<string, unknown>) {

@@ -13,6 +13,7 @@ export type Kind =
   | "costs"
   | "deliveries"
   | "jobs"
+  | "job_logs"
   | "events";
 export type RecordData = {
   id: string;
@@ -38,6 +39,7 @@ export const kinds: Kind[] = [
   "costs",
   "deliveries",
   "jobs",
+  "job_logs",
   "events",
 ];
 export const stageLabels: Record<string, string> = {

@@ -5,6 +5,7 @@ import PostingSets from "./posting-sets";
 import MaterialChecklist from "./material-checklist";
 import CustomerDocuments from "./customer-documents";
 import CustomerReportLinks from "./customer-report-links";
+import JobMonitor from "./job-monitor";
 import {
   useEffect,
   useState,
@@ -1702,8 +1703,14 @@ export default function Workspace() {
                               open("jobResolution", { ...j, note: "" }),
                             )}
                           {["failed", "uncertain"].includes(String(j.status)) &&
-                            Boolean((j.providerState as Draft)?.response) &&
-                            button("기존 영상 재조회", () =>
+                            Boolean(
+                              (j.providerState as Draft)?.request_id ||
+                              (j.providerState as Draft)?.response ||
+                              j.searchState ||
+                              j.outputText ||
+                              Object.keys(j.checkpoints || {}).length,
+                            ) &&
+                            button("기존 요청 재조회", () =>
                               action("resume-job", j),
                             )}
                         </div>
@@ -1730,6 +1737,9 @@ export default function Workspace() {
               </>
             )}
           </>
+        )}
+        {page === "projects" && project && (
+          <JobMonitor key={project.id} projectId={project.id} tasks={tasks} />
         )}
         {page === "reviews" && (
           <>

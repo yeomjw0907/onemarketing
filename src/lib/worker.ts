@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { create, get, list, transaction } from "./db";
 import { claimJob, jobResult, releaseLease, renewLease } from "./jobs";
 import type { RecordData } from "./types";
+import { jobLog, withJobLogs, redactLog } from "./job-logs";
 // 작업 실행기. 별도 worker 프로세스와 Vercel 서버리스 함수(after + cron + 연쇄 호출)가 같은 코드를 사용한다.
 // 서버리스에서는 함수 제한 시간 안에 끝내지 못하는 작업을 Yield로 돌려보내고, 저장한 요청 ID·체크포인트로 다음 실행에서 이어간다.
 export class Yield extends Error {
@@ -20,12 +21,16 @@ export function ensureTime(ms: number) {
   if (remainingMs() < ms) throw new Yield();
 }
 export async function processJob(job: RecordData, owner: string) {
+  return withJobLogs(job, () => processLoggedJob(job, owner));
+}
+async function processLoggedJob(job: RecordData, owner: string) {
   const { executeProviderJob, ProviderError } = await import("./providers");
   const { slideshow } = await import("./video");
   const heartbeat = setInterval(() => {
     renewLease(owner, job.id).catch(() => {});
   }, 15000);
   try {
+    await jobLog("start", `작업 실행 시작 · ${Number(job.attempts)}회차`);
     if (job.type === "slideshow") await slideshow(job);
     else await executeProviderJob(job);
     await transaction(async () => {
@@ -50,13 +55,21 @@ export async function processJob(job: RecordData, owner: string) {
         error: null,
       });
     });
+    await jobLog("completed", "결과 저장 완료 · 검수 대기");
     return "succeeded";
   } catch (e) {
     if (e instanceof Yield) {
+      await jobLog(
+        "checkpoint",
+        "실행 시간을 분할합니다. 저장한 요청에서 다음 실행으로 이어갑니다.",
+      );
       await jobResult(job.id, { status: "pending", error: null });
       return "yielded";
     }
     const uncertain = e instanceof ProviderError && e.uncertain;
+    await jobLog("error", e instanceof Error ? e.message : "작업 실패", {
+      level: uncertain ? "warn" : "error",
+    });
     await transaction(async () => {
       const latest = (await get(job.id))!;
       if (
@@ -74,7 +87,7 @@ export async function processJob(job: RecordData, owner: string) {
         });
       await jobResult(job.id, {
         status: uncertain ? "uncertain" : "failed",
-        error: e instanceof Error ? e.message : "작업 실패",
+        error: e instanceof Error ? redactLog(e.message) : "작업 실패",
       });
     });
     return uncertain ? "uncertain" : "failed";

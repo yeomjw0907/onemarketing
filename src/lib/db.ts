@@ -126,7 +126,7 @@ export async function view(): Promise<DatabaseView> {
     kinds.map((k) => [k, [] as RecordData[]]),
   ) as unknown as DatabaseView;
   const rows = await query<{ kind: Kind; data: unknown }>(
-    "select kind, data from records order by created_at desc, id",
+    "select kind, data from records where kind <> 'job_logs' order by created_at desc, id",
   );
   for (const r of rows) if (result[r.kind]) result[r.kind].push(decode(r)!);
   return result;
