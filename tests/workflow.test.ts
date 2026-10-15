@@ -793,6 +793,11 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
             plain === 1
               ? "검증 요점"
               : JSON.stringify({
+                  keywords: {
+                    main: ["피자설기"],
+                    secondary: ["떡 간식"],
+                    reason: "제품 자료 기반",
+                  },
                   tasks: [{ id: t.id, brief: "출처 기반 기획" }],
                 }),
         },
@@ -805,6 +810,11 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
     assert.equal(plain, 2);
     assert.equal((await get(p.id))!.status, "brief_review");
     assert.equal((await get(t.id))!.brief, "출처 기반 기획");
+    assert.deepEqual((await get(p.id))!.recommendedKeywords, {
+      main: ["피자설기"],
+      secondary: ["떡 간식"],
+      reason: "제품 자료 기반",
+    });
     const checkpoints = (await get(job.id))!.checkpoints as {
       sources: { url: string; verified: boolean }[];
       citations: unknown[];

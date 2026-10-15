@@ -111,6 +111,7 @@ const project = z.object({
   productId: name,
   due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   instructions: text.default(""),
+  preferredKeywords: z.string().trim().max(1000).default(""),
   budget: amount,
 });
 const schemas = {
@@ -440,6 +441,11 @@ export function command(
         {
           materialNotes: text.parse(input.materialNotes),
           instructions: text.parse(input.instructions),
+          preferredKeywords: z
+            .string()
+            .trim()
+            .max(1000)
+            .parse(input.preferredKeywords ?? row.preferredKeywords ?? ""),
           budget: amount.parse(input.budget),
         },
         Number(input.version),

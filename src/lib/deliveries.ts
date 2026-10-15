@@ -3,6 +3,7 @@ import { audit, create, list, lock, transaction, update } from "./db";
 import { requireRecord } from "./domain";
 import { bytes } from "./assets";
 import type { RecordData } from "./types";
+import { publishableCopy, orderedImages } from "./copy-format";
 export async function approvedBundle(projectId: string, taskIds?: string[]) {
   const p = await requireRecord(projectId, "projects");
   const tasks = (await list("tasks")).filter(
@@ -19,6 +20,7 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
     throw new Error("작업 목록을 확인하세요.");
   const entries: { path: string; buffer: Buffer }[] = [];
   const manifest: Record<string, unknown>[] = [];
+  const allAssets = await list("assets");
   for (const task of tasks) {
     if (
       !["approved", "delivered", "submitted", "verified"].includes(
@@ -45,19 +47,30 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
         .slice(0, 80);
     let i = 0;
     for (const asset of assets) {
+      if (asset.category === "copy") {
+        entries.push({
+          path: folder + "/원고.txt",
+          buffer: Buffer.from(
+            publishableCopy(String(asset.text || "")),
+            "utf8",
+          ),
+        });
+        continue;
+      }
       const filename =
         String(++i).padStart(2, "0") +
         "_" +
         String(asset.name).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_");
       entries.push({
-        path: folder + "/" + filename,
+        path:
+          folder +
+          "/" +
+          (asset.category === "image"
+            ? `이미지_${String(orderedImages(allAssets, task.id).findIndex((a) => a.id === asset.id) + 1).padStart(2, "0")}_` +
+              String(asset.name).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+            : filename),
         buffer: await bytes(asset),
       });
-      if (asset.category === "copy")
-        entries.push({
-          path: folder + "/원고.txt",
-          buffer: Buffer.from(String(asset.text), "utf8"),
-        });
     }
     entries.push({
       path: folder + "/게시안내.txt",

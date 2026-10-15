@@ -8,6 +8,7 @@ import { ensureTime, remainingMs, Yield } from "./worker";
 import type { RecordData } from "./types";
 import { hybrid } from "./video";
 import { jobLog } from "./job-logs";
+import { blogCopyOutput, orderedImages } from "./copy-format";
 export class ProviderError extends Error {
   constructor(
     message: string,
@@ -148,6 +149,10 @@ async function context(job: RecordData) {
       preserve: knowledge.product.preserve,
     },
     instructions: project.instructions,
+    preferredKeywords: project.preferredKeywords || "",
+    recommendedKeywords: project.recommendedKeywords || null,
+    keywordPolicy:
+      "희망 키워드가 있으면 제품 사실과 관련 있는 것만 우선 반영하고 부적절한 키워드는 기획에 이유를 설명하세요. 비어 있으면 조사 근거로 메인·보조 키워드를 추천하세요. 검색량·순위 보장을 만들지 마세요. 추천과 선정 이유는 기획에만 적고 원고에는 넣지 마세요.",
     materialNotes: project.materialNotes,
     spreadsheet,
     research: project.research,
@@ -387,7 +392,7 @@ async function research(job: RecordData) {
     await jobLog("planning", "Claude 게시물별 기획 작성 중");
     const plan = await claude(
       job,
-      `아래 작업 각각에 서로 다른 콘셉트·소구점·키워드·원고 구성·이미지 장면·영상 대본 방향을 지정하세요. 같은 글 안 이미지 무드를 통일하고 다른 글과 차별화하세요. 반드시 JSON만 반환: {"tasks":[{"id":"원래 작업 id","brief":"기획 내용"}]}. 작업: ${JSON.stringify(tasks.map((t) => ({ id: t.id, name: t.name, channel: t.channel, images: t.images, duration: t.duration })))}\n제품 자료: ${await context(job)}\n조사 분석: ${checkpoints.analysis}`,
+      `아래 작업 각각에 서로 다른 콘셉트·소구점·키워드·원고 구성·이미지 장면·영상 대본 방향을 지정하세요. 같은 글 안 이미지 무드를 통일하고 다른 글과 차별화하세요. 반드시 JSON만 반환: {"keywords":{"main":["핵심 키워드"],"secondary":["보조 키워드"],"reason":"자료에 근거한 선정 이유"},"tasks":[{"id":"원래 작업 id","brief":"기획 내용"}]}. 작업: ${JSON.stringify(tasks.map((t) => ({ id: t.id, name: t.name, channel: t.channel, images: t.images, duration: t.duration })))}\n제품 자료: ${await context(job)}\n조사 분석: ${checkpoints.analysis}`,
     );
     const cleaned = plan
       .trim()
@@ -395,6 +400,13 @@ async function research(job: RecordData) {
       .replace(/\s*```$/, "");
     const parsed = z
       .object({
+        keywords: z
+          .object({
+            main: z.array(z.string().max(100)).max(5),
+            secondary: z.array(z.string().max(100)).max(10),
+            reason: z.string().max(1000),
+          })
+          .optional(),
         tasks: z.array(
           z.object({ id: z.string(), brief: z.string().min(1).max(10000) }),
         ),
@@ -422,6 +434,8 @@ async function research(job: RecordData) {
         String(checkpoints.analysis) +
         "\n\n검색 출처:\n" +
         JSON.stringify(checkpoints.sources, null, 2),
+      recommendedKeywords:
+        (checkpoints.plan as { keywords?: unknown }).keywords || null,
       status: "brief_review",
     });
   });
@@ -429,14 +443,19 @@ async function research(job: RecordData) {
 async function copy(job: RecordData) {
   await jobLog("copy", "Claude 원고 작성 · 저장한 응답이 있으면 재사용합니다.");
   const checkpoint = (await requireRecord(job.id)).outputText;
-  const text =
+  const blog = jobInput(job).task?.channel === "blog";
+  const raw =
     typeof checkpoint === "string"
       ? checkpoint
       : await claude(
           job,
-          `게시물 원고 또는 클립 대본을 작성하세요. 제목, 본문, 이미지 삽입 위치 또는 영상 자막·장면표, 확인이 필요한 표현을 구분하세요. 프로젝트 내 다른 글과 다른 콘셉트를 유지하세요.\n${await context(job)}`,
+          `${blog ? `바로 복사·붙여넣기할 수 있는 블로그 원고를 작성하세요. JSON만 반환: {"title":"제목","body":"본문","editorialNotes":"운영자 확인 사항"}. 제목·본문에는 제작 메모, 대안 제목, 작성 지시, 확인 필요 표시, 이미지 생성 프롬프트, 검수표를 절대 넣지 마세요. 마크다운 기호 없이 자연스러운 문단과 소제목으로 작성하세요. 본문의 적절한 위치에 [이미지 1]부터 [이미지 ${Number(jobInput(job).task?.images || 0)}]까지 수량대로 각 1회씩 순서대로 넣으세요. 이미지가 0장이면 표시를 넣지 마세요. 알 수 없는 가격·원재료·효능 등은 본문에서 생략하고 editorialNotes에만 남기세요. 필요한 광고·협찬 표시와 가상 브랜드 예시라는 사실은 유지하세요.` : "클립 게시용 문구와 영상 자막·장면표를 작성하세요. 제작 메모나 검수표는 넣지 마세요."} 희망/추천 키워드는 사실에 맞게 자연스럽게 반영하세요. 프로젝트 내 다른 글과 다른 콘셉트를 유지하세요.\n${await context(job)}`,
         );
-  await jobResult(job.id, { outputText: text });
+  await jobResult(job.id, { outputText: raw });
+  const output = blog
+    ? blogCopyOutput(raw, Number(jobInput(job).task?.images || 0))
+    : { text: raw, notes: "" };
+  const text = output.text;
   await saveAsset(
     {
       projectId: String(job.projectId),
@@ -444,6 +463,7 @@ async function copy(job: RecordData) {
       category: "copy",
       name: "원고.md",
       text,
+      editorialNotes: output.notes,
       buffer: Buffer.from(text),
       jobId: job.id,
     },
@@ -463,8 +483,12 @@ async function image(job: RecordData) {
   if (!source) throw new ProviderError("제품 기준 사진이 없습니다.");
   const model =
     process.env.FAL_IMAGE_MODEL || "openai/gpt-image-2.5/sunburst/edit";
+  const currentImages = orderedImages(await list("assets"), job.taskId);
+  const sceneNumber = job.replaceAssetId
+    ? currentImages.findIndex((a) => a.id === job.replaceAssetId) + 1
+    : currentImages.length + 1;
   const result = await falGenerate(job, model, async () => ({
-    prompt: `${safeSystem}\n제품 외형·로고·패키지 표기를 보존하고 새 글자는 넣지 마세요. ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${(await list("assets")).filter((a) => a.taskId === job.taskId && a.category === "image").length + 1}`,
+    prompt: `${safeSystem}\n제품 외형·로고·패키지 표기를 보존하고 새 글자는 넣지 마세요. ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
     image_urls: [await sourceData(source!)],
     image_size: { width: 1024, height: 1536 },
     quality: "medium",

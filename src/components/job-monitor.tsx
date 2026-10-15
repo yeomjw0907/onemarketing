@@ -103,12 +103,17 @@ export default function JobMonitor({
     if (follow && panel.current)
       panel.current.scrollTop = panel.current.scrollHeight;
   }, [logs, follow]);
-  const text = logs
-    .map(
-      (l) =>
-        `[${new Date(l.createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}] [${String(l.level).toUpperCase()}] [${labels[String(l.type)] || l.type}] [${l.jobId}] ${l.stage}: ${l.message}${l.provider ? ` | ${l.provider}` : ""}${l.model ? ` | ${l.model}` : ""}${l.requestId ? ` | request=${l.requestId}` : ""}${typeof l.durationMs === "number" ? ` | ${l.durationMs}ms` : ""}`,
-    )
-    .join("\n");
+  const finalNotice =
+    updated && !error && jobs.length > 0 && !running && !pending
+      ? `\n\n──────── 최종 실행 상태 ────────\n${needsCheck ? "오류 또는 상태 확인이 필요한 작업이 있습니다. 실행 기록을 확인하세요." : reviewReady ? "요청한 AI 작업이 모두 끝났습니다. 생성 완료 · 결과물 검수 대기입니다." : "요청한 AI 작업 실행이 끝났습니다. 결과를 확인하세요."}\n※ 프로젝트 운영 완료·게시 완료와는 별도 상태입니다.`
+      : "";
+  const text =
+    logs
+      .map(
+        (l) =>
+          `[${new Date(l.createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}] [${String(l.level).toUpperCase()}] [${labels[String(l.type)] || l.type}] [${l.jobId}] ${l.stage}: ${l.message}${l.provider ? ` | ${l.provider}` : ""}${l.model ? ` | ${l.model}` : ""}${l.requestId ? ` | request=${l.requestId}` : ""}${typeof l.durationMs === "number" ? ` | ${l.durationMs}ms` : ""}`,
+      )
+      .join("\n") + finalNotice;
   return (
     <section className="section job-monitor">
       <div className="section-title">

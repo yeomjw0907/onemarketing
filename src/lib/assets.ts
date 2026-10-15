@@ -107,6 +107,7 @@ export async function saveAsset(
     name: string;
     buffer: Buffer;
     text?: string;
+    editorialNotes?: string;
     extracted?: string | null;
     slot?: string;
     jobId?: string;
@@ -217,6 +218,7 @@ export async function saveAsset(
         current: true,
         slot,
         text: input.text || null,
+        editorialNotes: input.editorialNotes || null,
         extracted: input.extracted || null,
         jobId: input.jobId || null,
       });

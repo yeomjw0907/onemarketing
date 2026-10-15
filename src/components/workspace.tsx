@@ -6,6 +6,7 @@ import MaterialChecklist from "./material-checklist";
 import CustomerDocuments from "./customer-documents";
 import CustomerReportLinks from "./customer-report-links";
 import JobMonitor from "./job-monitor";
+import { publishableCopy, orderedImages } from "@/lib/copy-format";
 import {
   useEffect,
   useState,
@@ -635,12 +636,56 @@ export default function Workspace() {
             ) : a.category === "video" ? (
               <video controls src={"/api/assets/" + a.id} />
             ) : a.category === "copy" ? (
-              <div className="content-preview">{String(a.text || "")}</div>
+              <div className="content-preview">
+                {publishableCopy(String(a.text || ""))}
+              </div>
             ) : (
               <FileText />
             )}
             <small>{String(a.name)}</small>
-            <a href={"/api/assets/" + a.id} target="_blank" rel="noreferrer">
+            {a.category === "image" && a.current === true && (
+              <span className="badge blue">
+                이미지{" "}
+                {orderedImages(data.assets, a.taskId).findIndex(
+                  (i) => i.id === a.id,
+                ) + 1}
+              </span>
+            )}
+            {a.category === "copy" && (
+              <>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        publishableCopy(String(a.text || "")),
+                      );
+                      setToast("원고를 복사했어요");
+                    } catch {
+                      setError(
+                        "복사하지 못했습니다. 원고를 선택해 직접 복사해주세요.",
+                      );
+                    }
+                  }}
+                >
+                  원고 복사
+                </button>
+                {a.editorialNotes ? (
+                  <details>
+                    <summary>운영자 확인 사항</summary>
+                    <p>{String(a.editorialNotes)}</p>
+                  </details>
+                ) : null}
+              </>
+            )}
+            <a
+              href={
+                "/api/assets/" +
+                a.id +
+                (a.category === "copy" ? "?publishable=1" : "")
+              }
+              target="_blank"
+              rel="noreferrer"
+            >
               열기 ↗
             </a>
             {a.common === true && (
@@ -1542,6 +1587,35 @@ export default function Workspace() {
                   자료에 근거한 소구점과 서로 다른 콘셉트를 확인한 뒤 개요에서
                   기획을 승인하세요.
                 </p>
+                {project.preferredKeywords ? (
+                  <p className="hint">
+                    희망 키워드: {String(project.preferredKeywords)}
+                  </p>
+                ) : null}
+                {project.recommendedKeywords ? (
+                  <div className="content-preview">
+                    <strong>추천 키워드</strong>
+                    <p>
+                      핵심:{" "}
+                      {(
+                        ((project.recommendedKeywords as Draft)
+                          .main as string[]) || []
+                      ).join(", ")}
+                    </p>
+                    <p>
+                      보조:{" "}
+                      {(
+                        ((project.recommendedKeywords as Draft)
+                          .secondary as string[]) || []
+                      ).join(", ")}
+                    </p>
+                    <p className="hint">
+                      {String(
+                        (project.recommendedKeywords as Draft).reason || "",
+                      )}
+                    </p>
+                  </div>
+                ) : null}
                 {project.research ? (
                   <pre className="content-preview">
                     {String(project.research)}
@@ -2287,6 +2361,13 @@ export default function Workspace() {
                   <Field label="이번 작업 요청" full>
                     {area("instructions")}
                   </Field>
+                  <Field label="희망 키워드 (선택 · 쉼표로 구분)" full>
+                    {input("preferredKeywords")}
+                    <p className="hint">
+                      예: 피자설기, 떡 간식. 비워두면 조사 단계에서 관련
+                      키워드를 추천합니다.
+                    </p>
+                  </Field>
                 </>
               )}
               {modal === "task" && (
@@ -2405,6 +2486,13 @@ export default function Workspace() {
                   </Field>
                   <Field label="이번 프로젝트 요청" full>
                     {area("instructions")}
+                  </Field>
+                  <Field label="희망 키워드 (선택 · 쉼표로 구분)" full>
+                    {input("preferredKeywords")}
+                    <p className="hint">
+                      다음 조사·기획 요청에 반영됩니다. 이미 승인한 기획·원고는
+                      자동 변경하지 않습니다.
+                    </p>
                   </Field>
                   <Field label="AI 제작비 상한">
                     {input("budget", "number")}
