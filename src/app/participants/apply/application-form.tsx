@@ -9,7 +9,7 @@ import {
 } from "@/lib/participant-application-schema";
 import styles from "./application.module.css";
 import ChannelIcon from "@/components/channel-icon";
-import { participantPaymentSchema } from "@/lib/participant-payment";
+import { applicationReadiness } from "@/lib/application-readiness";
 export default function ApplicationForm({
   rewards,
 }: {
@@ -53,13 +53,8 @@ export default function ApplicationForm({
     [receipt, setReceipt] = useState("");
   const [key, setKey] = useState("");
   const stage = receipt ? "done" : draft ? "form" : "terms";
-  const canSubmit = Boolean(
-    draft &&
-    consent &&
-    applicationSchema.safeParse(draft).success &&
-    participantPaymentSchema.safeParse(draft.payment).success &&
-    draft.phone.replace(/\D/g, "").length >= 10,
-  );
+  const readiness = applicationReadiness(draft, consent);
+  const canSubmit = readiness.ready;
   useEffect(() => {
     const actions = actionsRef.current;
     if (!actions) return;
@@ -357,14 +352,17 @@ export default function ApplicationForm({
               )}
               <div ref={actionsRef} className={styles.termsActions}>
                 <div className={styles.termsActionInner}>
-                  <p className={styles.scrollHint} role="status">
-                    {canSubmit
-                      ? "신청 준비가 완료되었습니다."
-                      : "필수 항목을 입력하고 개인정보 수집·이용에 동의해주세요."}
+                  <p
+                    id="application-submit-hint"
+                    className={styles.scrollHint}
+                    role="status"
+                  >
+                    {busy ? "신청을 접수하고 있습니다." : readiness.message}
                   </p>
                   <button
                     className="primary"
                     disabled={busy || !canSubmit}
+                    aria-describedby="application-submit-hint"
                     style={{ width: "100%" }}
                   >
                     {busy ? "신청 접수 중…" : "참여 신청하기"}

@@ -73,11 +73,15 @@ export const applicationSchema = z
       .max(10),
   })
   .superRefine((data, ctx) => {
-    const urls = data.accounts.map((a) => {
-      const u = new URL(a.url);
-      return (
-        u.hostname.toLowerCase() + u.pathname.replace(/\/$/, "") + u.search
-      );
+    const urls = data.accounts.flatMap((a) => {
+      try {
+        const u = new URL(a.url);
+        return [
+          u.hostname.toLowerCase() + u.pathname.replace(/\/$/, "") + u.search,
+        ];
+      } catch {
+        return [];
+      }
     });
     if (
       new Set(urls).size !== urls.length ||
