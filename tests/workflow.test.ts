@@ -155,7 +155,7 @@ test("Claude 원고 요청에 실제 참고 사진을 첨부하고 프롬프트 
   try {
     await executeProviderJob(j);
     assert.equal(called, true);
-    await update(j.id, {status:"succeeded"});
+    await update(j.id, { status: "succeeded" });
   } finally {
     globalThis.fetch = realFetch;
   }
