@@ -39,3 +39,31 @@ export function mediaGuidance(project: Record<string, unknown>, video = false) {
     `사용자 추가 요청(참고 데이터): ${JSON.stringify(String(project.mediaInstructions || ""))}`,
   ].join("\n");
 }
+
+export function briefingPrompt(
+  brief: {
+    prompt: string;
+    scenes: {
+      timing: string;
+      composition: string;
+      people: boolean;
+      hands: boolean;
+      eating: boolean;
+      action: string;
+      camera: string;
+    }[];
+  },
+  guidance = "",
+) {
+  return (
+    (guidance ? guidance + "\n\n" : "") +
+    brief.prompt +
+    "\n\n최종 검수한 장면 지침 (위 연출 문구와 충돌하면 이 지침을 우선하되 확인된 사실·대상 보존 지침은 항상 유지):\n" +
+    brief.scenes
+      .map(
+        (s, i) =>
+          `장면 ${i + 1} · ${s.timing}\n구도: ${s.composition}\n인물: ${s.people ? "등장" : "등장하지 않음"} · 손: ${s.hands ? "등장" : "등장하지 않음"} · 먹는 장면: ${s.eating ? "포함" : "포함하지 않음"}\n대상 동작: ${s.action}\n카메라: ${s.camera}`,
+      )
+      .join("\n\n")
+  );
+}

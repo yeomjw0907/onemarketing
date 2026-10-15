@@ -55,7 +55,12 @@ async function processLoggedJob(job: RecordData, owner: string) {
         error: null,
       });
     });
-    await jobLog("completed", "결과 저장 완료 · 검수 대기");
+    await jobLog(
+      "completed",
+      job.type === "media-plan"
+        ? "브리핑 작성 완료 · 생성 승인 대기 · fal 호출 없음"
+        : "결과 저장 완료 · 검수 대기",
+    );
     return "succeeded";
   } catch (e) {
     if (e instanceof Yield) {

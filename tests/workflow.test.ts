@@ -12,13 +12,84 @@ const { list, get, update, create } = await import("../src/lib/db");
 const { saveAsset, detectMime, extractSheet, bytes } =
   await import("../src/lib/assets");
 const { objectExists, bucketIsPrivate } = await import("../src/lib/storage");
-const { enqueue, claimJob, releaseLease } = await import("../src/lib/jobs");
+const {
+  enqueue: enqueueReal,
+  claimJob,
+  releaseLease,
+} = await import("../src/lib/jobs");
 const { approvedBundle, recordDelivery } =
   await import("../src/lib/deliveries");
 const { slideshow, hybrid } = await import("../src/lib/video");
 const { executeProviderJob } = await import("../src/lib/providers");
 const { runJobs } = await import("../src/lib/worker");
 const actor = "workflow@local";
+const { mediaBinding, editMediaPlan } = await import("../src/lib/media-plans");
+const { mediaGuidance, briefingPrompt } =
+  await import("../src/lib/media-guidance");
+function fixtureBrief(prompt: string) {
+  return {
+    summary: "검수용 장면",
+    scenes: [
+      {
+        timing: "전체",
+        composition: "자연광에서 대상을 가까이",
+        people: false,
+        hands: false,
+        eating: false,
+        action: "정물",
+        camera: "천천히 이동",
+      },
+    ],
+    warnings: [],
+    prompt,
+  };
+}
+async function fixturePlan(
+  projectId: string,
+  taskId: string,
+  mediaType: "image" | "video",
+  replaceAssetId?: string,
+) {
+  const binding = await mediaBinding(
+    projectId,
+    taskId,
+    mediaType,
+    replaceAssetId,
+  );
+  const p = (await get(projectId))!;
+  return create("media_plans", {
+    projectId,
+    taskId,
+    mediaType,
+    replaceAssetId: replaceAssetId || null,
+    ...binding,
+    brief: fixtureBrief(mediaGuidance(p, mediaType === "video")),
+    status: "draft",
+    consumedJobId: null,
+  });
+}
+// Existing adapter tests enter through the new approval gate using fixture briefings.
+async function enqueue(
+  input: Parameters<typeof enqueueReal>[0],
+  actor: string,
+) {
+  const body = input as Record<string, unknown>;
+  if (["image", "video"].includes(String(body.type)) && !body.mediaPlanId) {
+    const plan = await fixturePlan(
+      String(body.projectId),
+      String(body.taskId),
+      body.type as "image" | "video",
+      body.replaceAssetId as string | undefined,
+    );
+    await editMediaPlan(
+      { id: plan.id, version: plan.version, action: "approve" },
+      actor,
+    );
+    return enqueueReal({ ...body, mediaPlanId: plan.id }, actor);
+  }
+  return enqueueReal(input, actor);
+}
+
 const realFetch = globalThis.fetch;
 // 공급사 호출만 가로채고 Supabase Storage 요청은 실제로 보낸다.
 function mockFetch(handler: typeof fetch) {
@@ -893,5 +964,234 @@ test("Claude 검색 도구 오류·출처 누락은 기획으로 넘기지 않�
       globalThis.fetch = original;
       await update(job.id, { status: "failed" });
     }
+  }
+});
+
+test("생성 브리핑은 Claude만 호출하고 승인 전 fal을 차단, 승인한 프롬프트로 한 번만 생성", async () => {
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  await saveAsset(
+    { projectId: p.id, category: "source", name: "기준.png", buffer: png },
+    actor,
+  );
+  process.env.ANTHROPIC_API_KEY = "test-not-real";
+  process.env.FAL_KEY = "test-not-real";
+  const input = {
+    projectId: p.id,
+    taskId: t.id,
+    type: "image",
+    estimate: 1000,
+    key: crypto.randomUUID(),
+  };
+  await assert.rejects(enqueueReal(input, actor), /브리핑/);
+  const draftJob = await enqueueReal(
+    {
+      ...input,
+      type: "media-plan",
+      mediaType: "image",
+      generationRequest: "손과 먹는 장면 없이 가까이",
+    },
+    actor,
+  );
+  const original = globalThis.fetch;
+  let claudeCalls = 0,
+    falCalls = 0;
+  let expectedPrompt = "";
+  mockFetch(async (url, init) => {
+    const target = String(url);
+    if (target.startsWith("https://api.anthropic.com/")) {
+      claudeCalls++;
+      assert.match(String(init?.body), /손과 먹는 장면 없이 가까이/);
+      assert.match(String(init?.body), /과한 HDR/);
+      return Response.json({
+        id: "brief-claude",
+        stop_reason: "end_turn",
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(fixtureBrief("자연스러운 실제 제품 사진")),
+          },
+        ],
+        usage: { input_tokens: 100, output_tokens: 100 },
+      });
+    }
+    if (
+      init?.method === "POST" &&
+      target.startsWith("https://queue.fal.run/")
+    ) {
+      falCalls++;
+      assert.equal(JSON.parse(String(init.body)).prompt, expectedPrompt);
+      return Response.json({
+        request_id: "approved-only",
+        status_url: "https://queue.fal.run/test/status",
+        response_url: "https://queue.fal.run/test/result",
+      });
+    }
+    if (target.endsWith("/status"))
+      return Response.json({ status: "COMPLETED" });
+    if (target.endsWith("/result"))
+      return Response.json({
+        images: [{ url: "https://v3b.fal.media/approved.png" }],
+      });
+    if (target === "https://v3b.fal.media/approved.png")
+      return new Response(png);
+    throw new Error("unexpected provider");
+  });
+  let generatedId = "";
+  try {
+    await executeProviderJob(draftJob);
+    await executeProviderJob((await get(draftJob.id))!);
+    assert.equal(claudeCalls, 1);
+    assert.equal(falCalls, 0);
+    await update(draftJob.id, { status: "succeeded" });
+    const plan = (await list("media_plans")).find(
+      (x) => x.jobId === draftJob.id,
+    )!;
+    assert.equal(plan.status, "draft");
+    await assert.rejects(
+      enqueueReal(
+        { ...input, mediaPlanId: plan.id, key: crypto.randomUUID() },
+        actor,
+      ),
+      /미승인/,
+    );
+    const approved = await editMediaPlan(
+      { id: plan.id, version: plan.version, action: "approve" },
+      actor,
+    );
+    const editedBrief = {
+      ...(approved.brief as ReturnType<typeof fixtureBrief>),
+      scenes: [
+        {
+          ...(approved.brief as ReturnType<typeof fixtureBrief>).scenes[0],
+          composition: "낮은 시점에서 대각선 구도",
+        },
+      ],
+    };
+    const edited = await editMediaPlan(
+      {
+        id: plan.id,
+        version: approved.version,
+        action: "edit",
+        brief: editedBrief,
+      },
+      actor,
+    );
+    assert.equal(edited.approvedAt, null);
+    assert.equal(edited.approvedPrompt, null);
+    await assert.rejects(
+      enqueueReal(
+        { ...input, mediaPlanId: plan.id, key: crypto.randomUUID() },
+        actor,
+      ),
+      /미승인/,
+    );
+    const final = await editMediaPlan(
+      { id: plan.id, version: edited.version, action: "approve" },
+      actor,
+    );
+    expectedPrompt = briefingPrompt(editedBrief, String(final.guidance || ""));
+    assert.equal(final.approvedPrompt, expectedPrompt);
+    assert.match(expectedPrompt, /손: 등장하지 않음/);
+    assert.match(expectedPrompt, /낮은 시점에서 대각선 구도/);
+    const approvedInput = {
+      ...input,
+      key: crypto.randomUUID(),
+      mediaPlanId: plan.id,
+    };
+    const [first, second] = await Promise.all([
+      enqueueReal(approvedInput, actor),
+      enqueueReal(approvedInput, actor),
+    ]);
+    generatedId = first.id;
+    assert.equal(first.id, second.id);
+    assert.equal((await get(plan.id))!.consumedJobId, first.id);
+    await assert.rejects(
+      enqueueReal({ ...approvedInput, key: crypto.randomUUID() }, actor),
+      /이미 실행|이미 사용/,
+    );
+    await executeProviderJob(first);
+    await executeProviderJob((await get(first.id))!);
+    assert.equal(falCalls, 1);
+    assert.equal(
+      (first.snapshot as { mediaPlan: Record<string, unknown> }).mediaPlan
+        .approvedPrompt,
+      expectedPrompt,
+    );
+  } finally {
+    globalThis.fetch = original;
+    await update(draftJob.id, { status: "succeeded" });
+    if (generatedId) await update(generatedId, { status: "succeeded" });
+  }
+});
+
+test("브리핑은 다른 작업에 재사용할 수 없고 자료·기획·모델 변경 후 승인을 차단", async () => {
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  await saveAsset(
+    { projectId: p.id, category: "source", name: "기준.png", buffer: png },
+    actor,
+  );
+  process.env.FAL_KEY = "test-not-real";
+  let plan = await fixturePlan(p.id, t.id, "image");
+  let approved = await editMediaPlan(
+    { id: plan.id, version: plan.version, action: "approve" },
+    actor,
+  );
+  const input = {
+    projectId: p.id,
+    taskId: t.id,
+    type: "image",
+    estimate: 1000,
+    mediaPlanId: plan.id,
+    key: crypto.randomUUID(),
+  };
+  const other = await create("tasks", {
+    projectId: p.id,
+    channel: "blog",
+    briefApprovedAt: "approved",
+    status: "planned",
+  });
+  await assert.rejects(
+    enqueueReal({ ...input, taskId: other.id }, actor),
+    /브리핑의/,
+  );
+  await update(p.id, { mediaInstructions: "구도를 변경" });
+  await assert.rejects(enqueueReal(input, actor), /변경/);
+  plan = await fixturePlan(p.id, t.id, "image");
+  await update(t.id, { brief: "새 기획" });
+  await assert.rejects(
+    editMediaPlan(
+      { id: plan.id, version: plan.version, action: "approve" },
+      actor,
+    ),
+    /변경/,
+  );
+  plan = await fixturePlan(p.id, t.id, "image");
+  await saveAsset(
+    { projectId: p.id, category: "source", name: "추가.png", buffer: png },
+    actor,
+  );
+  await assert.rejects(
+    editMediaPlan(
+      { id: plan.id, version: plan.version, action: "approve" },
+      actor,
+    ),
+    /변경/,
+  );
+  plan = await fixturePlan(p.id, t.id, "image");
+  const oldModel = process.env.FAL_IMAGE_MODEL;
+  process.env.FAL_IMAGE_MODEL = "changed-model";
+  try {
+    await assert.rejects(
+      editMediaPlan(
+        { id: plan.id, version: plan.version, action: "approve" },
+        actor,
+      ),
+      /변경/,
+    );
+  } finally {
+    if (oldModel === undefined) delete process.env.FAL_IMAGE_MODEL;
+    else process.env.FAL_IMAGE_MODEL = oldModel;
   }
 });

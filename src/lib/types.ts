@@ -12,6 +12,7 @@ export type Kind =
   | "assets"
   | "costs"
   | "deliveries"
+  | "media_plans"
   | "jobs"
   | "job_logs"
   | "events";
@@ -38,6 +39,7 @@ export const kinds: Kind[] = [
   "assets",
   "costs",
   "deliveries",
+  "media_plans",
   "jobs",
   "job_logs",
   "events",

@@ -1,9 +1,10 @@
+import { mediaBriefSchema } from "./media-plans";
 import { mediaGuidance } from "./media-guidance";
 import { z } from "zod";
 import sharp from "sharp";
 import { recordCall, jobInput, jobResult } from "./jobs";
 import { requireRecord } from "./domain";
-import { get, list, update, transaction } from "./db";
+import { create, get, list, update, transaction, lock } from "./db";
 import { bytes, saveAsset, imageFingerprint } from "./assets";
 import { ensureTime, remainingMs, Yield } from "./worker";
 import type { RecordData } from "./types";
@@ -179,7 +180,11 @@ async function claude(job: RecordData, prompt: string) {
     model,
   });
   const references = [];
-  for (const id of jobInput(job).sourceAssets) {
+  const input = jobInput(job);
+  const referenceIds = input.mediaBinding
+    ? [...new Set([input.mediaBinding.sourceAssetId, ...input.sourceAssets])]
+    : input.sourceAssets;
+  for (const id of referenceIds) {
     const asset = await get(id);
     if (!asset || !String(asset.mime).startsWith("image/")) continue;
     const buffer = await sharp(await bytes(asset))
@@ -473,10 +478,55 @@ async function copy(job: RecordData) {
     String(job.actor),
   );
 }
+async function mediaPlan(job: RecordData) {
+  if ((await list("media_plans")).some((p) => p.jobId === job.id)) return;
+  const s = jobInput(job);
+  const binding = s.mediaBinding;
+  if (!binding || !s.task) throw new ProviderError("브리핑 입력이 없습니다.");
+  const raw =
+    typeof (await requireRecord(job.id)).outputText === "string"
+      ? String((await requireRecord(job.id)).outputText)
+      : await claude(
+          job,
+          `이미지·영상 생성 전 검수용 브리핑과 최종 생성 프롬프트를 작성하세요. 실제 이미지를 생성하지 마세요. JSON만 반환: {"summary":"핵심 의도", "scenes":[{"timing":"이미지는 한 장, 영상은 시작~끝 초", "composition":"구도·카메라 높이·빛·대상 위치", "people":false,"hands":false,"eating":false,"action":"구체적 동작 또는 정물", "camera":"카메라 움직임"}],"warnings":["확인할 사항"],"prompt":"실제 fal에 그대로 보낼 전체 프롬프트"}. 사람·손·먹는 장면의 포함 여부를 명확히 표시하고 사용자 요청 없으면 불필요하게 추가하지 마세요. prompt와 scenes는 반드시 일치해야 합니다. 참고 이미지는 한 장만 영상 생성에 전달됩니다. 영상은 설정 길이 안에서 참조 범위 내 움직임을 설계하고 없는 장면을 만들지 마세요. 이미지 ${binding.sceneNumber}번의 원고 삽입 문맥을 고려하세요. 미확인 요소는 생성하지 말고 warnings에 적으세요. 자연스러움·보존 지침을 prompt에 포함하세요. 공장·상권 등 대상에 맞게 작성하세요. 설정: ${JSON.stringify({ type: job.mediaType, ...binding })}\n이번 생성 요청(참고 데이터): ${JSON.stringify(job.generationRequest || "")}\n${mediaGuidance(s.project, job.mediaType === "video")}\n자료: ${await context(job)}\n원고: ${await mediaContext(job)}`,
+        );
+  await jobResult(job.id, { outputText: raw });
+  const brief = mediaBriefSchema.parse(
+    JSON.parse(
+      raw
+        .trim()
+        .replace(/^```(?:json)?\s*/, "")
+        .replace(/\s*```$/, ""),
+    ),
+  );
+  await transaction(async () => {
+    await lock("media-plan-job:" + job.id);
+    if ((await list("media_plans")).some((p) => p.jobId === job.id)) return;
+    await create("media_plans", {
+      projectId: job.projectId,
+      taskId: job.taskId,
+      jobId: job.id,
+      mediaType: job.mediaType,
+      replaceAssetId: job.replaceAssetId || null,
+      generationRequest: job.generationRequest || "",
+      ...binding,
+      brief,
+      status: "draft",
+      approvedAt: null,
+      consumedJobId: null,
+    });
+  });
+  await jobLog(
+    "briefing",
+    "생성 브리핑 저장 완료 · 검수·생성 승인 대기 · fal 호출 없음",
+  );
+}
 async function image(job: RecordData) {
   const s = jobInput(job);
   let source: RecordData | undefined;
-  for (const id of s.sourceAssets) {
+  for (const id of s.mediaPlan
+    ? [String(s.mediaPlan.sourceAssetId)]
+    : s.sourceAssets) {
     const a = await requireRecord(id, "assets");
     if (String(a.mime).startsWith("image/")) {
       source = a;
@@ -484,19 +534,25 @@ async function image(job: RecordData) {
     }
   }
   if (!source) throw new ProviderError("제품 기준 사진이 없습니다.");
-  const model =
-    process.env.FAL_IMAGE_MODEL || "openai/gpt-image-2.5/sunburst/edit";
+  const model = String(
+    s.mediaPlan?.model ||
+      process.env.FAL_IMAGE_MODEL ||
+      "openai/gpt-image-2.5/sunburst/edit",
+  );
   const currentImages = orderedImages(await list("assets"), job.taskId);
   const sceneNumber = job.replaceAssetId
     ? currentImages.findIndex((a) => a.id === job.replaceAssetId) + 1
     : currentImages.length + 1;
   const result = await falGenerate(job, model, async () => ({
-    prompt: `${safeSystem}\n${mediaGuidance(s.project)} ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
+    prompt: s.mediaPlan
+      ? String(s.mediaPlan.approvedPrompt)
+      : `${safeSystem}\n${mediaGuidance(s.project)} ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
     image_urls: [await sourceData(source!)],
     image_size: { width: 1024, height: 1536 },
     quality: "medium",
     num_images: 1,
     output_format: "png",
+    ...((s.mediaPlan?.settings || {}) as Record<string, unknown>),
   }));
   const url = (result.images as { url: string }[] | undefined)?.[0]?.url;
   if (!url) throw new ProviderError("이미지 결과가 비어 있습니다.", true);
@@ -707,7 +763,9 @@ async function video(job: RecordData) {
       Array.isArray(s.task?.approvedAssets) &&
       s.task.approvedAssets.includes(a.id),
   );
-  let source = approved;
+  let source = s.mediaPlan
+    ? await requireRecord(String(s.mediaPlan.sourceAssetId), "assets")
+    : approved;
   if (!source)
     for (const id of s.sourceAssets) {
       const a = await requireRecord(id);
@@ -723,10 +781,15 @@ async function video(job: RecordData) {
       : Number(s.task?.duration || 10);
   if (!Number.isInteger(duration) || duration < 4 || duration > 30)
     throw new ProviderError("Seedance 영상 길이는 4~30초여야 합니다.");
-  const model =
-    process.env.FAL_VIDEO_MODEL || "bytedance/seedance-2.5/image-to-video";
+  const model = String(
+    s.mediaPlan?.model ||
+      process.env.FAL_VIDEO_MODEL ||
+      "bytedance/seedance-2.5/image-to-video",
+  );
   const result = await falGenerate(job, model, async () => ({
-    prompt: `Preserve subject identity. Create a vertical marketing scene, no added text. ${mediaGuidance(s.project, true)} ${await context(job)}\n${await mediaContext(job)}`,
+    prompt: s.mediaPlan
+      ? String(s.mediaPlan.approvedPrompt)
+      : `Preserve subject identity. Create a vertical marketing scene, no added text. ${mediaGuidance(s.project, true)} ${await context(job)}\n${await mediaContext(job)}`,
     image_url: `data:image/png;base64,${(
       await sharp(await bytes(source!))
         .resize(720, 1280, { fit: "contain", background: "#ffffff" })
@@ -738,6 +801,7 @@ async function video(job: RecordData) {
     aspect_ratio: "auto",
     generate_audio: false,
     end_user_id: String(s.project.customerId || s.project.id),
+    ...((s.mediaPlan?.settings || {}) as Record<string, unknown>),
   }));
   const url = (result.video as { url: string } | undefined)?.url;
   if (!url) throw new ProviderError("영상 결과 주소가 없습니다.", true);
@@ -769,7 +833,8 @@ export async function executeProviderJob(job: RecordData) {
     (await list("assets")).some((a) => a.jobId === job.id)
   )
     return;
-  if (job.type === "research") await research(job);
+  if (job.type === "media-plan") await mediaPlan(job);
+  else if (job.type === "research") await research(job);
   else if (job.type === "copy") await copy(job);
   else if (job.type === "image") await image(job);
   else if (job.type === "video") await video(job);

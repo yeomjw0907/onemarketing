@@ -7,6 +7,7 @@ import MaterialChecklist from "./material-checklist";
 import CustomerDocuments from "./customer-documents";
 import CustomerReportLinks from "./customer-report-links";
 import JobMonitor from "./job-monitor";
+import MediaBriefings, { type BriefingRequest } from "./media-briefings";
 import { publishableCopy, orderedImages } from "@/lib/copy-format";
 import {
   useEffect,
@@ -69,7 +70,15 @@ const stages = [
   "publishing",
   "completed",
 ];
-const tabs = ["개요", "자료", "기획", "제작·검수", "전달·게시", "비용·기록"];
+const tabs = [
+  "개요",
+  "자료",
+  "기획",
+  "제작·검수",
+  "전달·게시",
+  "비용·기록",
+  "생성 브리핑",
+];
 const status = (value: unknown) =>
   stageLabels[String(value)] || String(value || "미정");
 function Badge({ value }: { value: unknown }) {
@@ -195,6 +204,7 @@ function Field({
   );
 }
 export default function Workspace() {
+  const [briefingRequest, setBriefingRequest] = useState<BriefingRequest>();
   const customerUploads = useRef<{ category: string; file: File }[]>([]);
   const [email, setEmail] = useState<string | null | undefined>(undefined),
     [data, setData] = useState<DatabaseView>(empty),
@@ -603,6 +613,17 @@ export default function Workspace() {
     task?: RecordData,
     replaceAssetId?: string,
   ) {
+    if ((type === "image" || type === "video") && task) {
+      navigate("projects", p.id);
+      setBriefingRequest({
+        taskId: task.id,
+        mediaType: type,
+        replaceAssetId,
+        nonce: Date.now(),
+      });
+      setTab(6);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -801,16 +822,18 @@ export default function Workspace() {
                 {button("원고 생성", () =>
                   generate("copy", find("projects", t.projectId)!, t),
                 )}
-                {button("이미지 생성", () =>
+                {button("이미지 브리핑", () =>
                   generate("image", find("projects", t.projectId)!, t),
                 )}
                 {t.channel === "clip" &&
-                  button("영상 제작", () =>
-                    generate(
-                      t.mode === "slideshow" ? "slideshow" : "video",
-                      find("projects", t.projectId)!,
-                      t,
-                    ),
+                  button(
+                    t.mode === "slideshow" ? "슬라이드 제작" : "영상 브리핑",
+                    () =>
+                      generate(
+                        t.mode === "slideshow" ? "slideshow" : "video",
+                        find("projects", t.projectId)!,
+                        t,
+                      ),
                   )}
                 {button("수정 요청", () =>
                   open("feedback", { id: t.id, feedback: "" }),
@@ -1624,6 +1647,21 @@ export default function Workspace() {
                 ) : null}
                 <TaskList rows={tasks} />
               </section>
+            )}
+            {tab === 6 && (
+              <MediaBriefings
+                key={project.id}
+                project={project}
+                data={data}
+                request={
+                  briefingRequest &&
+                  tasks.some((t) => t.id === briefingRequest.taskId)
+                    ? briefingRequest
+                    : undefined
+                }
+                estimates={config.defaultEstimates || {}}
+                reload={async () => setData(await api("/api/data"))}
+              />
             )}
             {tab === 3 && (
               <section className="section">

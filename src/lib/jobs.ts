@@ -1,3 +1,6 @@
+import { briefingPrompt } from "./media-guidance";
+import { mediaBriefSchema } from "./media-plans";
+import { mediaBinding, validateMediaPlan } from "./media-plans";
 import { z } from "zod";
 import { jobLog } from "./job-logs";
 import {
@@ -18,7 +21,17 @@ export const jobSchema = z.object({
   projectId: z.string().min(1),
   taskId: z.string().optional(),
   replaceAssetId: z.string().optional(),
-  type: z.enum(["research", "copy", "image", "video", "slideshow"]),
+  type: z.enum([
+    "research",
+    "copy",
+    "image",
+    "video",
+    "slideshow",
+    "media-plan",
+  ]),
+  mediaType: z.enum(["image", "video"]).optional(),
+  mediaPlanId: z.string().optional(),
+  generationRequest: z.string().trim().max(5000).optional(),
   estimate: z.number().int().min(1).max(1000000),
   key: z.string().uuid(),
 });
@@ -26,7 +39,9 @@ export const activeStatuses = ["pending", "running", "uncertain"];
 export function enqueue(input: unknown, actor: string) {
   const body = jobSchema.parse(input);
   return once(actor + ":job:" + body.key, async () => {
+    await lock("project-operations:" + body.projectId);
     await lock("jobs:" + body.projectId);
+    await lock("assets:" + body.projectId);
     const p = await requireRecord(body.projectId, "projects");
     if (
       p.settled ||
@@ -46,6 +61,12 @@ export function enqueue(input: unknown, actor: string) {
       if (!body.taskId) throw new Error("게시 작업을 선택하세요.");
       const t = await requireRecord(body.taskId, "tasks");
       if (t.projectId !== p.id) throw new Error("프로젝트가 다릅니다.");
+      if (
+        (body.type === "video" ||
+          (body.type === "media-plan" && body.mediaType === "video")) &&
+        t.channel !== "clip"
+      )
+        throw new Error("영상 작업을 선택하세요.");
       if (!t.briefApprovedAt) throw new Error("기획 승인이 필요합니다.");
       if (
         ["approved", "delivered", "submitted", "verified"].includes(
@@ -62,18 +83,17 @@ export function enqueue(input: unknown, actor: string) {
         ).length < Number(t.images || 1)
       )
         throw new Error("혼합형에 사용할 이미지를 먼저 등록하세요.");
-      const needed =
-        body.type === "copy"
-          ? "ANTHROPIC_API_KEY"
-          : body.type === "image"
+      const needed = ["copy", "media-plan"].includes(body.type)
+        ? "ANTHROPIC_API_KEY"
+        : body.type === "image"
+          ? "FAL_KEY"
+          : body.type === "video"
             ? "FAL_KEY"
-            : body.type === "video"
-              ? "FAL_KEY"
-              : null;
+            : null;
       if (needed && !process.env[needed])
         throw new Error(`${needed} 설정이 필요합니다.`);
       if (
-        ["image", "video"].includes(body.type) &&
+        ["image", "video", "media-plan"].includes(body.type) &&
         !assets.some(
           (a) =>
             a.projectId === p.id &&
@@ -89,7 +109,9 @@ export function enqueue(input: unknown, actor: string) {
         (j) =>
           j.projectId === p.id &&
           j.taskId === (body.taskId || null) &&
-          j.type === body.type &&
+          (j.type === body.type ||
+            (["image", "video", "media-plan"].includes(body.type) &&
+              ["image", "video", "media-plan"].includes(String(j.type)))) &&
           activeStatuses.includes(String(j.status)),
       )
     )
@@ -108,14 +130,56 @@ export function enqueue(input: unknown, actor: string) {
     if (body.replaceAssetId) {
       const a = await requireRecord(body.replaceAssetId, "assets");
       if (
-        body.type !== "image" ||
+        !["image", "media-plan"].includes(body.type) ||
         a.taskId !== body.taskId ||
         a.current !== true ||
         a.common === true
       )
         throw new Error("교체할 이미지를 확인하세요.");
     }
+    let mediaPlan: RecordData | null = null;
+    let mediaBindingSnapshot: Awaited<ReturnType<typeof mediaBinding>> | null =
+      null;
+    if (body.type === "media-plan") {
+      if (!body.mediaType) throw new Error("브리핑할 생성 종류를 선택하세요.");
+      mediaBindingSnapshot = await mediaBinding(
+        p.id,
+        body.taskId!,
+        body.mediaType,
+        body.replaceAssetId,
+      );
+    }
+    if (["image", "video"].includes(body.type)) {
+      if (!body.mediaPlanId)
+        throw new Error("생성 브리핑을 검수·승인한 뒤 생성하세요.");
+      mediaPlan = await requireRecord(body.mediaPlanId, "media_plans");
+      if (
+        mediaPlan.status !== "approved" ||
+        !mediaPlan.approvedAt ||
+        mediaPlan.consumedJobId
+      )
+        throw new Error("미승인 또는 이미 사용한 브리핑입니다.");
+      if (
+        mediaPlan.approvedPrompt !==
+        briefingPrompt(
+          mediaBriefSchema.parse(mediaPlan.brief),
+          String(mediaPlan.guidance || ""),
+        )
+      )
+        throw new Error(
+          "브리핑 내용과 승인 프롬프트가 다릅니다. 다시 승인하세요.",
+        );
+      await validateMediaPlan(
+        mediaPlan,
+        p.id,
+        body.taskId!,
+        body.type as "image" | "video",
+        body.replaceAssetId,
+      );
+    }
     const snapshot = {
+      mediaPlan,
+      mediaBinding: mediaBindingSnapshot,
       project: p,
       task: body.taskId ? await requireRecord(body.taskId) : null,
       sourceAssets: assets
@@ -134,6 +198,12 @@ export function enqueue(input: unknown, actor: string) {
       providerState: {},
       error: null,
     });
+    if (mediaPlan)
+      await update(
+        mediaPlan.id,
+        { consumedJobId: row.id, status: "used" },
+        mediaPlan.version,
+      );
     await audit(actor, "job-enqueued", p.id, {
       jobId: row.id,
       type: body.type,
@@ -283,6 +353,8 @@ export function jobResult(jobId: string, patch: Record<string, unknown>) {
 }
 export function jobInput(job: RecordData) {
   const s = job.snapshot as {
+    mediaPlan?: RecordData | null;
+    mediaBinding?: Awaited<ReturnType<typeof mediaBinding>> | null;
     project: RecordData;
     task: RecordData | null;
     sourceAssets: string[];
