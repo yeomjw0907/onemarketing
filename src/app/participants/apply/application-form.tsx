@@ -15,6 +15,20 @@ export default function ApplicationForm({
   rewards: { blog: number; clip: number; bundle: number };
 }) {
   const termsRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const actions = actionsRef.current;
+    if (!actions) return;
+    const resize = new ResizeObserver(() =>
+      pageRef.current?.style.setProperty(
+        "--actions-height",
+        `${actions.getBoundingClientRect().height}px`,
+      ),
+    );
+    resize.observe(actions);
+    return () => resize.disconnect();
+  }, []);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const receiptTitleRef = useRef<HTMLHeadingElement>(null);
   const [popup, setPopup] = useState<"success" | "contact" | "confirm" | null>(
@@ -103,12 +117,20 @@ export default function ApplicationForm({
     }
   }
   return (
-    <main className={styles.page}>
+    <main
+      ref={pageRef}
+      className={`${styles.page} ${!draft && !receipt ? styles.termsPage : ""}`}
+    >
       <header className={styles.header}>
         <span className={styles.brand}>
           ONE MARKETING<span>CREATOR PARTNERS</span>
         </span>
         <span>체험단 · 기자단 · 클립</span>
+        {!draft && !receipt && (
+          <button type="button" onClick={() => setPopup("contact")}>
+            문의하기
+          </button>
+        )}
       </header>
       <div className={styles.content}>
         <section className={styles.form}>
@@ -261,23 +283,27 @@ export default function ApplicationForm({
                   </section>
                 </div>
               </div>
-              <p
-                id="terms-scroll-hint"
-                className={styles.scrollHint}
-                role="status"
-              >
-                {readTerms
-                  ? "안내를 모두 확인했습니다. 동의 후 신청서를 작성해주세요."
-                  : "안내 영역을 아래 끝까지 내려 확인하면 버튼이 활성화됩니다."}
-              </p>
-              <button
-                className="primary"
-                disabled={!readTerms}
-                onClick={start}
-                style={{ width: "100%" }}
-              >
-                동의합니다.
-              </button>
+              <div ref={actionsRef} className={styles.termsActions}>
+                <div className={styles.termsActionInner}>
+                  <p
+                    id="terms-scroll-hint"
+                    className={styles.scrollHint}
+                    role="status"
+                  >
+                    {readTerms
+                      ? "안내를 모두 확인했습니다. 동의 후 신청서를 작성해주세요."
+                      : "안내 영역을 아래 끝까지 내려 확인하면 버튼이 활성화됩니다."}
+                  </p>
+                  <button
+                    className="primary"
+                    disabled={!readTerms}
+                    onClick={start}
+                    style={{ width: "100%" }}
+                  >
+                    동의합니다.
+                  </button>
+                </div>
+              </div>
             </>
           ) : (
             <form onSubmit={submit}>

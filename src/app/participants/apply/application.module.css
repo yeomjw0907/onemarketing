@@ -3,6 +3,74 @@
   background: #f7f8fa;
   color: #191f28;
 }
+.termsPage {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.termsPage .header {
+  flex-shrink: 0;
+  width: 100%;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.termsPage .header > span:last-of-type {
+  display: none;
+}
+.termsPage .content {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: var(--actions-height, 140px);
+  display: flex;
+}
+.termsPage .form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  animation: none;
+  padding-bottom: 0;
+}
+.termsPage .form > h2,
+.termsPage .form > p {
+  flex-shrink: 0;
+}
+.termsPage .terms {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  margin-top: 12px;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 16px;
+}
+.termsPage .footer {
+  display: none;
+}
+.termsActions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: #fff;
+  border-top: 1px solid #e9edf2;
+  padding: 12px 20px max(16px, env(safe-area-inset-bottom));
+}
+.termsActionInner {
+  max-width: 664px;
+  margin: auto;
+}
+.termsActions .scrollHint {
+  margin: 0 0 10px;
+}
+.termsActions button {
+  min-height: 52px;
+}
 .header {
   max-width: 800px;
   margin: auto;

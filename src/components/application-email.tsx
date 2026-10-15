@@ -20,6 +20,12 @@ export default function ApplicationEmail({
 }) {
   const [focused, setFocused] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
+  function choose(address: string) {
+    onChange(address);
+    ref.current?.setCustomValidity("");
+    ref.current?.focus();
+    setFocused(false);
+  }
   const [id, domain = ""] = value.split("@");
   const suggestions =
     focused && id && !/\s/.test(value) && value.split("@").length <= 2
@@ -76,11 +82,13 @@ export default function ApplicationEmail({
             <button
               key={address}
               type="button"
-              onClick={() => {
-                onChange(address);
-                ref.current?.focus();
-                setFocused(false);
+              onPointerDown={(e) => {
+                if (e.button === 0) {
+                  e.preventDefault();
+                  choose(address);
+                }
               }}
+              onClick={() => choose(address)}
             >
               {address}
             </button>
