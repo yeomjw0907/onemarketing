@@ -1,11 +1,9 @@
 "use client";
-import { useState } from "react";
+import ApplicationEmail from "./application-email";
+import ApplicationChannelSelect from "./application-channel-select";
 import { formatMobilePhone } from "@/lib/participant-payment";
 import ParticipantPaymentFields from "./participant-payment-fields";
-import {
-  applicationChannels,
-  type ApplicationDraft,
-} from "@/lib/participant-application-schema";
+import type { ApplicationDraft } from "@/lib/participant-application-schema";
 export function freshApplication(): ApplicationDraft {
   return {
     name: "",
@@ -30,23 +28,6 @@ export default function ApplicationFields({
   onChange: (draft: ApplicationDraft) => void;
   disabled?: boolean;
 }) {
-  const domains = [
-    "naver.com",
-    "gmail.com",
-    "daum.net",
-    "hanmail.net",
-    "nate.com",
-    "icloud.com",
-    "outlook.com",
-  ];
-  const at = draft.email.indexOf("@");
-  const emailId = at < 0 ? draft.email : draft.email.slice(0, at);
-  const emailDomain = at < 0 ? "" : draft.email.slice(at + 1);
-  const [customDomain, setCustomDomain] = useState(
-    !!emailDomain && !domains.includes(emailDomain),
-  );
-  const setEmail = (id: string, domain: string) =>
-    onChange({ ...draft, email: id || domain ? id + "@" + domain : "" });
   const field = (
     key: "name" | "region",
     label: string,
@@ -61,6 +42,7 @@ export default function ApplicationFields({
         type={type}
         required={required}
         maxLength={maxLength}
+        placeholder={key === "region" ? "서울시 강남구" : undefined}
         value={draft[key]}
         onChange={(e) => onChange({ ...draft, [key]: e.target.value })}
       />
@@ -89,70 +71,17 @@ export default function ApplicationFields({
           />
         </label>
         <div className="full">
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
-              gap: 10,
-              alignItems: "end",
-            }}
-          >
-            <label>
-              이메일 아이디
-              <input
-                aria-label="이메일 아이디"
-                autoComplete="off"
-                maxLength={64}
-                pattern={"[^@\\s]+"}
-                placeholder="test"
-                required={!!emailDomain}
-                value={emailId}
-                onChange={(e) => setEmail(e.target.value, emailDomain)}
-              />
-            </label>
-            <span style={{ paddingBottom: 12 }} aria-hidden="true">
-              @
-            </span>
-            <label>
-              이메일 도메인
-              <select
-                value={customDomain ? "custom" : emailDomain}
-                required={!!emailId}
-                onChange={(e) => {
-                  const custom = e.target.value === "custom";
-                  setCustomDomain(custom);
-                  setEmail(emailId, custom ? "" : e.target.value);
-                }}
-              >
-                <option value="">도메인 선택</option>
-                {domains.map((domain) => (
-                  <option key={domain} value={domain}>
-                    {domain}
-                  </option>
-                ))}
-                <option value="custom">직접 입력</option>
-              </select>
-            </label>
-          </div>
-          {customDomain && (
-            <label style={{ marginTop: 12 }}>
-              이메일 도메인 직접 입력
-              <input
-                required={!!emailId}
-                autoComplete="off"
-                maxLength={189}
-                placeholder="example.com"
-                value={emailDomain}
-                onChange={(e) => setEmail(emailId, e.target.value)}
-              />
-            </label>
-          )}
+          <ApplicationEmail
+            value={draft.email}
+            onChange={(email) => onChange({ ...draft, email })}
+          />
         </div>
         {field("region", "활동 지역 · 시/구까지")}
       </div>
       <h3 style={{ marginTop: 28 }}>활동 계정 *</h3>
       <p className="hint">
-        블로그·클립 등 본인이 운영하는 계정 주소를 입력해주세요.
+        본인이 운영하는 블로그·SNS 계정 주소를 입력해주세요. 클립 참여 시에도
+        네이버 블로그 계정을 입력해주세요.
       </p>
       {draft.accounts.map((a, i) => (
         <div
@@ -165,28 +94,18 @@ export default function ApplicationFields({
             marginBottom: 14,
           }}
         >
-          <label style={{ flex: "1 1 140px" }}>
-            채널 {i + 1}
-            <select
-              value={a.channel}
-              onChange={(e) =>
-                onChange({
-                  ...draft,
-                  accounts: draft.accounts.map((v, j) =>
-                    j === i
-                      ? { ...v, channel: e.target.value as typeof a.channel }
-                      : v,
-                  ),
-                })
-              }
-            >
-              {Object.entries(applicationChannels).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ApplicationChannelSelect
+            label={"채널 " + (i + 1)}
+            value={a.channel}
+            onChange={(channel) =>
+              onChange({
+                ...draft,
+                accounts: draft.accounts.map((v, j) =>
+                  j === i ? { ...v, channel } : v,
+                ),
+              })
+            }
+          />
           <label style={{ flex: "3 1 220px" }}>
             계정 주소 {i + 1}
             <input
@@ -231,7 +150,7 @@ export default function ApplicationFields({
                 ...draft.accounts,
                 {
                   id: crypto.randomUUID(),
-                  channel: "clip",
+                  channel: "blog",
                   url: "",
                   label: "",
                 },

@@ -5,6 +5,7 @@ import ApplicationFields, {
 } from "@/components/participant-application-fields";
 import type { ApplicationDraft } from "@/lib/participant-application-schema";
 import styles from "./application.module.css";
+import ChannelIcon from "@/components/channel-icon";
 export default function ApplicationForm({
   rewards,
 }: {
@@ -13,7 +14,10 @@ export default function ApplicationForm({
   const termsRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const receiptTitleRef = useRef<HTMLHeadingElement>(null);
-  const [popup, setPopup] = useState<"success" | "contact" | null>(null);
+  const [popup, setPopup] = useState<"success" | "contact" | "confirm" | null>(
+    null,
+  );
+  const websiteRef = useRef<FormDataEntryValue | null>("");
   useEffect(() => {
     const dialog = dialogRef.current;
     if (popup && dialog && !dialog.open) dialog.showModal();
@@ -47,23 +51,33 @@ export default function ApplicationForm({
     setDraft(freshApplication());
     setKey(crypto.randomUUID());
   }
-  async function submit(e: FormEvent<HTMLFormElement>) {
+  function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
-    const website = new FormData(e.currentTarget).get("website");
+    websiteRef.current = new FormData(e.currentTarget).get("website");
+    setPopup("confirm");
+  }
+  async function confirmSubmit() {
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
       const r = await fetch("/api/participant-applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: draft, consent, website, key }),
+        body: JSON.stringify({
+          data: draft,
+          consent,
+          website: websiteRef.current,
+          key,
+        }),
       });
       const body = await r.json();
       if (!r.ok) throw new Error(body.error || "신청하지 못했습니다.");
       setReceipt(body.id);
       setPopup("success");
     } catch (e) {
+      dialogRef.current?.close();
       setError(e instanceof Error ? e.message : "잠시 후 다시 시도해주세요.");
     } finally {
       setBusy(false);
@@ -104,7 +118,12 @@ export default function ApplicationForm({
               >
                 <div>
                   <section className={styles.channel}>
-                    <h3>네이버</h3>
+                    <h3
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                    >
+                      <ChannelIcon channel="blog" />
+                      네이버 블로그
+                    </h3>
                     <dl className={styles.rates}>
                       <div>
                         <dt>블로그 글 업로드</dt>
@@ -129,7 +148,27 @@ export default function ApplicationForm({
                   {["인스타그램", "페이스북", "링크드인", "유튜브"].map(
                     (channel) => (
                       <section className={styles.upcoming} key={channel}>
-                        <h3>{channel}</h3>
+                        <h3
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          }}
+                        >
+                          <ChannelIcon
+                            channel={
+                              (
+                                {
+                                  인스타그램: "instagram",
+                                  페이스북: "facebook",
+                                  링크드인: "linkedin",
+                                  유튜브: "youtube",
+                                } as Record<string, string>
+                              )[channel]
+                            }
+                          />
+                          {channel}
+                        </h3>
                         <span>오픈 예정</span>
                       </section>
                     ),
@@ -247,34 +286,57 @@ export default function ApplicationForm({
         className={styles.dialog}
         aria-labelledby="application-popup-title"
         aria-describedby="application-popup-description"
+        onCancel={(e) => {
+          if (busy) e.preventDefault();
+        }}
         onClose={() => {
           if (popup === "success") receiptTitleRef.current?.focus();
           setPopup(null);
         }}
       >
         <h2 id="application-popup-title">
-          {popup === "success" ? "신청이 완료되었습니다." : "체험단 문의하기"}
+          {popup === "confirm"
+            ? "접수하시겠습니까?"
+            : popup === "success"
+              ? "신청이 완료되었습니다."
+              : "체험단 문의하기"}
         </h2>
         <p id="application-popup-description">
-          {popup === "success"
-            ? "신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다."
-            : "신청이나 협업에 궁금한 점이 있다면 아래 연락처로 문의해주세요."}
+          {popup === "confirm"
+            ? "입력한 연락처와 정산 정보를 확인해주세요. 확인을 누르면 신청이 접수됩니다."
+            : popup === "success"
+              ? "신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다."
+              : "신청이나 협업에 궁금한 점이 있다면 아래 연락처로 문의해주세요."}
         </p>
-        <div className={styles.contactLinks}>
-          <a href="mailto:yeomjw0907@onecation.co.kr">
-            <span>이메일</span>yeomjw0907@onecation.co.kr
-          </a>
-          <a href="tel:01063334649">
-            <span>전화</span>010-6333-4649
-          </a>
-        </div>
+        {popup !== "confirm" && (
+          <div className={styles.contactLinks}>
+            <a href="mailto:yeomjw0907@onecation.co.kr">
+              <span>이메일</span>yeomjw0907@onecation.co.kr
+            </a>
+            <a href="tel:01063334649">
+              <span>전화</span>010-6333-4649
+            </a>
+          </div>
+        )}
+        {popup === "confirm" && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => dialogRef.current?.close()}
+          >
+            돌아가기
+          </button>
+        )}
         <button
           type="button"
           className="primary"
           autoFocus
-          onClick={() => dialogRef.current?.close()}
+          disabled={busy}
+          onClick={() =>
+            popup === "confirm" ? confirmSubmit() : dialogRef.current?.close()
+          }
         >
-          확인
+          {busy ? "접수 중…" : "확인"}
         </button>
       </dialog>
     </main>

@@ -3,8 +3,9 @@ import { participantPaymentSchema } from "./participant-payment";
 
 export const applicationChannels = {
   blog: "네이버 블로그",
-  clip: "네이버 클립",
   instagram: "인스타그램",
+  facebook: "페이스북",
+  linkedin: "링크드인",
   youtube: "유튜브",
   other: "기타",
 } as const;
@@ -31,7 +32,15 @@ export const applicationSchema = z
       .array(
         z.object({
           id: z.string().uuid(),
-          channel: z.enum(["blog", "clip", "instagram", "youtube", "other"]),
+          channel: z.enum([
+            "blog",
+            "clip",
+            "instagram",
+            "facebook",
+            "linkedin",
+            "youtube",
+            "other",
+          ]),
           url: z
             .string()
             .trim()
