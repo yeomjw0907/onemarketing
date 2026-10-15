@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import ApplicationFields from "./participant-application-fields";
+import CopyButton from "./copy-button";
 import type {
   ApplicationDraft,
   ParticipantApplication,
@@ -8,8 +9,10 @@ import type {
 const labels = { new: "신규", approved: "승인 완료", rejected: "반려" };
 export default function ParticipantApplications({
   onApproved,
+  refreshSignal,
 }: {
   onApproved: (id: string) => Promise<void>;
+  refreshSignal?: object;
 }) {
   const [items, setItems] = useState<ParticipantApplication[]>([]),
     [filter, setFilter] = useState("new"),
@@ -31,7 +34,7 @@ export default function ParticipantApplications({
     load()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshSignal]);
   async function review(action: "save" | "approve" | "reject") {
     if (!current || !draft || busy) return;
     setBusy(true);
@@ -99,15 +102,6 @@ export default function ParticipantApplications({
             {label} ({items.filter((i) => i.status === key).length})
           </button>
         ))}
-        <button
-          disabled={busy}
-          onClick={() => {
-            setError("");
-            load().catch((e) => setError(e.message));
-          }}
-        >
-          새로고침
-        </button>
       </div>
       {error && (
         <p className="error" role="alert">
@@ -137,7 +131,27 @@ export default function ParticipantApplications({
                     <td>
                       <strong>{item.data.name}</strong>
                     </td>
-                    <td>{item.data.phone}</td>
+                    <td>
+                      {[
+                        ["휴대전화", item.data.phone],
+                        ["이메일", item.data.email],
+                      ]
+                        .filter(([, value]) => value)
+                        .map(([label, value]) => (
+                          <div
+                            key={label}
+                            className="row"
+                            style={{
+                              gap: 8,
+                              margin: "4px 0",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span>{value}</span>
+                            <CopyButton value={value} label={label} />
+                          </div>
+                        ))}
+                    </td>
                     <td>
                       {new Date(item.created_at).toLocaleString("ko-KR", {
                         timeZone: "Asia/Seoul",
@@ -154,7 +168,9 @@ export default function ParticipantApplications({
                           setMessage("");
                         }}
                       >
-                        {item.status === "new" ? "검토 · 수정" : "내용 보기"}
+                        {item.status !== "approved"
+                          ? "검토 · 수정"
+                          : "내용 보기"}
                       </button>
                     </td>
                   </tr>
@@ -187,11 +203,21 @@ export default function ParticipantApplications({
           }}
         >
           <h3>{current.data.name} · 신청 검토</h3>
+          <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
+            <span>{draft.phone}</span>
+            <CopyButton value={draft.phone} label="휴대전화" />
+            {draft.email && (
+              <>
+                <span>{draft.email}</span>
+                <CopyButton value={draft.email} label="이메일" />
+              </>
+            )}
+          </div>
           <ApplicationFields
             key={current.id}
             draft={draft}
             onChange={setDraft}
-            disabled={busy || current.status !== "new"}
+            disabled={busy || current.status === "approved"}
           />
           <p className="hint">
             개인정보 동의:{" "}
@@ -217,15 +243,17 @@ export default function ParticipantApplications({
             >
               닫기
             </button>
-            {current.status === "new" && (
+            {current.status !== "approved" && (
               <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => review("reject")}
-                >
-                  반려
-                </button>
+                {current.status === "new" && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => review("reject")}
+                  >
+                    반려
+                  </button>
+                )}
                 <button type="submit" value="save" disabled={busy}>
                   수정 내용 저장
                 </button>

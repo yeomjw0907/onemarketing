@@ -76,7 +76,7 @@ export async function reviewApplication(input: unknown, actor: string) {
     if (!old) throw new Error("신청을 찾을 수 없습니다.");
     if (old.status === "approved" && body.action === "approve")
       return { participantId: old.participant_id };
-    if (old.status !== "new") throw new Error("이미 처리한 신청입니다.");
+    if (old.status === "approved") throw new Error("이미 승인한 신청입니다.");
     if (old.version !== body.version)
       throw new Error(
         "다른 곳에서 수정되었습니다. 새로고침 후 다시 시도하세요.",
@@ -113,7 +113,7 @@ export async function reviewApplication(input: unknown, actor: string) {
         ? "approved"
         : body.action === "reject"
           ? "rejected"
-          : "new";
+          : old.status;
     await execute(
       "update participant_applications set data=$1::jsonb,status=$2,participant_id=$3,version=version+1,updated_at=now() where id=$4",
       [

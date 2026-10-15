@@ -96,12 +96,39 @@ test("기존 참여자 계정 중복은 승인 전체를 되돌리고 반려는 
     actor,
   );
   assert.equal((await list("participants")).length, 1);
+  const revised = { ...input.data, name: "반려 후 수정한 신청자" };
+  await reviewApplication(
+    { id: result.id, version: 2, action: "save", data: revised },
+    actor,
+  );
+  assert.equal(
+    (await listApplications()).find((a) => a.id === result.id)?.status,
+    "rejected",
+  );
   await assert.rejects(
     reviewApplication(
-      { id: result.id, version: 2, action: "approve", data: input.data },
+      { id: result.id, version: 2, action: "approve", data: revised },
       actor,
     ),
-    /이미 처리/,
+    /다른 곳에서/,
+  );
+  const approvals = await Promise.all(
+    [1, 2].map(() =>
+      reviewApplication(
+        { id: result.id, version: 3, action: "approve", data: revised },
+        actor,
+      ),
+    ),
+  );
+  assert.equal(approvals[0].participantId, approvals[1].participantId);
+  assert.equal((await get(approvals[0].participantId!))?.name, revised.name);
+  assert.equal((await list("participants")).length, 2);
+  await assert.rejects(
+    reviewApplication(
+      { id: result.id, version: 4, action: "save", data: revised },
+      actor,
+    ),
+    /이미 승인/,
   );
 });
 test("동의·웹 주소·중복 계정 검사와 하루 접수 제한", async () => {

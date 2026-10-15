@@ -1,6 +1,8 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import ParticipantApplications from "./participant-applications";
+import CopyButton from "./copy-button";
+import styles from "./participants.module.css";
 import ParticipantPaymentFields from "./participant-payment-fields";
 import {
   elapsedLabel,
@@ -266,6 +268,7 @@ export default function Participants({
       )}
       {!participant && !editing && (
         <ParticipantApplications
+          refreshSignal={data}
           onApproved={async (id) => {
             await onReload();
             onSelect(id);
@@ -448,7 +451,7 @@ export default function Participants({
       )}
       {!participant && !editing && (
         <>
-          <div className="toolbar">
+          <div className={styles.filters}>
             <input
               aria-label="체험단 검색"
               placeholder="이름·닉네임·블로그 주소 검색"
@@ -467,14 +470,15 @@ export default function Participants({
                 </option>
               ))}
             </select>
-            <label>
-              정렬
-              <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="name">이름순</option>
-                <option value="speed">평균 링크 접수 빠른순</option>
-                <option value="quality">품질 평가 높은순</option>
-              </select>
-            </label>
+            <select
+              aria-label="정렬"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <option value="name">이름순</option>
+              <option value="speed">평균 링크 접수 빠른순</option>
+              <option value="quality">품질 평가 높은순</option>
+            </select>
           </div>
           <div className="tablewrap">
             <table>
@@ -580,8 +584,8 @@ export default function Participants({
               </tbody>
             </table>
             {!data.participants.length && (
-              <div className="empty">
-                <h3>첫 체험단를 등록하세요</h3>등록 후 프로젝트 작업에서
+              <div className={`empty ${styles.empty}`}>
+                <h3>첫 체험단을 등록하세요</h3>등록 후 프로젝트 작업에서
                 담당자와 게시 계정을 선택할 수 있어요.
               </div>
             )}
@@ -702,7 +706,13 @@ export default function Participants({
                 ].map(([k, v]) => (
                   <div className="amountline" key={String(k)}>
                     <span className="muted">{String(k)}</span>
-                    <span>{String(v || "미등록")}</span>
+                    <span className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      {String(v || "미등록")}
+                      {["전화번호", "이메일"].includes(String(k)) &&
+                        Boolean(v) && (
+                          <CopyButton value={String(v)} label={String(k)} />
+                        )}
+                    </span>
                   </div>
                 ))}
                 <h3 style={{ marginTop: 22 }}>내부 메모</h3>

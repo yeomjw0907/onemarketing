@@ -1,0 +1,31 @@
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.filters input,
+.filters select {
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin: 0;
+}
+.filters input {
+  width: min(320px, 100%);
+}
+.filters select {
+  width: 180px;
+}
+.empty {
+  padding: 28px 20px;
+}
+@media (max-width: 700px) {
+  .filters input {
+    width: 100%;
+  }
+  .filters select {
+    width: calc(50% - 5px);
+  }
+}
