@@ -12,22 +12,22 @@ Claude의 장면 설계에는 연결 원고/대본 버전과 문단, 장면 ID, 
 
 ## 모델 선택
 
-| 역할 | 기본 후보 | 비교·선택 후보 |
-| --- | --- | --- |
-| 검색 조사 | Claude Sonnet 5.5 웹 검색 | 정확한 ID는 계정·검색 지원 확인 후 설정 |
-| 분석·기획·원고·장면 설계 | Claude Sonnet 5.5 | 중요한 기획만 Opus 5.5 선택 검토 |
-| 이미지 편집 | fal GPT Image 2.5 Sunburst 편집 | fal Nano Banana Pro 편집 |
-| 이미지 기반 영상 | fal Seedance 2.5 | fal Kling 3.0 Pro |
-| 자막·가격·로고·영상 조립 | 자체 FFmpeg | 외부 생성 키 불필요 |
+| 역할                     | 기본 후보                       | 비교·선택 후보                          |
+| ------------------------ | ------------------------------- | --------------------------------------- |
+| 검색 조사                | Claude Sonnet 5.5 웹 검색       | 정확한 ID는 계정·검색 지원 확인 후 설정 |
+| 분석·기획·원고·장면 설계 | Claude Sonnet 5.5               | 중요한 기획만 Opus 5.5 선택 검토        |
+| 이미지 편집              | fal GPT Image 2.5 Sunburst 편집 | fal Nano Banana Pro 편집                |
+| 이미지 기반 영상         | fal Seedance 2.5                | fal Kling 3.0 Pro                       |
+| 자막·가격·로고·영상 조립 | 자체 FFmpeg                     | 외부 생성 키 불필요                     |
 
 공급사 구성은 확정 방향이고 모델은 샘플 검증 전 후보다. 모델별 실제 ID·스키마·접근 권한·가격을 확인한 뒤 운영 설정에 고정한다. 비교 후보는 자동으로 추가 호출하지 않는다. 동일 제품에서 제품 보존, 원고와 장면의 일치, 성공률, 수정 횟수, 대기 시간, 승인 결과물당 실제 비용을 비교한다.
 
 ## 필요한 API 키: 총 2개
 
-| 서비스 | 서버 환경변수 | 발급 위치 | 용도 |
-| --- | --- | --- | --- |
-| Anthropic Claude | `ANTHROPIC_API_KEY` | [Claude Console](https://platform.claude.com/)의 API Keys | 분석·기획·원고·장면 설계 |
-| fal | `FAL_KEY` | [fal Dashboard](https://fal.ai/dashboard)의 Keys | 이미지·영상 생성 |
+| 서비스           | 서버 환경변수       | 발급 위치                                                 | 용도                               |
+| ---------------- | ------------------- | --------------------------------------------------------- | ---------------------------------- |
+| Anthropic Claude | `ANTHROPIC_API_KEY` | [Claude Console](https://platform.claude.com/)의 API Keys | 분석·기획·원고·장면 설계           |
+| fal              | `FAL_KEY`           | [fal Dashboard](https://fal.ai/dashboard)의 Keys          | 이미지·영상 생성 및 청구 내역 조회 |
 
 신규 목표 흐름에는 OpenAI 키와 Higgsfield ID/secret이 필요하지 않다. GPT Image도 fal에서 호출하므로 fal 키를 사용한다. 코드와 `.env.example`도 신규 흐름으로 전환했다. 과거 생성 기록·비용은 보존하고 이전 공급사의 미완료 요청은 별도 확인한다.
 
@@ -78,3 +78,5 @@ FAL_KEY=
 - [Kling 영상](https://fal.ai/models/fal-ai/kling-video/v3/pro/image-to-video)
 
 2026-10-14 추가 결정: Gemini를 제거하고 Claude 웹 검색으로 조사·출처 수집까지 통합했다. 필요한 키는 ANTHROPIC_API_KEY와 FAL_KEY 두 개다. 웹 검색은 조직 설정에서 허용해야 하며, 출처 없는 결과와 검색 도구 오류는 기획으로 넘기지 않는다. 토큰·검색 도구 사용량을 기록하고 API 크레딧 적용·실제 청구는 Console에서 확인한다.
+
+2026-10-15 키 통합: fal은 FAL_KEY 하나로 생성과 청구 조회를 처리한다. 별도 FAL_BILLING_KEY는 사용하지 않는다. 청구 조회에는 billing:usage:read, auth:keys:read, account:users:read가 필요하다. Full access 키를 사용할 경우 서버 환경변수에만 보관하고 로컬과 Vercel의 production/preview/development 값을 동일하게 맞춘 뒤 재배포한다. 실제 비용은 요청 ID별 Billing Events의 cost_total(USD)로 확인하며 조회가 안 된 금액은 예상치로 표시한다.
