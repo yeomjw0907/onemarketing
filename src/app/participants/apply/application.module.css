@@ -4,7 +4,7 @@
   color: #191f28;
 }
 .header {
-  max-width: 1180px;
+  max-width: 800px;
   margin: auto;
   padding: 32px;
   display: flex;
@@ -28,45 +28,14 @@
   color: #2563eb;
 }
 .content {
-  max-width: 1180px;
+  max-width: 800px;
   margin: 25px auto;
   padding: 0 32px 50px;
-  display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
-  gap: 70px;
-  align-items: start;
-}
-.intro {
-  padding-top: 32px;
-  position: sticky;
-  top: 40px;
-  animation: enter 0.4s ease-out;
 }
 .eyebrow {
   font-size: 12px;
   color: #2563eb;
   font-weight: 700;
-}
-.intro h1 {
-  font-size: clamp(32px, 4vw, 48px);
-  line-height: 1.35;
-  letter-spacing: -2px;
-  margin: 20px 0;
-}
-.intro p {
-  font-size: 16px;
-  line-height: 1.9;
-  color: #6b7684;
-}
-.intro ol {
-  padding-left: 22px;
-  line-height: 2.4;
-  margin: 40px 0;
-  font-size: 14px;
-}
-.intro small {
-  color: #6b7684;
-  line-height: 1.9;
 }
 .form {
   background: white;
@@ -120,7 +89,7 @@
   clip-path: inset(50%);
 }
 .footer {
-  max-width: 1180px;
+  max-width: 800px;
   margin: auto;
   padding: 24px 32px;
   font-size: 11px;
@@ -142,13 +111,6 @@
     gap: 30px;
     padding: 0 20px 30px;
   }
-  .intro {
-    position: static;
-    padding-top: 0;
-  }
-  .intro ol {
-    margin: 20px 0;
-  }
   .header {
     padding: 24px 20px;
   }
@@ -160,8 +122,80 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .intro,
   .form {
     animation: none;
   }
+}
+
+.terms {
+  max-height: min(56svh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border-block: 1px solid #e9edf2;
+  margin-top: 24px;
+  padding: 0 16px 0 0;
+}
+.terms:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 4px;
+}
+.channel {
+  padding: 22px 0;
+}
+.channel h3,
+.upcoming h3,
+.conditions h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.rates {
+  margin: 18px 0;
+}
+.rates div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 0;
+  font-size: 14px;
+}
+.rates dd {
+  margin: 0;
+  font-weight: 700;
+  color: #2563eb;
+}
+.upcoming {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 0;
+  border-top: 1px solid #e9edf2;
+  gap: 16px;
+}
+.upcoming span {
+  color: #6b7684;
+  font-size: 13px;
+}
+.conditions {
+  border-top: 1px solid #e9edf2;
+  padding: 24px 0;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.conditions ul {
+  padding-left: 20px;
+}
+.conditions li {
+  margin: 14px 0;
+}
+.conditions p {
+  margin-bottom: 0;
+  font-weight: 600;
+}
+.scrollHint {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #6b7684;
+  margin: 16px 0;
 }

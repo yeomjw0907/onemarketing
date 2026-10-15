@@ -1,11 +1,34 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import ApplicationFields, {
   freshApplication,
 } from "@/components/participant-application-fields";
 import type { ApplicationDraft } from "@/lib/participant-application-schema";
 import styles from "./application.module.css";
-export default function ApplicationForm() {
+export default function ApplicationForm({
+  rewards,
+}: {
+  rewards: { blog: number; clip: number; bundle: number };
+}) {
+  const termsRef = useRef<HTMLDivElement>(null);
+  const [readTerms, setReadTerms] = useState(false);
+  useEffect(() => {
+    const panel = termsRef.current;
+    if (!panel) return;
+    const check = () => {
+      if (panel.scrollHeight - panel.scrollTop <= panel.clientHeight + 4)
+        setReadTerms(true);
+    };
+    const observer = new ResizeObserver(check);
+    observer.observe(panel);
+    if (panel.firstElementChild) observer.observe(panel.firstElementChild);
+    panel.addEventListener("scroll", check, { passive: true });
+    check();
+    return () => {
+      observer.disconnect();
+      panel.removeEventListener("scroll", check);
+    };
+  }, []);
   const [draft, setDraft] = useState<ApplicationDraft | null>(null);
   const [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
@@ -13,6 +36,7 @@ export default function ApplicationForm() {
     [receipt, setReceipt] = useState("");
   const [key, setKey] = useState("");
   function start() {
+    if (!readTerms) return;
     setDraft(freshApplication());
     setKey(crypto.randomUUID());
   }
@@ -46,29 +70,6 @@ export default function ApplicationForm() {
         <span>체험단 · 기자단 · 클립</span>
       </header>
       <div className={styles.content}>
-        <div className={styles.intro}>
-          <span className={styles.eyebrow}>크리에이터 참여 신청</span>
-          <h1>
-            당신의 경험을
-            <br />
-            함께 나눠주세요.
-          </h1>
-          <p>
-            블로그부터 클립까지.
-            <br />
-            원마케팅과 함께할 크리에이터를 기다립니다.
-          </p>
-          <ol>
-            <li>프로필과 활동 계정 입력</li>
-            <li>담당자 검토</li>
-            <li>승인 후 개별 협업 안내</li>
-          </ol>
-          <small>
-            신청은 참여자 등록을 위한 절차입니다.
-            <br />
-            실제 협업 일정과 조건은 별도로 안내합니다.
-          </small>
-        </div>
         <section className={styles.form}>
           {receipt ? (
             <div role="status">
@@ -83,9 +84,95 @@ export default function ApplicationForm() {
           ) : !draft ? (
             <>
               <h2>체험단 참여 신청</h2>
-              <p>이름, 연락처, 활동 계정을 준비해주세요.</p>
-              <button className="primary" onClick={start}>
-                신청서 작성하기 →
+              <p className="hint">채널별 보수와 참여 조건을 확인해주세요.</p>
+              <div
+                ref={termsRef}
+                className={styles.terms}
+                tabIndex={0}
+                role="region"
+                aria-label="채널별 보수 및 참여 조건"
+                aria-describedby="terms-scroll-hint"
+              >
+                <div>
+                  <section className={styles.channel}>
+                    <h3>네이버</h3>
+                    <dl className={styles.rates}>
+                      <div>
+                        <dt>블로그 글 업로드</dt>
+                        <dd>{rewards.blog.toLocaleString("ko-KR")}원 / 건</dd>
+                      </div>
+                      <div>
+                        <dt>클립 업로드</dt>
+                        <dd>{rewards.clip.toLocaleString("ko-KR")}원 / 건</dd>
+                      </div>
+                      <div>
+                        <dt>블로그 + 클립 업로드</dt>
+                        <dd>
+                          {rewards.bundle.toLocaleString("ko-KR")}원 / 세트
+                        </dd>
+                      </div>
+                    </dl>
+                    <p className="hint">
+                      기본 보수 기준이며, 실제 협업 보수와 지급 조건은 참여 전
+                      개별 안내합니다.
+                    </p>
+                  </section>
+                  {["인스타그램", "페이스북", "링크드인", "유튜브"].map(
+                    (channel) => (
+                      <section className={styles.upcoming} key={channel}>
+                        <h3>{channel}</h3>
+                        <span>오픈 예정</span>
+                      </section>
+                    ),
+                  )}
+                  <section className={styles.conditions}>
+                    <h3>참여 전 꼭 확인해주세요</h3>
+                    <ul>
+                      <li>
+                        참여가 확정된 작업은 안내된 기한과 업로드 조건을
+                        지켜주세요.
+                      </li>
+                      <li>
+                        기한 내 업로드하지 않거나 연락 없이 작업을 중단하면 이후
+                        체험단 선정에서 후순위로 배정될 수 있습니다.
+                      </li>
+                      <li>
+                        게시물은 개별 안내한 유지 기간 동안 공개 상태로
+                        유지해주세요. 사전 협의 없이 삭제하거나 비공개로
+                        전환하면 이후 참여가 제한될 수 있습니다.
+                      </li>
+                      <li>
+                        미업로드 또는 무단 삭제가 반복되는 경우 협업이 종료되고
+                        체험단 등록이 해제될 수 있습니다.
+                      </li>
+                      <li>
+                        업로드가 어렵거나 게시물을 수정·삭제해야 하는 사정이
+                        생기면 담당자에게 먼저 연락해주세요.
+                      </li>
+                    </ul>
+                    <p>
+                      위 보수 안내와 참여 조건을 확인했으며, 동의 후 신청을
+                      진행합니다.
+                    </p>
+                  </section>
+                </div>
+              </div>
+              <p
+                id="terms-scroll-hint"
+                className={styles.scrollHint}
+                role="status"
+              >
+                {readTerms
+                  ? "안내를 모두 확인했습니다. 동의 후 신청서를 작성해주세요."
+                  : "안내 영역을 아래 끝까지 내려 확인하면 버튼이 활성화됩니다."}
+              </p>
+              <button
+                className="primary"
+                disabled={!readTerms}
+                onClick={start}
+                style={{ width: "100%" }}
+              >
+                동의합니다.
               </button>
             </>
           ) : (
