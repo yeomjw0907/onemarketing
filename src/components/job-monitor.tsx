@@ -32,6 +32,40 @@ export default function JobMonitor({
     [follow, setFollow] = useState(true),
     [updated, setUpdated] = useState("");
   const panel = useRef<HTMLPreElement>(null);
+  const running = jobs.filter((j) => j.status === "running").length;
+  const pending = jobs.filter((j) => j.status === "pending").length;
+  const latest = new Map<string, Job>();
+  for (const job of jobs) {
+    const key = `${job.taskId || "project"}:${job.type}`;
+    if (!latest.has(key)) latest.set(key, job);
+  }
+  const needsCheck = [...latest.values()].some((j) =>
+    ["failed", "uncertain"].includes(j.status),
+  );
+  const reviewReady =
+    tasks.filter((t) => t.status !== "cancelled").length > 0 &&
+    tasks
+      .filter((t) => t.status !== "cancelled")
+      .every((t) =>
+        ["review", "approved", "delivered", "submitted", "verified"].includes(
+          String(t.status),
+        ),
+      );
+  const summary = error
+    ? "실행 상태 조회 실패"
+    : !updated
+      ? "실행 상태 확인 중"
+      : running
+        ? `AI 생성 중 · ${running}개 실행${pending ? ` · ${pending}개 대기` : ""}`
+        : pending
+          ? `실행 대기 · ${pending}개`
+          : needsCheck
+            ? "실행 중인 작업 없음 · 오류 확인 필요"
+            : jobs.length
+              ? reviewReady
+                ? "생성 완료 · 검수 대기"
+                : "실행 완료 · 결과 확인"
+              : "실행 중인 작업 없음";
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -83,6 +117,15 @@ export default function JobMonitor({
           4초마다 갱신{updated ? ` · ${updated}` : ""}
         </span>
       </div>
+      <div className="job-execution-summary" role="status" aria-live="polite">
+        {(running > 0 || !updated) && !error && (
+          <span className="job-spinner" aria-hidden="true" />
+        )}
+        <strong>{summary}</strong>
+        {updated && !running && !pending && !error && (
+          <small className="muted">아래 로그는 지난 실행 기록입니다.</small>
+        )}
+      </div>
       <div>
         {jobs
           .filter((j) => !jobId || j.id === jobId)
@@ -90,6 +133,10 @@ export default function JobMonitor({
           .map((j) => {
             const last = [...logs].reverse().find((l) => l.jobId === j.id);
             const task = tasks.find((t) => t.id === j.taskId);
+            const recovered =
+              ["failed", "uncertain"].includes(j.status) &&
+              latest.get(`${j.taskId || "project"}:${j.type}`)?.status ===
+                "succeeded";
             return (
               <div className="amountline" key={j.id}>
                 <div>
@@ -100,6 +147,8 @@ export default function JobMonitor({
                     · {j.id.slice(0, 8)} · 실행 {j.attempts}회
                   </small>
                   <p>
+                    {recovered &&
+                      "이전 실패 기록 · 이후 같은 종류의 작업 완료. "}
                     {j.error ||
                       String(last?.message || "상세 로그를 기다리고 있습니다.")}
                   </p>
@@ -111,7 +160,10 @@ export default function JobMonitor({
                       : "badge"
                   }
                 >
-                  {stageLabels[j.status] || j.status}
+                  {j.status === "running" && (
+                    <span className="job-spinner" aria-hidden="true" />
+                  )}
+                  {recovered ? "이전 실패" : stageLabels[j.status] || j.status}
                 </span>
               </div>
             );
