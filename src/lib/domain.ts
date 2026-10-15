@@ -193,6 +193,15 @@ export function save(
         const previous = await requireRecord(id, "participant_history");
         if (previous.participantId !== data.participantId)
           throw new Error("기존 협업 이력의 참여자는 변경할 수 없습니다.");
+        if (
+          previous.settlementId &&
+          (previous.amount !== data.amount ||
+            previous.paid !== data.paid ||
+            previous.paidDate !== data.paidDate)
+        )
+          throw new Error(
+            "합산 지급 이력입니다. 담당자 정산 화면에서 합산 지급을 취소한 뒤 변경하세요.",
+          );
         await audit(actor, "participant-history-updated", id, {
           previousAmount: previous.amount,
           amount: data.amount,
@@ -418,7 +427,48 @@ export function command(
       !["reopen-settlement", "import-source"].includes(action)
     )
       throw new Error("정산 마감한 프로젝트입니다. 먼저 마감을 취소하세요.");
-    if (action === "work-slot-assign" || action === "work-slot-pay") {
+    if (
+      ["payout", "work-slot-pay", "posting-set-pay"].includes(action) &&
+      row.settlementId
+    )
+      throw new Error(
+        "합산 지급 내역입니다. 담당자 정산 화면에서 합산 지급을 취소하세요.",
+      );
+    if (action === "participant-settlement-cancel") {
+      result = await (
+        await import("./participant-settlements")
+      ).cancelParticipantSettlement(row, input, actor);
+    } else if (action === "participant-settle") {
+      result = await (
+        await import("./participant-settlements")
+      ).settleParticipant(row, input, actor);
+    } else if (action === "participant-account-review") {
+      if (row.kind !== "participants") throw new Error("담당자를 선택하세요.");
+      await lock("save:participants");
+      row = await requireRecord(id, "participants");
+      const accountId = z.string().uuid().parse(input.accountId);
+      const status = z
+        .enum(["pending", "approved", "rejected"])
+        .parse(input.status);
+      const accounts = row.accounts as {
+        id: string;
+        approvalStatus?: string;
+      }[];
+      if (!accounts.some((a) => a.id === accountId))
+        throw new Error("계정을 찾을 수 없습니다.");
+      result = await save(
+        "participants",
+        {
+          ...row,
+          accounts: accounts.map((a) =>
+            a.id === accountId ? { ...a, approvalStatus: status } : a,
+          ),
+        },
+        actor,
+        row.id,
+        Number(input.version),
+      );
+    } else if (action === "work-slot-assign" || action === "work-slot-pay") {
       const module = await import("./work-slots");
       result =
         action === "work-slot-assign"

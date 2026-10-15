@@ -1,4 +1,5 @@
 "use client";
+import { accountAssignable } from "@/lib/participant-account-policy";
 import { shootingTargetOptions } from "@/lib/media-guidance";
 import Participants from "./participants";
 import SalesCartBuilder from "./sales-cart";
@@ -2582,7 +2583,7 @@ export default function Workspace() {
                       onChange={(e) => {
                         const p = find("participants", e.target.value);
                         const account = ((p?.accounts as Draft[]) || []).find(
-                          (a) => a.channel === draft.channel,
+                          (a) => accountAssignable(a, draft.channel),
                         );
                         setDraft({
                           ...draft,
@@ -2627,7 +2628,11 @@ export default function Workspace() {
                           (find("participants", draft.participantId)
                             ?.accounts || []) as Draft[]
                         )
-                          .filter((a) => a.channel === draft.channel)
+                          .filter(
+                            (a) =>
+                              accountAssignable(a, draft.channel) ||
+                              a.id === draft.participantAccountId,
+                          )
                           .map((a) => (
                             <option key={a.id} value={a.id}>
                               {a.label || a.url}

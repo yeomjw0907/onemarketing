@@ -221,3 +221,53 @@ test("섭외 보류 참여자 신규 배정 차단과 과거 협업 이력 정�
     /수정/,
   );
 });
+
+test("legacy standalone tasks settle to their coordinator and a closed project blocks settlement cancellation", async () => {
+  const { p: project, t } = await task();
+  const { update, view } = await import("../src/lib/db");
+  const { settlementItems } =
+    await import("../src/lib/participant-settlement-view");
+  const participant = await save(
+    "participants",
+    {
+      name: "기존 담당자",
+      payment: {
+        method: "bank",
+        bankName: "국민은행",
+        accountNumber: "123456789",
+      },
+      accounts: [
+        { ...account(), url: "https://blog.naver.com/legacy-settlement" },
+      ],
+    },
+    actor,
+  );
+  // A pre-slot task from the existing workflow remains eligible.
+  await update(t.id, {
+    workSlotId: null,
+    postingSetId: null,
+    participantId: participant.id,
+    status: "verified",
+    payout: 5000,
+    payoutStatus: "pending",
+  });
+  const items = settlementItems(await view(), participant.id);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].kind, "tasks");
+  const act = async (action: string, id: string, extra = {}) =>
+    command(
+      action,
+      { id, version: (await get(id))!.version, ...extra },
+      actor,
+      crypto.randomUUID(),
+    );
+  const paid = await act("participant-settle", participant.id, { items });
+  assert.equal(paid.total, 5000);
+  assert.equal((await get(t.id))!.settlementId, paid.id);
+  await update(project.id, { settled: true });
+  await assert.rejects(act("participant-settlement-cancel", paid.id), /마감/);
+  assert.equal((await get(t.id))!.payoutStatus, "paid");
+  await update(project.id, { settled: false });
+  await act("participant-settlement-cancel", paid.id);
+  assert.equal((await get(t.id))!.payoutStatus, "pending");
+});

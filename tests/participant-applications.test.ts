@@ -30,6 +30,7 @@ function application() {
         {
           id: crypto.randomUUID(),
           channel: "blog",
+          approvalStatus: "approved",
           url: "https://blog.naver.com/" + key,
           label: "",
         },
@@ -200,4 +201,52 @@ test("인스타그램 아이디는 신청 저장·승인 단계 모두 표준 �
     stored.data.accounts[0].url,
   );
   assert.deepEqual(participant?.payment, input.data.payment);
+});
+
+test("관리 신청은 권한 동의와 별칭이 필요하고 공개 신청은 승인 상태를 지정할 수 없다", async () => {
+  const input = application();
+  input.data.phone = "010-8765-4321";
+  const data = {
+    ...input.data,
+    operationType: "managed",
+    teamName: "파트너",
+    authorityConsent: false,
+  };
+  await assert.rejects(submitApplication({ ...input, data }), /권한/);
+  data.authorityConsent = true;
+  await assert.rejects(submitApplication({ ...input, data }), /별칭/);
+  data.accounts[0].label = "크리에이터 A";
+  const second = {
+    ...data.accounts[0],
+    id: crypto.randomUUID(),
+    url: "https://blog.naver.com/" + crypto.randomUUID(),
+    label: "크리에이터 B",
+  };
+  data.accounts.push(second);
+  const result = await submitApplication({ ...input, data });
+  const stored = (await listApplications()).find((a) => a.id === result.id)!;
+  assert.ok(stored.data.accounts.every((a) => a.approvalStatus === "pending"));
+  const approved = await reviewApplication(
+    {
+      id: result.id,
+      version: 1,
+      action: "approve",
+      data: {
+        ...data,
+        accounts: [
+          { ...data.accounts[0], approvalStatus: "approved" },
+          { ...second, approvalStatus: "rejected" },
+        ],
+      },
+    },
+    actor,
+  );
+  const participant = (await get(approved.participantId!))!;
+  assert.equal(participant.operationType, "managed");
+  assert.deepEqual(
+    (participant.accounts as { approvalStatus: string }[]).map(
+      (a) => a.approvalStatus,
+    ),
+    ["approved", "rejected"],
+  );
 });

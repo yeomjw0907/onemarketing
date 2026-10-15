@@ -212,14 +212,11 @@ test("new cart projects create unassigned slots, immutable scope, exact rewards,
   );
   assert.equal((await projectCosts(p)).actual, 27000);
   const single = slots.find((s) => s.type === "clip")!;
-  await assert.rejects(
-    act("work-slot-assign", single.id, {
-      participantId: participant.id,
-      clipAccountId: accounts[0].id,
-    }),
-    /채널/,
-  );
-  assert.equal((await get(single.id))!.participantId, null);
+  await act("work-slot-assign", single.id, {
+    participantId: participant.id,
+    clipAccountId: accounts[0].id,
+  });
+  assert.equal((await get(single.id))!.participantId, participant.id);
 });
 test("approved files are scoped to the worker; delivery, submission, verification and correction timestamps remain auditable", async () => {
   const { p, participant, accounts } = await fixture();
@@ -342,4 +339,79 @@ test("approved files are scoped to the worker; delivery, submission, verificatio
     "revision",
   ])
     assert.ok(history.some((e) => e.type === type));
+});
+
+test("managed accounts are approved individually and settlement groups verified slots without double counting", async () => {
+  const { p, participant, accounts } = await fixture();
+  await update(participant.id, {
+    operationType: "managed",
+    payment: { method: "kakaopay" },
+  });
+  await act("participant-account-review", participant.id, {
+    accountId: accounts[0].id,
+    status: "pending",
+  });
+  const slots = (await list("work_slots")).filter((s) => s.projectId === p.id);
+  const bundle = slots.find((s) => s.type === "bundle")!;
+  await assert.rejects(
+    act("work-slot-assign", bundle.id, {
+      participantId: participant.id,
+      blogAccountId: accounts[0].id,
+      clipAccountId: accounts[0].id,
+    }),
+    /계정/,
+  );
+  await act("participant-account-review", participant.id, {
+    accountId: accounts[0].id,
+    status: "approved",
+  });
+  await act("work-slot-assign", bundle.id, {
+    participantId: participant.id,
+    blogAccountId: accounts[0].id,
+    clipAccountId: accounts[0].id,
+  });
+  const { settlementItems } =
+    await import("../src/lib/participant-settlement-view");
+  const { view } = await import("../src/lib/db");
+  assert.equal(settlementItems(await view(), participant.id).length, 0);
+  const tasks = (await list("tasks")).filter((t) => t.workSlotId === bundle.id);
+  for (const t of tasks) await update(t.id, { status: "verified" });
+  const history = await save(
+    "participant_history",
+    {
+      participantId: participant.id,
+      name: "추가 보수",
+      channel: "blog",
+      date: "2026-10-16",
+      amount: 3000,
+      paid: false,
+    },
+    actor,
+  );
+  const items = settlementItems(await view(), participant.id);
+  assert.equal(items.length, 2);
+  assert.equal(
+    items.reduce((sum, i) => sum + i.amount, 0),
+    10000,
+  );
+  const result = await act("participant-settle", participant.id, { items });
+  assert.equal(result.total, 10000);
+  assert.equal((await get(history.id))!.paid, true);
+  for (const t of tasks) assert.equal((await get(t.id))!.payoutStatus, "paid");
+  assert.equal(settlementItems(await view(), participant.id).length, 0);
+  await assert.rejects(
+    act("participant-settle", participant.id, { items }),
+    /변경/,
+  );
+  await assert.rejects(
+    act("work-slot-pay", bundle.id, { paid: false }),
+    /합산/,
+  );
+  await act("participant-settlement-cancel", result.id);
+  assert.equal((await get(history.id))!.paid, false);
+  assert.equal(settlementItems(await view(), participant.id).length, 2);
+  await assert.rejects(
+    act("participant-settle", participant.id, { items }),
+    /변경/,
+  );
 });

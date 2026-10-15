@@ -1,6 +1,8 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import ParticipantApplications from "./participant-applications";
+import ParticipantAccountReview from "./participant-account-review";
+import ParticipantSettlements from "./participant-settlements";
 import CopyButton from "./copy-button";
 import styles from "./participants.module.css";
 import ParticipantPaymentFields from "./participant-payment-fields";
@@ -32,6 +34,8 @@ const states: Record<string, string> = {
 };
 const fresh = () => ({
   name: "",
+  operationType: "self",
+  teamName: "",
   nickname: "",
   contact: "",
   phone: "",
@@ -286,6 +290,19 @@ export default function Participants({
           >
             <div className="fields">
               {field("name", "이름")}
+              <label>
+                계정 운영 형태
+                <select
+                  value={draft.operationType || "self"}
+                  onChange={(e) =>
+                    setDraft({ ...draft, operationType: e.target.value })
+                  }
+                >
+                  <option value="self">본인 계정</option>
+                  <option value="managed">여러 계정 운영</option>
+                </select>
+              </label>
+              {field("teamName", "업체명 · 운영팀명")}
               {field("nickname", "닉네임")}
               {field("phone", "전화번호", "tel")}
               {field("email", "이메일", "email")}
@@ -354,8 +371,8 @@ export default function Participants({
               </button>
             </div>
             <p className="hint">
-              블로그 주소를 붙여 넣으세요. 같은 체험단의 클립 링크는 링크 추가
-              후 채널을 선택하면 됩니다.
+              블로그와 클립은 같은 네이버 블로그 계정으로 배정할 수 있어요. 여러
+              계정을 운영한다면 별칭으로 구분해주세요.
             </p>
             {draft.accounts.map((a: Draft, i: number) => (
               <div className="row" key={a.id} style={{ margin: "12px 0" }}>
@@ -680,6 +697,13 @@ export default function Participants({
                 <h2>기본 정보</h2>
                 {[
                   ["전화번호", participant.phone],
+                  [
+                    "계정 운영 형태",
+                    participant.operationType === "managed"
+                      ? "여러 계정 운영"
+                      : "본인 계정",
+                  ],
+                  ["업체 · 운영팀", participant.teamName],
                   ["이메일", participant.email],
                   [
                     "정산 방식",
@@ -720,19 +744,10 @@ export default function Participants({
                   {String(participant.notes || "없음")}
                 </p>
               </section>
-              <section className="section">
-                <h2>블로그·클립 링크</h2>
-                {(participant.accounts as Draft[]).map((a) => (
-                  <div className="amountline" key={a.id}>
-                    <span>
-                      {channels[a.channel]} · {a.label || "기본 계정"}
-                    </span>
-                    <a href={a.url} target="_blank" rel="noreferrer">
-                      {a.url} ↗
-                    </a>
-                  </div>
-                ))}
-              </section>
+              <ParticipantAccountReview
+                participant={participant}
+                reload={onReload}
+              />
             </div>
           )}
           {tab === 3 && (
@@ -792,6 +807,13 @@ export default function Participants({
           )}
           {(tab === 1 || tab === 2) && (
             <>
+              {tab === 2 && (
+                <ParticipantSettlements
+                  participant={participant}
+                  data={data}
+                  reload={onReload}
+                />
+              )}
               <div className="section-title">
                 <h2>{tab === 1 ? "참여한 작업" : "지급·미지급 내역"}</h2>
                 <button

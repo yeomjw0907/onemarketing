@@ -43,6 +43,10 @@ export async function submitApplication(input: unknown) {
         envelope.key,
         JSON.stringify({
           ...envelope.data,
+          accounts: envelope.data.accounts.map((a) => ({
+            ...a,
+            approvalStatus: "pending",
+          })),
           consentAt: new Date().toISOString(),
           consentVersion: "2026-10-15-creator-terms-v3",
         }),
@@ -83,10 +87,14 @@ export async function reviewApplication(input: unknown, actor: string) {
       );
     let participantId: string | null = null;
     if (body.action === "approve") {
+      if (!body.data.accounts.some((a) => a.approvalStatus === "approved"))
+        throw new Error("계정을 하나 이상 승인한 뒤 담당자를 등록하세요.");
       const p = await save(
         "participants",
         {
           name: body.data.name,
+          operationType: body.data.operationType || "self",
+          teamName: body.data.teamName || "",
           nickname: body.data.nickname,
           phone: body.data.phone,
           email: body.data.email,
@@ -101,7 +109,10 @@ export async function reviewApplication(input: unknown, actor: string) {
           ]
             .filter(Boolean)
             .join("\n"),
-          accounts: body.data.accounts,
+          accounts: body.data.accounts.map((a) => ({
+            ...a,
+            approvalStatus: a.approvalStatus || "pending",
+          })),
           status: "active",
         },
         actor,

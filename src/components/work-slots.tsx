@@ -1,4 +1,5 @@
 "use client";
+import { accountAssignable } from "@/lib/participant-account-policy";
 import { useState } from "react";
 import {
   money,
@@ -12,7 +13,13 @@ type Props = {
   reload: () => Promise<void>;
   onPublication: (task: RecordData) => void;
 };
-type Account = { id: string; channel: string; url: string; label: string };
+type Account = {
+  id: string;
+  channel: string;
+  url: string;
+  label: string;
+  approvalStatus?: "pending" | "approved" | "rejected";
+};
 function Slot({
   slot,
   project,
@@ -137,7 +144,11 @@ function Slot({
                 value={
                   accountIds[String(t.channel)] ||
                   accounts.find((a) => a.id === t.participantAccountId)?.id ||
-                  accounts.find((a) => a.channel === t.channel)?.id ||
+                  accounts.find(
+                    (a) =>
+                      accountAssignable(a, t.channel) ||
+                      a.id === t.participantAccountId,
+                  )?.id ||
                   ""
                 }
                 onChange={(e) =>
@@ -149,7 +160,11 @@ function Slot({
               >
                 <option value="">계정 등록 필요</option>
                 {accounts
-                  .filter((a) => a.channel === t.channel)
+                  .filter(
+                    (a) =>
+                      accountAssignable(a, t.channel) ||
+                      a.id === t.participantAccountId,
+                  )
                   .map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.label || a.url}
@@ -171,7 +186,7 @@ function Slot({
                     tasks.find((t) => t.channel === "blog")
                       ?.participantAccountId,
                 )?.id ||
-                accounts.find((a) => a.channel === "blog")?.id,
+                accounts.find((a) => accountAssignable(a, "blog"))?.id,
               clipAccountId:
                 accountIds.clip ||
                 accounts.find(
@@ -180,7 +195,7 @@ function Slot({
                     tasks.find((t) => t.channel === "clip")
                       ?.participantAccountId,
                 )?.id ||
-                accounts.find((a) => a.channel === "clip")?.id,
+                accounts.find((a) => accountAssignable(a, "clip"))?.id,
             })
           }
         >

@@ -1,4 +1,5 @@
 "use client";
+import { accountAssignable } from "@/lib/participant-account-policy";
 import { useState } from "react";
 import {
   money,
@@ -272,7 +273,7 @@ export default function PostingSets({
                       >
                         <option value="">계정 선택</option>
                         {accounts
-                          .filter((a) => a.channel === channel)
+                          .filter((a) => accountAssignable(a, channel))
                           .map((a) => (
                             <option key={a.id} value={a.id}>
                               {a.label || a.url}
@@ -284,8 +285,8 @@ export default function PostingSets({
                 ))}
               </div>
               {participant &&
-                (!accounts.some((a) => a.channel === "blog") ||
-                  !accounts.some((a) => a.channel === "clip")) && (
+                (!accounts.some((a) => accountAssignable(a, "blog")) ||
+                  !accounts.some((a) => accountAssignable(a, "clip"))) && (
                   <p className="hint">
                     체험단 관리에서 블로그·클립 계정을 모두 등록해 주세요.
                   </p>

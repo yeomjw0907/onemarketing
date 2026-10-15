@@ -11,9 +11,13 @@ import {
 import ParticipantPaymentFields from "./participant-payment-fields";
 import type { ApplicationDraft } from "@/lib/participant-application-schema";
 import styles from "./application-inputs.module.css";
+import { Check } from "lucide-react";
 export function freshApplication(): ApplicationDraft {
   return {
     name: "",
+    operationType: "self",
+    teamName: "",
+    authorityConsent: false,
     nickname: "",
     phone: "",
     email: "",
@@ -40,9 +44,38 @@ export default function ApplicationFields({
       disabled={disabled}
       style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
     >
+      <h3>계정 운영 형태</h3>
+      <div
+        className={styles.paymentOptions}
+        role="group"
+        aria-label="계정 운영 형태"
+      >
+        {(
+          [
+            ["self", "본인 계정"],
+            ["managed", "여러 계정 운영"],
+          ] as const
+        ).map(([type, label]) => (
+          <button
+            key={type}
+            type="button"
+            aria-pressed={(draft.operationType || "self") === type}
+            onClick={() => onChange({ ...draft, operationType: type })}
+          >
+            {(draft.operationType || "self") === type && <Check size={18} />}
+            {label}
+          </button>
+        ))}
+      </div>
+      {draft.operationType === "managed" && (
+        <p className={styles.fieldHelp} style={{ marginBottom: 20 }}>
+          담당자 한 분이 여러 계정을 등록할 수 있어요. 계정별로 검토·배정하고,
+          보수는 담당자에게 합산 정산합니다.
+        </p>
+      )}
       <div className={styles.fieldGrid}>
         <ApplicationInput
-          label="이름"
+          label={draft.operationType === "managed" ? "담당자 이름" : "이름"}
           required
           autoComplete="name"
           maxLength={200}
@@ -50,6 +83,15 @@ export default function ApplicationFields({
           value={draft.name}
           onChange={(name) => onChange({ ...draft, name })}
         />
+        {draft.operationType === "managed" && (
+          <ApplicationInput
+            label="업체명 · 운영팀명 (선택)"
+            value={draft.teamName || ""}
+            onChange={(teamName) => onChange({ ...draft, teamName })}
+            maxLength={200}
+            placeholder="예: 원케이션 운영팀"
+          />
+        )}
         <ApplicationInput
           label="휴대전화"
           type="tel"
@@ -86,6 +128,25 @@ export default function ApplicationFields({
           const config = accountInputs[account.channel] || accountInputs.other;
           return (
             <div key={account.id} className={styles.account}>
+              {draft.operationType === "managed" && (
+                <ApplicationInput
+                  label="관리용 별칭"
+                  aria-label={`관리용 별칭 ${index + 1}`}
+                  required
+                  maxLength={100}
+                  placeholder="예: 뷰티 블로그 A"
+                  value={account.label}
+                  data-field={`accounts.${index}.label`}
+                  onChange={(label) =>
+                    onChange({
+                      ...draft,
+                      accounts: draft.accounts.map((a, i) =>
+                        i === index ? { ...a, label } : a,
+                      ),
+                    })
+                  }
+                />
+              )}
               <div className={styles.accountHeader}>
                 <ApplicationChannelSelect
                   label={
@@ -185,6 +246,29 @@ export default function ApplicationFields({
           </button>
         )}
       </section>
+      {draft.operationType === "managed" && (
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            fontWeight: 400,
+            lineHeight: 1.8,
+          }}
+        >
+          <input
+            type="checkbox"
+            required
+            checked={draft.authorityConsent || false}
+            style={{ width: 18, height: 18, flexShrink: 0, marginTop: 3 }}
+            onChange={(e) =>
+              onChange({ ...draft, authorityConsent: e.target.checked })
+            }
+          />
+          등록한 계정의 관리·게시 권한이 있으며, 각 계정 운영자에게 게시 및 유지
+          조건을 확인했습니다. *
+        </label>
+      )}
       <ParticipantPaymentFields
         payment={draft.payment}
         onChange={(payment) => onChange({ ...draft, payment })}

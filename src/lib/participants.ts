@@ -1,6 +1,7 @@
 import { rewardDefaults } from "./sales-cart";
 import { z } from "zod";
 import { participantPaymentSchema } from "./participant-payment";
+import { accountAssignable } from "./participant-account-policy";
 import { get, list } from "./db";
 import type { RecordData } from "./types";
 const amount = z.number().int().min(0).max(1e12).nullable();
@@ -15,6 +16,8 @@ const profileUrl = z
   );
 export const participantSchema = z.object({
   name: z.string().trim().min(1).max(200),
+  operationType: z.enum(["self", "managed"]).default("self"),
+  teamName: z.string().trim().max(200).default(""),
   nickname: z.string().trim().max(100).default(""),
   contact: z.string().trim().max(1000).default(""),
   phone: z.string().trim().max(40).default(""),
@@ -43,6 +46,9 @@ export const participantSchema = z.object({
         ]),
         url: profileUrl,
         label: z.string().trim().max(100).default(""),
+        approvalStatus: z
+          .enum(["pending", "approved", "rejected"])
+          .default("approved"),
       }),
     )
     .max(20)
@@ -135,9 +141,21 @@ export async function participantAssignment(
       ? input.participantAccountId
       : String(task.participantAccountId || "");
   const account = (
-    p.accounts as { id: string; channel: string; url: string; label: string }[]
+    p.accounts as {
+      id: string;
+      channel: string;
+      url: string;
+      label: string;
+      approvalStatus?: "pending" | "approved" | "rejected";
+    }[]
   ).find((a) => a.id === accountId);
-  if (!account || account.channel !== task.channel)
+  if (
+    !account ||
+    (!accountAssignable(account, task.channel) &&
+      !(
+        task.participantId === p.id && task.participantAccountId === account.id
+      ))
+  )
     throw new Error("게시 채널에 맞는 참여자 계정을 선택하세요.");
   if (
     task.payoutStatus === "paid" &&
@@ -155,6 +173,8 @@ export async function participantAssignment(
         ? task.participantSnapshot
         : {
             name: p.name,
+            operationType: p.operationType || "self",
+            teamName: p.teamName || "",
             nickname: p.nickname,
             account: { ...account },
           },

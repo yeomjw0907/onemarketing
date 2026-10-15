@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import ApplicationFields from "./participant-application-fields";
 import CopyButton from "./copy-button";
+import { accountStatusLabels } from "@/lib/participant-account-policy";
 import type {
   ApplicationDraft,
   ParticipantApplication,
@@ -219,6 +220,52 @@ export default function ParticipantApplications({
             onChange={setDraft}
             disabled={busy || current.status === "approved"}
           />
+          <section className="section" aria-label="신청 계정별 검토">
+            <h3>계정별 승인</h3>
+            <p className="hint">
+              승인한 계정만 배정할 수 있습니다. 보류·반려 계정은 담당자 등록
+              후에도 다시 검토할 수 있어요.
+            </p>
+            {draft.accounts.map((account, i) => (
+              <div
+                key={account.id}
+                className="row"
+                style={{ flexWrap: "wrap", marginBottom: 14, gap: 12 }}
+              >
+                <strong>{account.label || `계정 ${i + 1}`}</strong>
+                <span style={{ overflowWrap: "anywhere" }}>{account.url}</span>
+                <select
+                  aria-label={`${account.label || `계정 ${i + 1}`} 승인 상태`}
+                  disabled={busy || current.status === "approved"}
+                  value={
+                    account.approvalStatus ||
+                    (current.status === "approved" ? "approved" : "pending")
+                  }
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      accounts: draft.accounts.map((a, j) =>
+                        j === i
+                          ? {
+                              ...a,
+                              approvalStatus: e.target.value as
+                                "pending" | "approved" | "rejected",
+                            }
+                          : a,
+                      ),
+                    })
+                  }
+                  style={{ width: 140 }}
+                >
+                  {Object.entries(accountStatusLabels).map(([key, label]) => (
+                    <option value={key} key={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </section>
           <p className="hint">
             개인정보 동의:{" "}
             {new Date(current.data.consentAt).toLocaleString("ko-KR", {
@@ -261,9 +308,12 @@ export default function ParticipantApplications({
                   type="submit"
                   value="approve"
                   className="primary"
-                  disabled={busy}
+                  disabled={
+                    busy ||
+                    !draft.accounts.some((a) => a.approvalStatus === "approved")
+                  }
                 >
-                  {busy ? "처리 중…" : "수정 내용으로 승인 · 참여자 등록"}
+                  {busy ? "처리 중…" : "담당자 승인 · 선택 계정 등록"}
                 </button>
               </>
             )}

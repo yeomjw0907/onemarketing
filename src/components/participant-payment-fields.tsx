@@ -68,7 +68,7 @@ export default function ParticipantPaymentFields({
             validate={(value) =>
               value.length < 6 ? "계좌번호를 확인해주세요." : ""
             }
-            help="신청자 본인 명의의 계좌를 입력해주세요."
+            help="정산 담당자 본인 명의의 계좌를 입력해주세요."
           />
         </div>
       )}

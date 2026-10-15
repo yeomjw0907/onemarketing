@@ -22,7 +22,8 @@ export function applicationReadiness(
           email: "이메일",
           region: "활동 지역",
         } as Record<string, string>
-      )[String(field)] || "신청 정보";
+      )[String(field)] ||
+      (field === "authorityConsent" ? "관리 권한 동의" : "신청 정보");
     if (!path.length) {
       invalid.add("중복 활동 계정");
       return;
@@ -32,6 +33,7 @@ export function applicationReadiness(
       label = account
         ? `${accountInputs[account.channel]?.label || "활동 계정"}${draft!.accounts.length > 1 ? ` ${Number(path[1]) + 1}` : ""}`
         : "활동 계정";
+      if (path[2] === "label") label = `관리용 별칭 ${Number(path[1]) + 1}`;
     }
     if (field === "payment")
       label =

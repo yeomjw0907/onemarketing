@@ -3,6 +3,7 @@ export type Kind =
   | "products"
   | "participants"
   | "participant_history"
+  | "participant_settlements"
   | "work_slots"
   | "participant_events"
   | "posting_sets"
@@ -33,6 +34,7 @@ export const kinds: Kind[] = [
   "products",
   "participants",
   "participant_history",
+  "participant_settlements",
   "work_slots",
   "participant_events",
   "posting_sets",

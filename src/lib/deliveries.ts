@@ -39,10 +39,21 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
       )
     )
       throw new Error("승인 후 파일이 변경되었습니다. 다시 검수하세요.");
+    const snapshot = task.participantSnapshot as {
+      name?: string;
+      operationType?: string;
+      account?: { label?: string; url?: string };
+    } | null;
     const folder =
       String(task.order).padStart(2, "0") +
       "_" +
-      String(task.name)
+      String(
+        task.name +
+          (snapshot?.operationType === "managed"
+            ? "_" +
+              (snapshot.account?.label || task.participantAccountId || "계정")
+            : ""),
+      )
         .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
         .slice(0, 80);
     let i = 0;
@@ -75,11 +86,14 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
     entries.push({
       path: folder + "/게시안내.txt",
       buffer: Buffer.from(
-        `작업: ${task.name}\n채널: ${task.channel === "blog" ? "네이버 블로그" : "네이버 클립"}\n승인일: ${task.approvedAt}\n원고의 이미지 삽입 순서를 확인해 주세요.\n게시 후 링크를 운영자에게 전달해 주세요.\n`,
+        `담당자: ${snapshot?.name || "미배정"}\n게시 계정: ${snapshot?.account?.label || ""} ${snapshot?.account?.url || ""}\n작업: ${task.name}\n채널: ${task.channel === "blog" ? "네이버 블로그" : "네이버 클립"}\n승인일: ${task.approvedAt}\n원고의 이미지 삽입 순서를 확인해 주세요.\n게시 후 링크를 운영자에게 전달해 주세요.\n`,
       ),
     });
     manifest.push({
       taskId: task.id,
+      participantId: task.participantId,
+      participantAccountId: task.participantAccountId,
+      account: snapshot?.account || null,
       name: task.name,
       approvedAt: task.approvedAt,
       files: assets.map((a) => ({ id: a.id, name: a.name, hash: a.hash })),

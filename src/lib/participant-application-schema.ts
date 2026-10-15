@@ -13,6 +13,9 @@ export const applicationChannels = {
 export const applicationSchema = z
   .object({
     name: z.string().trim().min(1, "이름을 입력하세요.").max(200),
+    operationType: z.enum(["self", "managed"]).optional(),
+    teamName: z.string().trim().max(200).optional(),
+    authorityConsent: z.boolean().optional(),
     nickname: z.string().trim().max(100).default(""),
     phone: z
       .string()
@@ -49,6 +52,9 @@ export const applicationSchema = z
               .min(1, "활동 계정을 입력해주세요.")
               .max(2048),
             label: z.string().trim().max(100).default(""),
+            approvalStatus: z
+              .enum(["pending", "approved", "rejected"])
+              .optional(),
           })
           .transform((account, ctx) => {
             try {
@@ -73,6 +79,22 @@ export const applicationSchema = z
       .max(10),
   })
   .superRefine((data, ctx) => {
+    if (data.operationType === "managed") {
+      if (!data.authorityConsent)
+        ctx.addIssue({
+          code: "custom",
+          path: ["authorityConsent"],
+          message: "관리 권한 및 게시 조건 확인에 동의해주세요.",
+        });
+      data.accounts.forEach((a, i) => {
+        if (!a.label.trim())
+          ctx.addIssue({
+            code: "custom",
+            path: ["accounts", i, "label"],
+            message: "계정을 구분할 관리용 별칭을 입력해주세요.",
+          });
+      });
+    }
     const urls = data.accounts.flatMap((a) => {
       try {
         const u = new URL(a.url);
