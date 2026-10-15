@@ -1,3 +1,4 @@
+import { anthropicCost } from "./anthropic-cost";
 import { briefingPrompt } from "./media-guidance";
 import { mediaBriefSchema } from "./media-plans";
 import { mediaBinding, validateMediaPlan } from "./media-plans";
@@ -334,7 +335,15 @@ export async function recordCall(
   const j = await requireRecord(jobId, "jobs");
   const calls = [
     ...(Array.isArray(j.calls) ? j.calls : []),
-    { provider, model, requestId, usage, at: new Date().toISOString() },
+    {
+      provider,
+      model,
+      requestId,
+      usage,
+      costEstimate:
+        provider === "anthropic" ? anthropicCost(model, usage) : null,
+      at: new Date().toISOString(),
+    },
   ];
   await jobLog(
     "call_recorded",

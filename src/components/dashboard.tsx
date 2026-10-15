@@ -7,10 +7,12 @@ export default function Dashboard({
   data,
   onOpen,
   onNew,
+  onReload,
 }: {
   data: DatabaseView;
   onOpen: (id: string, tab: number) => void;
   onNew: () => void;
+  onReload: () => Promise<void>;
 }) {
   const summary = dashboard(data);
   return (
@@ -125,7 +127,7 @@ export default function Dashboard({
           </table>
         </div>
       </section>
-      <AiCosts costs={data.costs} />
+      <AiCosts data={data} onReload={onReload} />
     </>
   );
 }

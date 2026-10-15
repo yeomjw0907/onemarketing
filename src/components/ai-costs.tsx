@@ -1,32 +1,129 @@
-import { aiCostSummary } from "@/lib/ai-cost-summary";
-import { money, type RecordData } from "@/lib/types";
-
-export default function AiCosts({ costs }: { costs: RecordData[] }) {
-  const summary = aiCostSummary(costs);
+"use client";
+import { useState } from "react";
+import {
+  aiCostLedger,
+  aiTypeLabels,
+  groupAiCosts,
+  koreanDay,
+  totalAiCosts,
+  usd,
+} from "@/lib/ai-cost-ledger";
+import { money, type DatabaseView } from "@/lib/types";
+import { anthropicPricingSource } from "@/lib/anthropic-cost";
+export default function AiCosts({
+  data,
+  projectId,
+  onReload,
+}: {
+  data: DatabaseView;
+  projectId?: string;
+  onReload: () => Promise<void>;
+}) {
+  const today = koreanDay(new Date()),
+    month = today.slice(0, 7);
+  const [from, setFrom] = useState(""),
+    [to, setTo] = useState(""),
+    [project, setProject] = useState(projectId || ""),
+    [provider, setProvider] = useState(""),
+    [group, setGroup] = useState<"individual" | "projectId" | "day" | "month">(
+      "projectId",
+    ),
+    [page, setPage] = useState(0);
+  const [busy, setBusy] = useState(false),
+    [message, setMessage] = useState(""),
+    [error, setError] = useState("");
+  const all = aiCostLedger(data).filter(
+    (r) => !projectId || r.projectId === projectId,
+  );
+  const scope = all.filter(
+    (r) =>
+      (!project || r.projectId === project) &&
+      (!provider || r.provider === provider),
+  );
+  const rows = all.filter(
+    (r) =>
+      (!project || r.projectId === project) &&
+      (!provider || r.provider === provider) &&
+      (!from || r.day >= from) &&
+      (!to || r.day <= to),
+  );
+  const total = totalAiCosts(rows),
+    lifetime = totalAiCosts(scope),
+    monthly = totalAiCosts(scope.filter((r) => r.month === month)),
+    daily = totalAiCosts(scope.filter((r) => r.day === today));
+  const groups = group === "individual" ? [] : groupAiCosts(rows, group);
+  const totalPages = Math.max(
+    1,
+    Math.ceil((group === "individual" ? rows.length : groups.length) / 30),
+  );
+  const currentPage = Math.min(page, totalPages - 1);
+  async function sync() {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const r = await fetch("/api/ai-costs/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: projectId || project || undefined }),
+      });
+      const result = await r.json();
+      if (!r.ok) throw new Error(result.error);
+      await onReload();
+      setMessage(
+        `fal ${result.matched}/${result.checked}개 요청 청구 확인 · 미반영 ${result.pending}개${result.older ? ` · 90일 이전 ${result.older}개는 저장된 내역 유지` : ""}`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "청구 조회 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const projectName = (id: string) =>
+    String(data.projects.find((p) => p.id === id)?.name || "프로젝트 미지정");
+  function figures(t: ReturnType<typeof totalAiCosts>) {
+    return (
+      <>
+        <td>{usd(t.actualCount ? t.actualUsd : null)}</td>
+        <td>{usd(t.estimatedCount ? t.estimatedUsd : null)}</td>
+        <td>{t.confirmedKrwCount ? money(t.confirmedKrw) : "—"}</td>
+        <td>
+          {t.pendingCount
+            ? `${t.pendingCount}건 · ${t.pendingKrw ? money(t.pendingKrw) : "금액 미확인"}`
+            : "—"}
+        </td>
+      </>
+    );
+  }
   return (
-    <section aria-label="AI 사용 비용">
-      <h2>AI 사용 비용</h2>
+    <section className="section" aria-label="AI 사용 비용">
+      <div className="section-title">
+        <h2>AI 사용 비용 · 실제 청구와 사용량</h2>
+        <button disabled={busy} onClick={sync}>
+          {busy ? "fal 청구 확인 중…" : "fal 실제 청구 확인 · 최근 90일"}
+        </button>
+      </div>
       <div className="stats">
         {[
           [
-            "이번 달 AI 비용",
-            money(summary.monthlyTotal),
-            `${summary.month} · 잠정 ${money(summary.monthlyProvisional)} 포함`,
+            "오늘 실제 청구 USD",
+            usd(daily.actualCount ? daily.actualUsd : null),
+            today,
           ],
           [
-            "프로젝트당 평균",
-            summary.average === null ? "집계 전" : money(summary.average),
-            `전체 기간 · 비용 기록 프로젝트 ${summary.projectCount}건 기준`,
+            "이번 달 실제 청구 USD",
+            usd(monthly.actualCount ? monthly.actualUsd : null),
+            month,
           ],
           [
-            "누적 AI 비용",
-            money(summary.total),
-            "전체 기간 · 재생성 비용 포함",
+            "누적 실제 청구 USD",
+            usd(lifetime.actualCount ? lifetime.actualUsd : null),
+            "저장된 공급사 청구액",
           ],
           [
-            "확인할 잠정 비용",
-            money(summary.provisionalTotal),
-            `${summary.provisionalCount}건 · 공급사 청구 확인 후 확정`,
+            "선택 범위 Claude 사용량 추정",
+            usd(total.estimatedCount ? total.estimatedUsd : null),
+            "크레딧·할인 반영 전, 실제 청구 별도",
           ],
         ].map(([label, value, sub]) => (
           <div className="stat" key={label}>
@@ -36,10 +133,290 @@ export default function AiCosts({ costs }: { costs: RecordData[] }) {
           </div>
         ))}
       </div>
+      <div className="row">
+        <label>
+          시작일
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setPage(0);
+            }}
+          />
+        </label>
+        <label>
+          종료일
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setPage(0);
+            }}
+          />
+        </label>
+        {!projectId && (
+          <label>
+            프로젝트
+            <select
+              value={project}
+              onChange={(e) => {
+                setProject(e.target.value);
+                setPage(0);
+              }}
+            >
+              <option value="">전체 프로젝트</option>
+              {data.projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {String(p.name)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label>
+          공급사
+          <select
+            value={provider}
+            onChange={(e) => {
+              setProvider(e.target.value);
+              setPage(0);
+            }}
+          >
+            <option value="">전체 공급사</option>
+            <option value="fal">fal</option>
+            <option value="Claude">Claude</option>
+            <option value="수동 확정">원화 수동 확정</option>
+            <option value="미확인">미확인</option>
+          </select>
+        </label>
+        <button
+          onClick={() => {
+            setFrom(today);
+            setTo(today);
+            setPage(0);
+          }}
+        >
+          오늘
+        </button>
+        <button
+          onClick={() => {
+            setFrom(month + "-01");
+            setTo(today);
+            setPage(0);
+          }}
+        >
+          이번 달
+        </button>
+        <button
+          onClick={() => {
+            setFrom("");
+            setTo("");
+            setPage(0);
+          }}
+        >
+          전체 기간
+        </button>
+      </div>
+      {from && to && from > to && (
+        <p role="alert">시작일을 종료일 이전으로 선택하세요.</p>
+      )}
       <p className="hint">
-        시스템에 기록된 AI 제작비 기준입니다. 월 집계는 한국 시간의 비용 등록일
-        기준이며, 미기록 청구액과 실행 전 예상비용은 포함하지 않습니다. 평균에는
-        진행 중인 프로젝트와 잠정 비용도 포함됩니다.
+        선택 범위 합계: 실제 청구{" "}
+        {usd(total.actualCount ? total.actualUsd : null, true)} · 사용량 추정{" "}
+        {usd(total.estimatedCount ? total.estimatedUsd : null, true)} · 원화
+        확정 {money(total.confirmedKrw)} · 청구 확인 필요 {total.pendingCount}건
+        {total.pendingCount ? ` (원화 잠정 ${money(total.pendingKrw)})` : ""}
+      </p>
+      <p>
+        <strong>
+          선택 범위 예상 총사용 비용:{" "}
+          {usd(
+            Math.round((total.actualUsd + total.estimatedUsd) * 1e9) / 1e9,
+            true,
+          )}
+        </strong>
+        <span className="hint">
+          {" "}
+          · 실제 USD + 추정 USD · 확정 청구 합계가 아니며 원화·미확인 비용은
+          제외
+        </span>
+      </p>
+      <div className="tablewrap">
+        <table>
+          <caption>종류별 합계 · 선택한 필터 적용</caption>
+          <thead>
+            <tr>
+              {[
+                "종류",
+                "실제 USD",
+                "추정 USD",
+                "확정 원화",
+                "미확인 · 원화 잠정",
+              ].map((s) => (
+                <th key={s}>{s}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {groupAiCosts(rows, "type").map((t) => (
+              <tr key={t.key}>
+                <td>{aiTypeLabels[t.key] || t.key}</td>
+                {figures(t)}
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th>합계</th>
+              {figures(total)}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <label>
+        상세 집계
+        <select
+          value={group}
+          onChange={(e) => {
+            setGroup(e.target.value as typeof group);
+            setPage(0);
+          }}
+        >
+          <option value="individual">개별 API 요청·비용</option>
+          <option value="projectId">프로젝트별</option>
+          <option value="day">일별</option>
+          <option value="month">월별</option>
+        </select>
+      </label>
+      <div className="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              {[
+                group === "individual" ? "요청·작업" : "집계 기준",
+                "실제 USD",
+                "추정 USD",
+                "확정 원화",
+                "미확인 · 원화 잠정",
+              ].map((s) => (
+                <th key={s}>{s}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {group === "individual"
+              ? rows
+                  .slice(currentPage * 30, (currentPage + 1) * 30)
+                  .map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <strong>
+                          {aiTypeLabels[r.type] || r.type} · {r.provider}
+                        </strong>
+                        <small style={{ display: "block" }}>
+                          {r.day} · {projectName(r.projectId)} ·{" "}
+                          {String(
+                            data.tasks.find((t) => t.id === r.taskId)?.name ||
+                              "프로젝트 전체",
+                          )}
+                        </small>
+                        <details>
+                          <summary>요청·사용량 근거</summary>
+                          <p>{r.model || "모델 미기록"}</p>
+                          <p>요청 ID: {r.requestId || "미기록"}</p>
+                          {r.checkedAt && (
+                            <p>
+                              청구 확인:{" "}
+                              {new Date(r.checkedAt).toLocaleString("ko-KR", {
+                                timeZone: "Asia/Seoul",
+                              })}
+                            </p>
+                          )}
+                          {r.usage && (
+                            <p>
+                              입력 {r.usage.inputTokens} · 출력{" "}
+                              {r.usage.outputTokens} · 캐시 읽기{" "}
+                              {r.usage.cacheReadTokens} · 캐시 쓰기{" "}
+                              {r.usage.cacheWriteTokens} · 검색{" "}
+                              {r.usage.searches}회 · 단가 기준{" "}
+                              {r.usage.pricingDate}
+                            </p>
+                          )}
+                        </details>
+                      </td>
+                      <td>{usd(r.actualUsd, true)}</td>
+                      <td>{usd(r.estimatedUsd, true)}</td>
+                      <td>
+                        {r.confirmedKrw === null ? "—" : money(r.confirmedKrw)}
+                      </td>
+                      <td>
+                        {r.pendingKrw === null
+                          ? r.actualUsd === null &&
+                            r.estimatedUsd === null &&
+                            r.confirmedKrw === null
+                            ? "금액 미확인"
+                            : "—"
+                          : money(r.pendingKrw)}
+                      </td>
+                    </tr>
+                  ))
+              : groups
+                  .slice(currentPage * 30, (currentPage + 1) * 30)
+                  .map((t) => (
+                    <tr key={t.key}>
+                      <td>
+                        {group === "projectId" ? projectName(t.key) : t.key}
+                        <small style={{ display: "block" }}>
+                          {t.count}개 비용·요청 기록
+                        </small>
+                      </td>
+                      {figures(t)}
+                    </tr>
+                  ))}
+          </tbody>
+        </table>
+      </div>
+      {!rows.length && (
+        <p className="hint">선택한 범위에 기록된 AI 비용이 없습니다.</p>
+      )}
+      {totalPages > 1 && (
+        <div className="row">
+          <button
+            disabled={currentPage === 0}
+            onClick={() => setPage(currentPage - 1)}
+          >
+            이전
+          </button>
+          <span>
+            {currentPage + 1} / {totalPages}
+          </span>
+          <button
+            disabled={currentPage + 1 >= totalPages}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            다음
+          </button>
+        </div>
+      )}
+      {message && <p role="status">{message}</p>}
+      {error && <p role="alert">{error}</p>}
+      <p className="hint">
+        USD와 원화는 환율 없이 합산하지 않습니다. 실제 청구가 확인되면 같은
+        요청의 원화 잠정 금액은 이 집계에서 제외합니다. 날짜는 한국 시간의
+        공급사 청구 발생일 또는 API 응답·비용 등록일이며, 청구 조회일은
+        아닙니다. 실패·재생성 비용도 기록이 있으면 포함합니다. 이 플랫폼의
+        요청만 집계하므로 fal에서 별도로 실행한 작업은 포함되지 않습니다.
+      </p>
+      <p className="hint">
+        Claude는 API 사용량과{" "}
+        <a href={anthropicPricingSource} target="_blank" rel="noreferrer">
+          공식 단가
+        </a>{" "}
+        기준 추정치입니다. 프로모션 크레딧·계약 할인·세금·카드 환율이 반영된
+        실제 결제액은 아닙니다. 확인할 수 없는 모델·사용량은 미확인으로
+        표시합니다.
       </p>
     </section>
   );

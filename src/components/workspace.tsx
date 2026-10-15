@@ -2,6 +2,7 @@
 import { shootingTargetOptions } from "@/lib/media-guidance";
 import Participants from "./participants";
 import Dashboard from "./dashboard";
+import AiCosts from "./ai-costs";
 import PostingSets from "./posting-sets";
 import MaterialChecklist from "./material-checklist";
 import CustomerDocuments from "./customer-documents";
@@ -1044,6 +1045,7 @@ export default function Workspace() {
         {page === "overview" && (
           <>
             <Dashboard
+              onReload={async () => setData(await api("/api/data"))}
               data={data}
               onNew={newProject}
               onOpen={(id, nextTab) => {
@@ -1729,6 +1731,11 @@ export default function Workspace() {
             )}
             {tab === 5 && (
               <>
+                <AiCosts
+                  data={data}
+                  projectId={project.id}
+                  onReload={async () => setData(await api("/api/data"))}
+                />
                 <div className="split">
                   <section className="section">
                     <div className="section-title">
@@ -1755,18 +1762,27 @@ export default function Workspace() {
                             {String(c.description)}{" "}
                             {!c.confirmed && (
                               <>
-                                <span className="badge orange">잠정</span>{" "}
+                                <span className="badge orange">
+                                  {(c.providerBilling as Draft)?.currency ===
+                                  "USD"
+                                    ? "원화 미환산"
+                                    : "잠정"}
+                                </span>{" "}
                                 {button("금액 확정", () =>
                                   open("confirmCost", { ...c }),
                                 )}
                               </>
                             )}
                           </span>
-                          <strong>{money(c.amount)}</strong>
+                          <strong>
+                            {(c.providerBilling as Draft)?.currency === "USD"
+                              ? `$${Number((c.providerBilling as Draft).amount).toFixed(6)} · 실제 USD / 원화 미환산`
+                              : money(c.amount)}
+                          </strong>
                         </div>
                       ))}
                     <div className="amountline total">
-                      <span>발생 원가</span>
+                      <span>원화 원가 · USD 미환산</span>
                       <strong>{money(costSummary(project).total)}</strong>
                     </div>
                     <p className="hint">
