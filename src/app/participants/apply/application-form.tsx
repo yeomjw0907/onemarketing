@@ -11,6 +11,13 @@ export default function ApplicationForm({
   rewards: { blog: number; clip: number; bundle: number };
 }) {
   const termsRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const receiptTitleRef = useRef<HTMLHeadingElement>(null);
+  const [popup, setPopup] = useState<"success" | "contact" | null>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (popup && dialog && !dialog.open) dialog.showModal();
+  }, [popup]);
   const [readTerms, setReadTerms] = useState(false);
   useEffect(() => {
     const panel = termsRef.current;
@@ -55,6 +62,7 @@ export default function ApplicationForm({
       const body = await r.json();
       if (!r.ok) throw new Error(body.error || "신청하지 못했습니다.");
       setReceipt(body.id);
+      setPopup("success");
     } catch (e) {
       setError(e instanceof Error ? e.message : "잠시 후 다시 시도해주세요.");
     } finally {
@@ -74,10 +82,11 @@ export default function ApplicationForm({
           {receipt ? (
             <div role="status">
               <span className={styles.eyebrow}>신청 완료</span>
-              <h2>신청이 접수되었습니다.</h2>
+              <h2 ref={receiptTitleRef} tabIndex={-1}>
+                신청이 접수되었습니다.
+              </h2>
               <p>
-                담당자가 프로필을 확인한 뒤 협업이 가능한 경우 남겨주신 연락처로
-                안내드립니다.
+                신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다.
               </p>
               <p className="hint">접수번호: {receipt}</p>
             </div>
@@ -227,7 +236,47 @@ export default function ApplicationForm({
           )}
         </section>
       </div>
-      <footer className={styles.footer}>© ONE MARKETING</footer>
+      <footer className={styles.footer}>
+        <span>© ONE MARKETING</span>
+        <button type="button" onClick={() => setPopup("contact")}>
+          문의하기
+        </button>
+      </footer>
+      <dialog
+        ref={dialogRef}
+        className={styles.dialog}
+        aria-labelledby="application-popup-title"
+        aria-describedby="application-popup-description"
+        onClose={() => {
+          if (popup === "success") receiptTitleRef.current?.focus();
+          setPopup(null);
+        }}
+      >
+        <h2 id="application-popup-title">
+          {popup === "success" ? "신청이 완료되었습니다." : "체험단 문의하기"}
+        </h2>
+        <p id="application-popup-description">
+          {popup === "success"
+            ? "신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다."
+            : "신청이나 협업에 궁금한 점이 있다면 아래 연락처로 문의해주세요."}
+        </p>
+        <div className={styles.contactLinks}>
+          <a href="mailto:yeomjw0907@onecation.co.kr">
+            <span>이메일</span>yeomjw0907@onecation.co.kr
+          </a>
+          <a href="tel:01063334649">
+            <span>전화</span>010-6333-4649
+          </a>
+        </div>
+        <button
+          type="button"
+          className="primary"
+          autoFocus
+          onClick={() => dialogRef.current?.close()}
+        >
+          확인
+        </button>
+      </dialog>
     </main>
   );
 }
