@@ -9,6 +9,7 @@ import {
 } from "@/lib/participant-application-schema";
 import styles from "./application.module.css";
 import ChannelIcon from "@/components/channel-icon";
+import { participantPaymentSchema } from "@/lib/participant-payment";
 export default function ApplicationForm({
   rewards,
 }: {
@@ -17,18 +18,6 @@ export default function ApplicationForm({
   const termsRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const actions = actionsRef.current;
-    if (!actions) return;
-    const resize = new ResizeObserver(() =>
-      pageRef.current?.style.setProperty(
-        "--actions-height",
-        `${actions.getBoundingClientRect().height}px`,
-      ),
-    );
-    resize.observe(actions);
-    return () => resize.disconnect();
-  }, []);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const receiptTitleRef = useRef<HTMLHeadingElement>(null);
   const [popup, setPopup] = useState<"success" | "contact" | "confirm" | null>(
@@ -63,6 +52,26 @@ export default function ApplicationForm({
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState("");
   const [key, setKey] = useState("");
+  const stage = receipt ? "done" : draft ? "form" : "terms";
+  const canSubmit = Boolean(
+    draft &&
+    consent &&
+    applicationSchema.safeParse(draft).success &&
+    participantPaymentSchema.safeParse(draft.payment).success &&
+    draft.phone.replace(/\D/g, "").length >= 10,
+  );
+  useEffect(() => {
+    const actions = actionsRef.current;
+    if (!actions) return;
+    const resize = new ResizeObserver(() =>
+      pageRef.current?.style.setProperty(
+        "--actions-height",
+        `${actions.getBoundingClientRect().height}px`,
+      ),
+    );
+    resize.observe(actions);
+    return () => resize.disconnect();
+  }, [stage]);
   function start() {
     if (!readTerms) return;
     setDraft(freshApplication());
@@ -70,7 +79,7 @@ export default function ApplicationForm({
   }
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || !canSubmit) return;
     const parsed = applicationSchema.safeParse(draft);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
@@ -119,7 +128,7 @@ export default function ApplicationForm({
   return (
     <main
       ref={pageRef}
-      className={`${styles.page} ${!draft && !receipt ? styles.termsPage : ""}`}
+      className={`${styles.page} ${stage === "terms" ? styles.termsPage : stage === "form" ? styles.writingPage : ""}`}
     >
       <header className={styles.header}>
         <span className={styles.brand}>
@@ -346,13 +355,22 @@ export default function ApplicationForm({
                   {error}
                 </p>
               )}
-              <button
-                className="primary"
-                disabled={busy || !consent}
-                style={{ width: "100%", marginTop: 20 }}
-              >
-                {busy ? "신청 접수 중…" : "참여 신청하기"}
-              </button>
+              <div ref={actionsRef} className={styles.termsActions}>
+                <div className={styles.termsActionInner}>
+                  <p className={styles.scrollHint} role="status">
+                    {canSubmit
+                      ? "신청 준비가 완료되었습니다."
+                      : "필수 항목을 입력하고 개인정보 수집·이용에 동의해주세요."}
+                  </p>
+                  <button
+                    className="primary"
+                    disabled={busy || !canSubmit}
+                    style={{ width: "100%" }}
+                  >
+                    {busy ? "신청 접수 중…" : "참여 신청하기"}
+                  </button>
+                </div>
+              </div>
             </form>
           )}
         </section>

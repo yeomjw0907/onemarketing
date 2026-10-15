@@ -71,6 +71,15 @@
 .termsActions button {
   min-height: 52px;
 }
+.writingPage {
+  padding-bottom: var(--actions-height, 140px);
+}
+.writingPage .form {
+  animation: none;
+}
+.writingPage input {
+  scroll-margin-bottom: 160px;
+}
 .header {
   max-width: 800px;
   margin: auto;
