@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import ParticipantApplications from "./participant-applications";
 import {
   elapsedLabel,
   participantPerformance,
@@ -261,6 +262,14 @@ export default function Participants({
         <div role="alert" className="error">
           {error}
         </div>
+      )}
+      {!participant && !editing && (
+        <ParticipantApplications
+          onApproved={async (id) => {
+            await onReload();
+            onSelect(id);
+          }}
+        />
       )}
       {editing && (
         <section className="section">
