@@ -120,6 +120,46 @@ execFileSync(
   { stdio: "ignore", windowsHide: true },
 );
 const png = readFileSync(imageFile);
+test("Claude 원고 요청에 실제 참고 사진을 첨부하고 프롬프트 원문은 로그로 기록하지 않음", async () => {
+  const { p, t } = await setup();
+  await production(p.id, t.id);
+  await saveAsset(
+    { projectId: p.id, category: "source", name: "참고.png", buffer: png },
+    actor,
+  );
+  const j = await enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "copy",
+      estimate: 100,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  let called = false;
+  mockFetch(async (_url, init) => {
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.messages[0].content[0].type, "image");
+    assert.equal(body.messages[0].content[0].source.media_type, "image/jpeg");
+    assert.ok(body.messages[0].content[0].source.data.length > 0);
+    assert.match(body.messages[0].content.at(-1).text, /현재 첨부된 사진/);
+    called = true;
+    return Response.json({
+      id: "vision-test",
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: "사진을 참고한 외형 소개" }],
+      usage: { input_tokens: 10, output_tokens: 10 },
+    });
+  });
+  try {
+    await executeProviderJob(j);
+    assert.equal(called, true);
+    await update(j.id, {status:"succeeded"});
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
 test("비공개 버킷에 저장되고 업로드 실패 시 DB에 기록하지 않음", async () => {
   assert.equal(await bucketIsPrivate(), true);
   const { p, t } = await setup();

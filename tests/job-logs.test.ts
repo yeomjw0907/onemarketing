@@ -5,6 +5,30 @@ const { create, view, list } = await import("../src/lib/db");
 const { jobLog, withJobLogs, projectJobLogs, redactLog } =
   await import("../src/lib/job-logs");
 const { processJob } = await import("../src/lib/worker");
+test("공급사 오류 본문은 저장하지 않고 잔액·인증·권한 사유만 안전하게 분류", async () => {
+  const { providerFailureReason } = await import("../src/lib/providers");
+  assert.match(
+    providerFailureReason("fal", 403, {
+      detail: "User is locked. Reason: Exhausted balance.",
+    }),
+    /잔액/,
+  );
+  assert.match(
+    providerFailureReason("anthropic", 401, {
+      error: { type: "authentication_error" },
+    }),
+    /인증/,
+  );
+  assert.match(
+    providerFailureReason("fal", 403, { detail: "permission denied" }),
+    /권한/,
+  );
+  assert.ok(
+    !providerFailureReason("fal", 422, {
+      detail: "PRIVATE_PROMPT_AND_INPUT",
+    }).includes("PRIVATE_PROMPT"),
+  );
+});
 test("지정한 예시 작업만 claim하고 다른 프로젝트의 큐는 변경하지 않음", async () => {
   const { claimJob } = await import("../src/lib/jobs");
   const p = await create("projects", { status: "producing" });
