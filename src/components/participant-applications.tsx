@@ -122,7 +122,7 @@ export default function ParticipantApplications({
           <table>
             <thead>
               <tr>
-                <th>이름 / 닉네임</th>
+                <th>이름</th>
                 <th>연락처</th>
                 <th>신청일</th>
                 <th>상태</th>
@@ -136,7 +136,6 @@ export default function ParticipantApplications({
                   <tr key={item.id}>
                     <td>
                       <strong>{item.data.name}</strong>
-                      <small>{item.data.nickname}</small>
                     </td>
                     <td>{item.data.phone}</td>
                     <td>
@@ -189,6 +188,7 @@ export default function ParticipantApplications({
         >
           <h3>{current.data.name} · 신청 검토</h3>
           <ApplicationFields
+            key={current.id}
             draft={draft}
             onChange={setDraft}
             disabled={busy || current.status !== "new"}

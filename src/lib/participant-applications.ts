@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { audit, execute, lock, query, transaction } from "./db";
 import { save } from "./domain";
+import { participantPaymentSchema } from "./participant-payment";
 import {
   applicationSchema,
   type ParticipantApplication,
@@ -9,7 +10,10 @@ import {
 export async function submitApplication(input: unknown) {
   const envelope = z
     .object({
-      data: applicationSchema,
+      data: applicationSchema.refine(
+        (data) => participantPaymentSchema.safeParse(data.payment).success,
+        "정산 방식을 선택하고 계좌 정보를 확인해주세요.",
+      ),
       consent: z.literal(true),
       website: z.string().max(0).optional(),
       key: z.string().uuid(),
@@ -40,7 +44,7 @@ export async function submitApplication(input: unknown) {
         JSON.stringify({
           ...envelope.data,
           consentAt: new Date().toISOString(),
-          consentVersion: "2026-10-15",
+          consentVersion: "2026-10-15-payment-v2",
         }),
       ],
     );
@@ -86,6 +90,7 @@ export async function reviewApplication(input: unknown, actor: string) {
           nickname: body.data.nickname,
           phone: body.data.phone,
           email: body.data.email,
+          payment: body.data.payment,
           contact: [body.data.phone, body.data.email]
             .filter(Boolean)
             .join(" · "),

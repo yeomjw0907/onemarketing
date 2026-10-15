@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { participantPaymentSchema } from "./participant-payment";
 
 export const applicationChannels = {
   blog: "네이버 블로그",
@@ -25,6 +26,7 @@ export const applicationSchema = z
     region: z.string().trim().max(200).default(""),
     specialties: z.string().trim().max(1000).default(""),
     introduction: z.string().trim().max(3000).default(""),
+    payment: participantPaymentSchema.optional(),
     accounts: z
       .array(
         z.object({

@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import ParticipantApplications from "./participant-applications";
+import ParticipantPaymentFields from "./participant-payment-fields";
 import {
   elapsedLabel,
   participantPerformance,
@@ -286,6 +287,12 @@ export default function Participants({
               {field("phone", "전화번호", "tel")}
               {field("email", "이메일", "email")}
               {field("contact", "기타 연락처 · 카톡 등")}
+              <div className="full">
+                <ParticipantPaymentFields
+                  payment={draft.payment}
+                  onChange={(payment) => setDraft({ ...draft, payment })}
+                />
+              </div>
               {field("specialties", "관심 분야 · 쉼표로 구분")}
               <label>
                 활동 상태
@@ -670,6 +677,23 @@ export default function Participants({
                 {[
                   ["전화번호", participant.phone],
                   ["이메일", participant.email],
+                  [
+                    "정산 방식",
+                    (participant.payment as Draft)?.method === "bank"
+                      ? "계좌 송금"
+                      : (participant.payment as Draft)?.method === "kakaopay"
+                        ? "카카오페이"
+                        : "미등록",
+                  ],
+                  ...((participant.payment as Draft)?.method === "bank"
+                    ? [
+                        ["은행", (participant.payment as Draft).bankName],
+                        [
+                          "계좌번호",
+                          (participant.payment as Draft).accountNumber,
+                        ],
+                      ]
+                    : []),
                   ["기타 연락처", participant.contact],
                   ["관심 분야", participant.specialties],
                   ["블로그 기본 지급액", money(participant.blogRate)],

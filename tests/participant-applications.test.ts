@@ -21,6 +21,11 @@ function application() {
       region: "서울 마포구",
       specialties: "뷰티",
       introduction: "블로그 운영 중",
+      payment: {
+        method: "bank",
+        bankName: "국민은행",
+        accountNumber: "123456789012",
+      },
       accounts: [
         {
           id: crypto.randomUUID(),
@@ -62,6 +67,7 @@ test("신청 수정 후 동시 승인도 참여자를 한 번만 등록한다", 
   assert.equal(p?.name, edited.name);
   assert.equal(p?.phone, edited.phone);
   assert.equal(p?.status, "active");
+  assert.deepEqual(p?.payment, edited.payment);
   assert.equal((await list("participants")).length, 1);
   assert.equal(
     (await listApplications()).find((a) => a.id === result.id)?.status,
@@ -102,6 +108,21 @@ test("동의·웹 주소·중복 계정 검사와 하루 접수 제한", async (
   const input = application();
   input.data.phone = "010-7777-8888";
   await assert.rejects(submitApplication({ ...input, consent: false }));
+  await assert.rejects(
+    submitApplication({
+      ...input,
+      data: { ...input.data, payment: undefined },
+    }),
+  );
+  await assert.rejects(
+    submitApplication({
+      ...input,
+      data: {
+        ...input.data,
+        payment: { method: "bank", bankName: "", accountNumber: "" },
+      },
+    }),
+  );
   await assert.rejects(submitApplication({ ...input, website: "spam" }));
   await assert.rejects(
     submitApplication({

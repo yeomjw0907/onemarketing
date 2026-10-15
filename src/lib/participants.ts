@@ -1,5 +1,6 @@
 import { rewardDefaults } from "./sales-cart";
 import { z } from "zod";
+import { participantPaymentSchema } from "./participant-payment";
 import { get, list } from "./db";
 import type { RecordData } from "./types";
 const amount = z.number().int().min(0).max(1e12).nullable();
@@ -23,6 +24,7 @@ export const participantSchema = z.object({
   status: z.enum(["active", "paused", "closed"]).default("active"),
   specialties: z.string().trim().max(1000).default(""),
   notes: z.string().trim().max(10000).default(""),
+  payment: participantPaymentSchema.optional(),
   blogRate: amount.default(rewardDefaults.blog),
   clipRate: amount.default(rewardDefaults.clip),
   bundleRate: amount.default(rewardDefaults.bundle),
