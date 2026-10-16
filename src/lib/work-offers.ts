@@ -632,6 +632,7 @@ export async function partialPay(
       payoutStatus: "paid",
       paidAt: now,
       partialPaidAmount: amount,
+      partialPaidAt: now,
     });
     await update(slot.id, {
       partialPaidAmount: amount,
@@ -765,6 +766,7 @@ export async function cancelPartialPay(slotId: string, actor: string) {
         payoutStatus: "pending",
         paidAt: null,
         partialPaidAmount: null,
+        partialPaidAt: null,
       });
     }
     await update(slot.id, {

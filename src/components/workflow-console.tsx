@@ -847,6 +847,8 @@ export default function WorkflowConsole({
                       disabled={busy}
                       onClick={async () => {
                         setBusy(true);
+                        setFailed(false);
+                        setMessage("");
                         try {
                           const r = await fetch("/api/data", {
                             method: "POST",
@@ -865,6 +867,7 @@ export default function WorkflowConsole({
                           const d = await r.json();
                           if (!r.ok) throw new Error(d.error);
                           await onReload();
+                          setMessage("게시물 검수 승인을 완료했어요.");
                         } catch (e) {
                           setFailed(true);
                           setMessage(e instanceof Error ? e.message : "실패");

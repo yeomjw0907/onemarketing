@@ -1,3 +1,4 @@
+import { portalPaymentHistory } from "./portal-payment-history";
 import { publishableCopy } from "./copy-format";
 import { randomBytes, createHash } from "node:crypto";
 import { cookies } from "next/headers";
@@ -85,8 +86,15 @@ export async function portalView(
       offers.some((o) => o.projectId === pr.id),
   );
   const assets = await list("assets");
-  const settlements = (await list("participant_settlements")).filter(
-    (s) => s.participantId === p.id,
+  const settlements = portalPaymentHistory(
+    {
+      participant_settlements: await list("participant_settlements"),
+      work_slots: slots,
+      posting_sets: await list("posting_sets"),
+      tasks: allTasks,
+      participant_history: await list("participant_history"),
+    },
+    p.id,
   );
   const credits = (await list("referral_credits")).filter(
     (c) => c.participantId === p.id,
