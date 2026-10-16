@@ -1,6 +1,48 @@
 .email {
   position: relative;
 }
+.marketingConsent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  margin: 0 0 28px;
+  border-radius: 12px;
+  background: #f2f4f6;
+  cursor: pointer;
+}
+.marketingConsent input[type="checkbox"] {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  padding: 0;
+  accent-color: #3182f6;
+}
+.marketingConsent input:focus-visible {
+  outline: 2px solid #3182f6;
+  outline-offset: 3px;
+}
+.consentTitle {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+  word-break: keep-all;
+}
+.consentOptional {
+  color: #6b7684;
+  font-weight: 400;
+}
+.consentDescription {
+  display: block;
+  margin-top: 6px;
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 21px;
+  word-break: keep-all;
+}
 .field label {
   margin: 0 0 8px;
   font-size: 13px;
