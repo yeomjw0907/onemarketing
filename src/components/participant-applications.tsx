@@ -7,12 +7,10 @@ import type {
   ApplicationDraft,
   ParticipantApplication,
 } from "@/lib/participant-application-schema";
-const labels = {
-  new: "신규",
-  approved: "승인 완료",
-  rejected: "반려",
-  deleted: "삭제된 신청",
-};
+import {
+  applicationListLabels as labels,
+  matchesApplication,
+} from "@/lib/participant-application-filter";
 export default function ParticipantApplications({
   onApproved,
   refreshSignal,
@@ -29,32 +27,45 @@ export default function ParticipantApplications({
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [exporting, setExporting] = useState(false);
   const selectable =
     filter === "new" || filter === "rejected" || filter === "deleted";
   const query = search.trim();
-  const nameQuery = query.replace(/\s/g, "").toLocaleLowerCase("ko-KR");
-  const phoneQuery = /^[0-9+()\s-]+$/.test(query)
-    ? query.replace(/\D/g, "")
-    : "";
-  const matches = (i: ParticipantApplication) => {
-    const statusMatches =
-      filter === "deleted"
-        ? Boolean(i.data.deletedAt)
-        : !i.data.deletedAt && i.status === filter;
-    return (
-      statusMatches &&
-      (!query ||
-        i.data.name
-          .replace(/\s/g, "")
-          .toLocaleLowerCase("ko-KR")
-          .includes(nameQuery) ||
-        (phoneQuery.length > 0 &&
-          i.data.phone.replace(/\D/g, "").includes(phoneQuery)))
-    );
-  };
+  const matches = (i: ParticipantApplication) =>
+    matchesApplication(i, filter, query);
   const pending = items.filter(matches);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
+  async function downloadExcel() {
+    if (exporting || busy || loading || !pending.length) return;
+    setExporting(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/participant-applications/export?${new URLSearchParams({ status: filter, search: query })}`,
+      );
+      if (!response.ok) {
+        const body = await response.json();
+        throw new Error(body.error || "엑셀 다운로드 실패");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = decodeURIComponent(
+        response.headers.get("Content-Disposition")?.split("UTF-8''")[1] ||
+          "체험단_신청.xlsx",
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "엑셀 다운로드 실패");
+    } finally {
+      setExporting(false);
+    }
+  }
   async function bulkReview(
     action:
       | "bulk-approve"
@@ -240,6 +251,17 @@ export default function ParticipantApplications({
             검색 지우기
           </button>
         )}
+        <button
+          type="button"
+          disabled={loading || busy || exporting || !pending.length}
+          onClick={downloadExcel}
+        >
+          {exporting
+            ? "엑셀 준비 중…"
+            : query
+              ? "검색 결과 엑셀 다운로드"
+              : "엑셀 다운로드"}
+        </button>
         {!loading && (
           <span role="status" className="hint">
             {labels[filter as keyof typeof labels]} ·{" "}
