@@ -144,6 +144,19 @@ export async function sendNotification(id: string) {
         return null;
       }
     }
+    if (n.type === "retention") {
+      const [taskId, ...cycle] = String(n.eventId).split(":");
+      const source = await get(taskId);
+      if (
+        !source ||
+        source.participantId !== n.participantId ||
+        source.retentionStatus !== "needs_recovery" ||
+        source.retentionRequestedAt !== cycle.join(":")
+      ) {
+        await update(n.id, { status: "cancelled" });
+        return null;
+      }
+    }
     if (n.type === "revision") {
       const source = await get(String(n.eventId).split(":")[0]);
       if (!source || source.status !== "delivered" || !source.revisionNotes) {

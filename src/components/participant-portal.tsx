@@ -483,6 +483,53 @@ export default function ParticipantPortal() {
                       </div>
                     )}
                   </dl>
+                  {["needs_recovery", "recovery_submitted"].includes(
+                    t.retentionStatus,
+                  ) && (
+                    <Feedback>
+                      <strong>
+                        {t.retentionStatus === "needs_recovery"
+                          ? "게시물 복구 요청"
+                          : "복구 완료 접수 · 담당자 확인 중"}
+                      </strong>
+                      <p>{t.retentionNote}</p>
+                      {t.retentionRecoveryDue && (
+                        <p>
+                          복구 기한 {date(t.retentionRecoveryDue)}
+                          {t.retentionStatus === "needs_recovery" &&
+                          Date.parse(t.retentionRecoveryDue) < Date.now()
+                            ? " · 기한이 지났어요. 복구 후 알려주세요."
+                            : ""}
+                        </p>
+                      )}
+                      <p>
+                        기존 게시물을 공개 상태로 복구해주세요. 새 링크 제출이
+                        필요한 경우 담당자에게 문의해주세요.
+                      </p>
+                      {t.link && (
+                        <a href={t.link} target="_blank" rel="noreferrer">
+                          기존 게시물 확인
+                        </a>
+                      )}
+                      {t.retentionStatus === "needs_recovery" && (
+                        <Button
+                          disabled={busy}
+                          onClick={async () => {
+                            const answer = await ask({
+                              title: "복구 완료 알리기",
+                              description:
+                                "기존 게시물이 공개 상태인지 확인해주세요. 담당자가 다시 확인한 뒤 유지 상태를 갱신합니다.",
+                              confirmLabel: "복구 완료 알리기",
+                            });
+                            if (answer)
+                              void act({ action: "report-recovery", id: t.id });
+                          }}
+                        >
+                          복구 완료 알리기
+                        </Button>
+                      )}
+                    </Feedback>
+                  )}
                   <details>
                     <summary>
                       캠페인 가이드 · v

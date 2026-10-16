@@ -937,30 +937,84 @@ export default function WorkflowConsole({
                         "ko-KR",
                       )}
                     </span>
+                    <p>
+                      유지 상태:{" "}
+                      {t.retentionStatus === "needs_recovery"
+                        ? "복구 요청 중"
+                        : t.retentionStatus === "recovery_submitted"
+                          ? "복구 완료 접수 · 재확인 필요"
+                          : t.retentionStatus === "public"
+                            ? "공개 확인"
+                            : "확인 대기"}
+                      {!!t.retentionNote && (
+                        <span> · {String(t.retentionNote)}</span>
+                      )}
+                      {!!t.retentionCheckedAt && (
+                        <span>
+                          {" "}
+                          · 최근 확인{" "}
+                          {new Date(
+                            String(t.retentionCheckedAt),
+                          ).toLocaleString("ko-KR")}
+                        </span>
+                      )}
+                      {!!t.retentionRecoveryDue &&
+                        ["needs_recovery", "recovery_submitted"].includes(
+                          String(t.retentionStatus),
+                        ) && (
+                          <span>
+                            {" "}
+                            · 복구 기한{" "}
+                            {new Date(
+                              String(t.retentionRecoveryDue),
+                            ).toLocaleString("ko-KR")}
+                            {t.retentionStatus === "needs_recovery" &&
+                            Date.parse(String(t.retentionRecoveryDue)) <
+                              Date.now()
+                              ? " · 기한 초과"
+                              : ""}
+                          </span>
+                        )}
+                    </p>
                     <Button
                       disabled={busy}
-                      onClick={() =>
-                        void act({
-                          action: "retention-check",
-                          id: t.id,
-                          ok: true,
-                        })
-                      }
+                      onClick={async () => {
+                        if (
+                          await confirm(
+                            "게시 링크를 열어 콘텐츠가 공개되어 있는지 확인했나요?",
+                          )
+                        )
+                          void act({
+                            action: "retention-check",
+                            id: t.id,
+                            version: t.version,
+                            ok: true,
+                          });
+                      }}
                     >
                       공개 유지 확인
                     </Button>
                     <Button
                       disabled={busy}
-                      onClick={() =>
-                        void act({
-                          action: "retention-check",
-                          id: t.id,
-                          ok: false,
-                          note: "삭제·비공개 확인 필요",
-                        })
-                      }
+                      onClick={async () => {
+                        const answer = await ask({
+                          title: "게시물 복구 요청",
+                          description:
+                            "기존 게시물을 공개 상태로 복구하도록 안내합니다. 지급 기록과 유지 종료일은 그대로 유지됩니다.",
+                          inputLabel: "확인 결과와 복구할 내용",
+                          confirmLabel: "복구 요청 보내기",
+                        });
+                        if (answer)
+                          void act({
+                            action: "retention-check",
+                            id: t.id,
+                            version: t.version,
+                            ok: false,
+                            note: answer.value,
+                          });
+                      }}
                     >
-                      복구 확인 필요
+                      복구 요청
                     </Button>
                   </>
                 )}

@@ -1,3 +1,4 @@
+import { checkRetention } from "@/lib/retention";
 import { requireActor, sameOrigin } from "@/lib/auth";
 import { get, list, transaction, lock, update, audit } from "@/lib/db";
 import { saveQuote, confirmQuote } from "@/lib/quote-workflow";
@@ -166,26 +167,15 @@ export async function POST(request: Request) {
         result = { ok: true };
         break;
       case "retention-check":
-        result = await transaction(async () => {
-          const t = await get(b.id);
-          if (t?.kind !== "tasks" || !t.retentionUntil)
-            throw new Error("유지 관리 작업을 선택하세요.");
-          await lock("project-operations:" + t.projectId);
-          const r = await update(t.id, {
-            retentionCheckedAt: new Date().toISOString(),
-            retentionStatus: b.ok === true ? "public" : "needs_recovery",
-            retentionNote: String(b.note || ""),
-          });
-          if (b.ok !== true && t.participantId)
-            await queueNotification(
-              String(t.participantId),
-              "retention",
-              t.id + ":" + r.version,
-              { name: String(t.name) },
-            );
-          await audit(actor, "retention-check", t.id);
-          return r;
-        });
+        if (typeof b.ok !== "boolean")
+          throw new Error("확인 결과를 선택하세요.");
+        result = await checkRetention(
+          b.id,
+          b.ok,
+          String(b.note || ""),
+          actor,
+          b.version,
+        );
         break;
       default:
         throw new Error("지원하지 않는 작업입니다.");

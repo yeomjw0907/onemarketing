@@ -1,3 +1,4 @@
+import { reportRecovery } from "@/lib/retention";
 import {
   requestPortalCode,
   verifyPortalCode,
@@ -114,6 +115,8 @@ export async function POST(request: Request) {
       });
     } else if (b.action === "respond")
       result = await respondOffer(b.id, p.id, b.accept === true);
+    else if (b.action === "report-recovery")
+      result = await reportRecovery(b.id, p.id);
     else if (b.action === "submit")
       result = await submitPublication(b.id, p.id, String(b.link));
     else if (b.action === "availability")
