@@ -175,14 +175,6 @@ export default function KakaoPortalLogin({
           )}
         </>
       )}
-      <a
-        className="ui-text-link"
-        href="https://pf.kakao.com/_iaDxeG/friend"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        원케이션 채널 추가 (선택)
-      </a>
     </section>
   );
 }
