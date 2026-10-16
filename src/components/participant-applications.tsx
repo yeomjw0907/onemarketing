@@ -22,6 +22,7 @@ export default function ParticipantApplications({
 }) {
   const [items, setItems] = useState<ParticipantApplication[]>([]),
     [filter, setFilter] = useState("new"),
+    [search, setSearch] = useState(""),
     [checked, setChecked] = useState<Record<string, number>>({}),
     [current, setCurrent] = useState<ParticipantApplication | null>(null),
     [draft, setDraft] = useState<ApplicationDraft | null>(null),
@@ -31,10 +32,27 @@ export default function ParticipantApplications({
     [loading, setLoading] = useState(true);
   const selectable =
     filter === "new" || filter === "rejected" || filter === "deleted";
-  const matches = (i: ParticipantApplication) =>
-    filter === "deleted"
-      ? Boolean(i.data.deletedAt)
-      : !i.data.deletedAt && i.status === filter;
+  const query = search.trim();
+  const nameQuery = query.replace(/\s/g, "").toLocaleLowerCase("ko-KR");
+  const phoneQuery = /^[0-9+()\s-]+$/.test(query)
+    ? query.replace(/\D/g, "")
+    : "";
+  const matches = (i: ParticipantApplication) => {
+    const statusMatches =
+      filter === "deleted"
+        ? Boolean(i.data.deletedAt)
+        : !i.data.deletedAt && i.status === filter;
+    return (
+      statusMatches &&
+      (!query ||
+        i.data.name
+          .replace(/\s/g, "")
+          .toLocaleLowerCase("ko-KR")
+          .includes(nameQuery) ||
+        (phoneQuery.length > 0 &&
+          i.data.phone.replace(/\D/g, "").includes(phoneQuery)))
+    );
+  };
   const pending = items.filter(matches);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
   async function bulkReview(
@@ -193,6 +211,42 @@ export default function ParticipantApplications({
             )
           </button>
         ))}
+      </div>
+      <div className="row" style={{ marginBottom: 16, flexWrap: "wrap" }}>
+        <input
+          type="search"
+          aria-label="신청 이름·전화번호 검색"
+          placeholder="이름 또는 전화번호 검색"
+          autoComplete="off"
+          maxLength={200}
+          value={search}
+          disabled={busy}
+          style={{ width: 320, maxWidth: "100%", height: 40 }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setChecked({});
+            setMessage("");
+          }}
+        />
+        {search && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setSearch("");
+              setChecked({});
+            }}
+          >
+            검색 지우기
+          </button>
+        )}
+        {!loading && (
+          <span role="status" className="hint">
+            {labels[filter as keyof typeof labels]} ·{" "}
+            {query ? "검색 결과 " : ""}
+            {pending.length}건
+          </span>
+        )}
       </div>
       {selectable && !loading && (
         <>
@@ -407,7 +461,9 @@ export default function ParticipantApplications({
           </table>
           {!items.some(matches) && (
             <p className="empty">
-              {labels[filter as keyof typeof labels]} 신청이 없습니다.
+              {query
+                ? "검색 결과가 없습니다."
+                : `${labels[filter as keyof typeof labels]} 신청이 없습니다.`}
             </p>
           )}
         </div>
