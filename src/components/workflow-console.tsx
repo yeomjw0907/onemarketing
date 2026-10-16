@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { money, type DatabaseView, type RecordData } from "@/lib/types";
-import { participantPerformance } from "@/lib/participant-performance";
+import {
+  recommendParticipants,
+  type RecommendationOrder,
+} from "@/lib/participant-recommendations";
 import {
   Button,
   Field,
@@ -23,6 +26,8 @@ export default function WorkflowConsole({
   onReload: () => Promise<void>;
 }) {
   const [tab, setTab] = useState("quote");
+  const [recommendationOrder, setRecommendationOrder] =
+    useState<RecommendationOrder>("balanced");
   const { ask, confirm, dialog } = useDecisionDialog();
   const [failed, setFailed] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
@@ -87,16 +92,14 @@ export default function WorkflowConsole({
     (s) => s.projectId === projectId && s.status !== "cancelled",
   );
   const project = data.projects.find((p) => p.id === projectId);
-  const rank = (p: RecordData) => {
-    const m = participantPerformance(data.tasks, p.id);
-    return (
-      (m.averageQuality ?? 3) * 8 +
-      (m.deadlineCount ? m.onTime / m.deadlineCount : 0.5) * 20 +
-      Math.min(m.verified, 20) -
-      Math.min((m.averageResponseMs ?? 86400000) / 3600000, 48) / 4 -
-      m.overdue * 10
-    );
-  };
+  const recommendations = recommendParticipants(
+    data,
+    slots.find((s) => s.id === offer.slotId),
+    recommendationOrder,
+  );
+  const recommendation = recommendations.find(
+    (r) => r.participant.id === offer.participantId,
+  );
 
   return (
     <div className="workflow-console">
@@ -430,7 +433,10 @@ export default function WorkflowConsole({
           프로젝트
           <select
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(e) => {
+              setProjectId(e.target.value);
+              setOffer({ slotId: "", participantId: "" });
+            }}
           >
             <option value="">프로젝트 선택</option>
             {data.projects.map((p) => (
@@ -524,7 +530,9 @@ export default function WorkflowConsole({
               <select
                 required
                 value={offer.slotId}
-                onChange={(e) => setOffer({ ...offer, slotId: e.target.value })}
+                onChange={(e) =>
+                  setOffer({ slotId: e.target.value, participantId: "" })
+                }
               >
                 <option value="">미배정 작업 선택</option>
                 {slots
@@ -534,6 +542,21 @@ export default function WorkflowConsole({
                       {String(s.name)}
                     </option>
                   ))}
+              </select>
+            </Field>
+            <Field help="종합: 품질 40% · 제출 속도 25% · 참여 기간 15% · 완료량 20%. 미제출 기한 초과는 감점하며 신규 참여자는 중립 점수로 시작합니다.">
+              추천 기준
+              <select
+                value={recommendationOrder}
+                onChange={(e) =>
+                  setRecommendationOrder(e.target.value as RecommendationOrder)
+                }
+              >
+                <option value="balanced">종합 추천</option>
+                <option value="quality">일 잘하는 순</option>
+                <option value="speed">빨리 제출하는 순</option>
+                <option value="tenure">오래 참여한 순</option>
+                <option value="volume">많이 완료한 순</option>
               </select>
             </Field>
             <Field>
@@ -549,32 +572,25 @@ export default function WorkflowConsole({
                 }
               >
                 <option value="">참여자 선택</option>
-                {[...data.participants]
-                  .filter((p) => p.status === "active")
-                  .sort((a, b) => rank(b) - rank(a))
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {String(p.name)} · 완료{" "}
-                      {
-                        data.tasks.filter(
-                          (t) =>
-                            t.participantId === p.id && t.status === "verified",
-                        ).length
-                      }
-                      건 · 품질{" "}
-                      {participantPerformance(
-                        data.tasks,
-                        p.id,
-                      ).averageQuality?.toFixed(1) || "미평가"}{" "}
-                      · 가용{" "}
-                      {((p.availability as Row[]) || [])
-                        .filter((v) => new Date(v.until).getTime() > Date.now())
-                        .reduce((n, v) => n + Number(v.quantity), 0)}
-                      건
-                    </option>
-                  ))}
+                {recommendations.map((r, index) => (
+                  <option key={r.participant.id} value={r.participant.id}>
+                    {index + 1}위 · {String(r.participant.name)} ·{" "}
+                    {r.score.toFixed(1)}점 · 완료 {r.completed}건
+                  </option>
+                ))}
               </select>
             </Field>
+            {!recommendations.length && (
+              <EmptyState
+                title="제안 가능한 참여자가 없어요"
+                description="활동 상태, 승인 계정, 소유·관리 권한 확인과 기존 배정·제안을 확인해주세요."
+              />
+            )}
+            {recommendation && (
+              <Feedback>
+                {`추천 ${recommendation.score.toFixed(1)}점 · 품질 ${recommendation.quality?.toFixed(1) ?? "미평가"} (${recommendation.samples}건) · 평균 제출 ${recommendation.hours === null ? "기록 없음" : recommendation.hours.toFixed(1) + "시간"} · 참여 ${recommendation.days}일 · 완료 ${recommendation.completed}건 · 기한 초과 미제출 ${recommendation.overdue}건`}
+              </Feedback>
+            )}
             {["blog", "clip"].map((ch) => (
               <Field key={ch}>
                 {ch === "blog" ? "블로그" : "클립"} 계정
