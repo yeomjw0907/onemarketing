@@ -133,6 +133,15 @@ export async function issueKakaoSession(participantId: string) {
       throw new Error(
         "현재 참여할 수 없는 계정이에요. 담당자에게 문의해주세요.",
       );
+    const binding = (await list("portal_links")).find(
+      (l) =>
+        l.purpose === "kakao-account" &&
+        l.participantId === participantId &&
+        !l.revokedAt,
+    );
+    if (!binding) throw new Error("카카오 계정 연결을 다시 확인해주세요.");
+    if (!p.referralCode)
+      await update(p.id, { referralCode: randomBytes(6).toString("hex") });
     const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
     const parent = await create("portal_links", {
       participantId,
@@ -143,6 +152,7 @@ export async function issueKakaoSession(participantId: string) {
     await create("portal_links", {
       purpose: "session",
       provider: "kakao",
+      bindingId: binding.id,
       participantId,
       parentId: parent.id,
       tokenHash: hash(session),

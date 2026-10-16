@@ -12,7 +12,7 @@
 - 기존 비즈 앱 1056843의 원케이션 대표 채널 연결 사용. 전용 REST 키 onemarketing-participants와 클라이언트 시크릿 생성. 기존 키/대표 키는 변경하지 않음.
 - 환경변수 KAKAO_LOGIN_ENABLED, KAKAO_CLIENT_ID, KAKAO_CLIENT_SECRET, APP_URL. 서버 비밀값은 Vercel production에만 저장.
 - 콜백 https://www.onemarketing.kr/api/auth/kakao/callback.
-- 연결 해제 웹훅 POST /api/auth/kakao/unlink: 대표 어드민 키와 app_id 검증, 연결·미완료 사용자 정보 제거, 기존 세션 접근 차단. 업무/정산 기록은 유지. KAKAO_WEBHOOK_ADMIN_KEY, KAKAO_APP_ID 설정 필요.
+- 카카오디벨로퍼스 연결 해제 웹훅 URL/POST 저장 완료. 연결 해제 웹훅 POST /api/auth/kakao/unlink: 대표 어드민 키와 app_id 검증, 연결·미완료 사용자 정보 제거, 기존 세션 접근 차단. 업무/정산 기록은 유지. KAKAO_WEBHOOK_ADMIN_KEY, KAKAO_APP_ID 설정 필요.
 - 기존 SMS 인증 코드는 별도 보조 경로로 유지하며 SMS 설정이 없으면 통과시키지 않음. 기본 카카오/관리자 확인 흐름에는 SMS 등록 불필요.
 - 알림톡 검수 자동 확인 및 자동 테스트는 사용자 요청으로 중지된 상태 유지.
 
@@ -20,9 +20,11 @@
 - 관련 33개 테스트: OAuth 변조/만료/재사용, 연결 요청·거절·승인, 중복 연결 동시성, 연결 해제, 신규 신청 수정 후 승인 연결, 클라이언트 ID 위조, 기존 작업·정산·추천료, OTP 보조 경로.
 - production build 및 타입 검사 통과.
 - 격리된 QA DB와 카카오 API 모의 응답으로 브라우저에서 로그인 → 연결 요청 → 관리자 승인 → 내 작업 → 새로고침 → 로그아웃 → 카카오 재로그인 확인.
-- 참여자 화면 1440/390/360px 확인, 가로 넘침 없음. 실제 카카오 OAuth 확인은 production 배포 후 별도 진행.
+- 참여자 화면 1440/390/360px 확인, 가로 넘침 없음. 운영 배포 후 열려 있는 크롬 계정으로 실제 카카오 OAuth 성공 및 최초 연결 화면 복귀 확인. 운영 참여자 연결 승인은 임의로 하지 않음.
 
 공식 문서:
 - https://developers.kakao.com/docs/ko/kakaologin/rest-api
 - https://developers.kakao.com/docs/ko/kakaotalk-channel/common
 - https://developers.kakao.com/docs/ko/kakaologin/callback
+
+- 세션을 발급 당시의 카카오 연결 레코드 ID에 고정. 연결 해제 후 재연결해도 과거 세션은 재활성화되지 않음.

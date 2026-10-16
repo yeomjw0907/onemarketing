@@ -165,4 +165,7 @@ test("unlink removes login identity and invalidates browser access", async () =>
   await unlinkKakao("106");
   await assert.rejects(portalParticipant(signed.session!));
   assert.equal((await login(106)).session, undefined);
+  await bindKakao("106", p.id, "admin", "재연결 확인");
+  await assert.rejects(portalParticipant(signed.session!));
+  assert.equal((await portalParticipant((await login(106)).session!)).id, p.id);
 });

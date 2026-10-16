@@ -63,6 +63,7 @@ export async function portalParticipant(token?: string) {
     !(await list("portal_links")).some(
       (l) =>
         l.purpose === "kakao-account" &&
+        l.id === link.bindingId &&
         l.participantId === p.id &&
         !l.revokedAt,
     )
