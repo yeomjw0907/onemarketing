@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
 import KakaoPortalLogin from "./kakao-portal-login";
 import {
   Button,
@@ -287,6 +288,13 @@ export default function ParticipantPortal() {
                   {Number(o.amount).toLocaleString()}
                   <span>원</span>
                 </p>
+                {typeof o.partialFinalizedAmount === "number" && (
+                  <Feedback tone="info">
+                    이 묶음은 부분 완료로 종료되었어요. 완료한 작업{" "}
+                    {Number(o.partialFinalizedAmount).toLocaleString()}원을
+                    지급했고, 나머지 작업은 재모집해요.
+                  </Feedback>
+                )}
                 <p className="ui-account-url">{o.accountUrls?.join(" / ")}</p>
                 <dl className="ui-details">
                   <div>
@@ -425,6 +433,13 @@ export default function ParticipantPortal() {
                     <StatusBadge value={t.status} />
                   </div>
                   <p className="ui-account-url">{t.account?.url}</p>
+                  {taskOverdue(t) && (
+                    <Feedback tone="error">
+                      {t.revisionNotes ? "수정 기한" : "제출 기한"}이 지났어요.
+                      완료한 게시물의 링크를 제출하고 담당자에게 진행 상황을
+                      알려주세요.
+                    </Feedback>
+                  )}
                   <dl className="ui-details">
                     {t.scheduledFrom && (
                       <div>
@@ -434,10 +449,14 @@ export default function ParticipantPortal() {
                         </dd>
                       </div>
                     )}
-                    {t.submissionDue && (
+                    {taskDeadline(t) && (
                       <div>
-                        <dt>제출 기한</dt>
-                        <dd>{date(t.submissionDue)}</dd>
+                        <dt>
+                          {t.status === "delivered" && t.revisionNotes
+                            ? "수정 기한"
+                            : "제출 기한"}
+                        </dt>
+                        <dd>{date(taskDeadline(t)!)}</dd>
                       </div>
                     )}
                     <div>
@@ -473,7 +492,7 @@ export default function ParticipantPortal() {
                       {t.guideSnapshot?.text || p?.guide}
                     </p>
                   </details>
-                  {t.revisionNotes && (
+                  {t.revisionNotes && t.status === "delivered" && (
                     <Feedback>
                       <strong>수정 요청</strong>
                       <p>{t.revisionNotes}</p>

@@ -164,6 +164,16 @@ export async function portalView(
       guideVersion: o.guideVersion,
       retentionDays: o.retentionDays,
       policy: o.policySnapshot,
+      partialFinalizedAmount:
+        o.status === "accepted"
+          ? (slots.find(
+              (s) =>
+                s.id === o.slotId &&
+                s.offerId === o.id &&
+                s.participantId === p.id &&
+                s.partialFinalized,
+            )?.amount ?? null)
+          : null,
       lastPostingDate: o.lastPostingDate,
     })),
     projects: projects.map((pr) => ({

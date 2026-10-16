@@ -1,4 +1,5 @@
 "use client";
+import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
 import { useState, useEffect } from "react";
 import { money, type DatabaseView, type RecordData } from "@/lib/types";
 import {
@@ -731,8 +732,16 @@ export default function WorkflowConsole({
             .filter((o) => o.projectId === projectId)
             .map((o) => (
               <p key={o.id}>
-                {String(o.name)} · <StatusBadge value={o.status} /> ·{" "}
-                {new Date(String(o.expiresAt)).toLocaleString("ko-KR")}
+                {String(o.name)} ·{" "}
+                <StatusBadge
+                  value={
+                    o.status === "proposed" &&
+                    Date.parse(String(o.expiresAt)) <= Date.now()
+                      ? "expired"
+                      : o.status
+                  }
+                />{" "}
+                · {new Date(String(o.expiresAt)).toLocaleString("ko-KR")}
               </p>
             ))}
         </div>
@@ -812,6 +821,22 @@ export default function WorkflowConsole({
                   </Button>
                 )}
               </div>
+            ))}
+          <h3>기한 초과 작업</h3>
+          {data.tasks
+            .filter((t) => t.projectId === projectId && taskOverdue(t))
+            .map((t) => (
+              <Feedback key={t.id} tone="error">
+                {String(t.name)} ·{" "}
+                {String(
+                  data.participants.find((p) => p.id === t.participantId)
+                    ?.name || "참여자",
+                )}{" "}
+                · {t.revisionNotes ? "수정" : "제출"} 기한{" "}
+                {new Date(taskDeadline(t)!).toLocaleString("ko-KR", {
+                  timeZone: "Asia/Seoul",
+                })}
+              </Feedback>
             ))}
           <h3>검수·유지 관리</h3>
           {projectId &&

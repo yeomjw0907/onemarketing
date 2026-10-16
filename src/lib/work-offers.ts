@@ -572,6 +572,23 @@ export async function cancelUnfinished(slotId: string, actor: string) {
         ? "approved"
         : "planned",
       submissionDue: null,
+      postingDeadlineAt: null,
+      requestedAt: null,
+      firstRequestedAt: null,
+      submittedAt: null,
+      firstSubmittedAt: null,
+      reviewEligibleAt: null,
+      verifiedAt: null,
+      firstVerifiedAt: null,
+      verifiedBy: null,
+      retentionUntil: null,
+      revisionNotes: null,
+      revisionDue: null,
+      revisionCount: 0,
+      postingRevisionCount: 0,
+      qualityScore: null,
+      qualityNotes: "",
+      guideSnapshot: null,
       offerId: null,
     });
     await update(done[0].id, {

@@ -1,3 +1,4 @@
+import { taskDeadline, taskNeedsReminder } from "./task-deadline";
 import { createHmac } from "node:crypto";
 import { create, get, list, update, transaction, lock } from "./db";
 export const notificationTemplates = {
@@ -153,12 +154,7 @@ export async function sendNotification(id: string) {
     // Stale reminders must never be delivered after submission.
     if (n.type === "reminder") {
       const tasks = (await list("tasks")).filter(
-        (t) =>
-          t.participantId === n.participantId &&
-          t.status === "delivered" &&
-          t.submissionDue &&
-          new Date(String(t.submissionDue)).getTime() < Date.now() + 86400000 &&
-          new Date(String(t.submissionDue)).getTime() > Date.now() - 86400000,
+        (t) => t.participantId === n.participantId && taskNeedsReminder(t),
       );
       if (!tasks.length) {
         await update(n.id, { status: "cancelled" });
@@ -172,13 +168,7 @@ export async function sendNotification(id: string) {
             count: String(
               (await list("tasks")).filter(
                 (t) =>
-                  t.participantId === n.participantId &&
-                  t.status === "delivered" &&
-                  t.submissionDue &&
-                  new Date(String(t.submissionDue)).getTime() <=
-                    Date.now() + 86400000 &&
-                  new Date(String(t.submissionDue)).getTime() >
-                    Date.now() - 86400000,
+                  t.participantId === n.participantId && taskNeedsReminder(t),
               ).length,
             ),
           }
@@ -285,13 +275,7 @@ export async function notificationTick() {
     const tasks = await list("tasks");
     for (const p of await list("participants")) {
       const pending = tasks.filter(
-        (t) =>
-          t.participantId === p.id &&
-          t.status === "delivered" &&
-          t.submissionDue &&
-          new Date(String(t.submissionDue)).getTime() <=
-            Date.now() + 86400000 &&
-          new Date(String(t.submissionDue)).getTime() > Date.now() - 86400000,
+        (t) => t.participantId === p.id && taskNeedsReminder(t),
       );
       if (pending.length)
         await queueNotification(
@@ -300,7 +284,7 @@ export async function notificationTick() {
           p.id +
             ":" +
             pending
-              .map((t) => t.id + ":" + t.submissionDue)
+              .map((t) => t.id + ":" + taskDeadline(t))
               .sort()
               .join("|"),
           { count: String(pending.length) },
