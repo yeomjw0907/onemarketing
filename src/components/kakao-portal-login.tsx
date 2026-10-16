@@ -2,7 +2,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, Field, Form, Feedback } from "./ui/workflow-ui";
-type Pending = { nickname: string; hasCandidate: boolean; status?: string };
+type Pending = {
+  nickname: string;
+  hasCandidate: boolean;
+  status?: string;
+  applicationStatus?: string;
+};
 export default function KakaoPortalLogin({
   access,
   onAuthenticated,
@@ -68,17 +73,32 @@ export default function KakaoPortalLogin({
     <section className="portal-auth">
       {error && <Feedback tone="error">{error}</Feedback>}
       <h2>
-        {pending ? "기존 참여자 계정 연결" : "카카오로 간편하게 시작하세요"}
+        {pending?.applicationStatus
+          ? "참여 신청 확인"
+          : pending
+            ? "기존 참여자 계정 연결"
+            : "카카오로 간편하게 시작하세요"}
       </h2>
       {!ready ? (
         <p className="muted">로그인 상태를 확인하고 있어요.</p>
       ) : pending ? (
         <>
           <p className="muted">
-            {pending.nickname}님, 처음 한 번 기존 참여자 정보를 연결하면
-            다음부터 카카오 로그인만으로 내 작업을 볼 수 있어요.
+            {pending.nickname}님,{" "}
+            {pending.applicationStatus
+              ? "신청 상태를 확인하고, 승인 후 내 작업 화면으로 이동할 수 있어요."
+              : "처음 참여하신다면 체험단을 신청해주세요. 이미 등록된 참여자는 계정을 한 번 연결하면 돼요."}
           </p>
-          {pending.status === "pending" ? (
+          {pending.status === "application_pending" ? (
+            <>
+              <Feedback tone="info">
+                참여 신청을 접수했어요. 담당자가 신청 내용을 검토 중이에요.
+              </Feedback>
+              <Button busy={busy} onClick={() => void action("continue")}>
+                신청 상태 확인
+              </Button>
+            </>
+          ) : pending.status === "pending" ? (
             <>
               <Feedback tone="info">
                 연결 요청을 접수했어요. 담당자가 등록된 연락처로 확인한 뒤
@@ -102,6 +122,24 @@ export default function KakaoPortalLogin({
                 <Feedback tone="error">
                   연결 요청을 확인하지 못했어요. 정보를 확인해 다시
                   요청해주세요.
+                </Feedback>
+              )}
+              {!pending.hasCandidate && (
+                <p>
+                  <Link
+                    className="ui-text-link"
+                    href="/participants/apply?kakao=1"
+                  >
+                    {pending.applicationStatus === "rejected"
+                      ? "참여 신청 다시 작성하기"
+                      : "신규 체험단 신청하기"}
+                  </Link>
+                </p>
+              )}
+              {pending.applicationStatus === "rejected" && (
+                <Feedback tone="info">
+                  이번 신청은 승인되지 않았어요. 자세한 내용은 담당자에게
+                  문의해주세요.
                 </Feedback>
               )}
               <Form
@@ -137,7 +175,10 @@ export default function KakaoPortalLogin({
               </Form>
               <p className="muted">
                 처음 참여하시나요?{" "}
-                <Link className="ui-text-link" href="/participants/apply">
+                <Link
+                  className="ui-text-link"
+                  href="/participants/apply?kakao=1"
+                >
                   체험단 신청하기
                 </Link>
               </p>

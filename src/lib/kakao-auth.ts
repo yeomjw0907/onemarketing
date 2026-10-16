@@ -8,6 +8,7 @@ import {
   lock,
   audit,
   execute,
+  query,
 } from "./db";
 import { portalLinkParticipant } from "./portal-auth";
 const hash = (v: string) => createHash("sha256").update(v).digest("hex");
@@ -275,4 +276,33 @@ export async function reviewKakaoLink(
       reviewedBy: actor,
     });
   });
+}
+
+export async function kakaoOnboarding(identity: string) {
+  const r = await pendingKakao(identity),
+    links = await list("portal_links");
+  const requests = links.filter(
+    (l) => l.purpose === "kakao-link-request" && l.kakaoId === r.kakaoId,
+  );
+  const application = (
+    await query<{ status: string }>(
+      "select status from participant_applications where data->>'trustedKakaoId'=$1 and data->>'deletedAt' is null order by created_at desc limit 1",
+      [r.kakaoId],
+    )
+  )[0];
+  const linked = links.some(
+    (l) =>
+      l.purpose === "kakao-account" && l.kakaoId === r.kakaoId && !l.revokedAt,
+  );
+  return {
+    nickname: r.nickname,
+    hasCandidate: !!r.candidateId,
+    applicationStatus: application?.status,
+    status: linked
+      ? "approved"
+      : application?.status === "new"
+        ? "application_pending"
+        : requests.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+            ?.status,
+  };
 }

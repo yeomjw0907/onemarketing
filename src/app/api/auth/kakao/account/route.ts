@@ -2,27 +2,18 @@ import { cookies } from "next/headers";
 import { sameOrigin } from "@/lib/auth";
 import {
   pendingKakao,
+  kakaoOnboarding,
   requestKakaoLink,
   issueKakaoSession,
   kakaoConfigured,
 } from "@/lib/kakao-auth";
-import { list } from "@/lib/db";
+import { list, query } from "@/lib/db";
 export async function GET() {
   const identity = (await cookies()).get("om_kakao_pending")?.value;
   let pending = null;
   if (identity)
     try {
-      const r = await pendingKakao(identity);
-      const requests = (await list("portal_links")).filter(
-        (l) => l.purpose === "kakao-link-request" && l.kakaoId === r.kakaoId,
-      );
-      pending = {
-        nickname: r.nickname,
-        hasCandidate: !!r.candidateId,
-        status: requests.sort((a, b) =>
-          b.createdAt.localeCompare(a.createdAt),
-        )[0]?.status,
-      };
+      pending = await kakaoOnboarding(identity);
     } catch {}
   return Response.json(
     { enabled: kakaoConfigured(), pending },
@@ -43,7 +34,19 @@ export async function POST(request: Request) {
           l.kakaoId === r.kakaoId &&
           !l.revokedAt,
       );
-      if (!binding) throw new Error("담당자가 연결 요청을 확인 중이에요.");
+      if (!binding) {
+        const application = (
+          await query<{ status: string }>(
+            "select status from participant_applications where data->>'trustedKakaoId'=$1 and status='new' and data->>'deletedAt' is null limit 1",
+            [r.kakaoId],
+          )
+        )[0];
+        throw new Error(
+          application
+            ? "참여 신청을 검토 중이에요. 승인 후 내 작업을 확인할 수 있어요."
+            : "담당자가 연결 요청을 확인 중이에요.",
+        );
+      }
       const session = await issueKakaoSession(String(binding.participantId));
       store.set("om_participant", session, {
         httpOnly: true,

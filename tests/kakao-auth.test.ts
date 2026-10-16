@@ -2,6 +2,11 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import "./helpers";
 import { create, list, update } from "../src/lib/db";
+import {
+  submitApplication,
+  reviewApplication,
+  listApplications,
+} from "../src/lib/participant-applications";
 import { issuePortal, portalParticipant } from "../src/lib/portal";
 import {
   beginKakao,
@@ -11,6 +16,7 @@ import {
   reviewKakaoLink,
   bindKakao,
   unlinkKakao,
+  kakaoOnboarding,
 } from "../src/lib/kakao-auth";
 Object.assign(process.env, {
   KAKAO_LOGIN_ENABLED: "true",
@@ -70,6 +76,7 @@ test("link possession and matching name do not authenticate; manual review binds
     name: "동일한 이름",
     phone: "01011112222",
     status: "active",
+    accounts: [],
   });
   const { url } = await issuePortal(p.id, "admin"),
     access = url.split("access=")[1];
@@ -101,6 +108,7 @@ test("link possession and matching name do not authenticate; manual review binds
     name: "다른 사람",
     phone: "01011113333",
     status: "active",
+    accounts: [],
   });
   await assert.rejects(bindKakao("102", other.id, "admin", "확인"));
   await assert.rejects(bindKakao("103", p.id, "admin", "확인"));
@@ -140,11 +148,13 @@ test("concurrent binding cannot assign one Kakao account to two participants", a
     name: "A",
     phone: "01033334444",
     status: "active",
+    accounts: [],
   });
   const b = await create("participants", {
     name: "B",
     phone: "01033335555",
     status: "active",
+    accounts: [],
   });
   const outcomes = await Promise.allSettled([
     bindKakao("105", a.id, "admin", "확인"),
@@ -158,6 +168,7 @@ test("unlink removes login identity and invalidates browser access", async () =>
     name: "unlink",
     phone: "01055556666",
     status: "active",
+    accounts: [],
   });
   await bindKakao("106", p.id, "admin", "확인");
   const signed = await login(106);
@@ -168,4 +179,53 @@ test("unlink removes login identity and invalidates browser access", async () =>
   await bindKakao("106", p.id, "admin", "재연결 확인");
   await assert.rejects(portalParticipant(signed.session!));
   assert.equal((await portalParticipant((await login(106)).session!)).id, p.id);
+});
+
+test("new Kakao applicant sees pending, approved, and own portal without legacy link request", async () => {
+  const signed = await login(701),
+    identity = signed.identity!;
+  assert.equal((await kakaoOnboarding(identity)).status, undefined);
+  const input = {
+    key: crypto.randomUUID(),
+    consent: true,
+    data: {
+      name: "신규 카카오 참여자",
+      phone: "01077778888",
+      email: "new@example.com",
+      nickname: "신규",
+      region: "서울",
+      specialties: "",
+      introduction: "",
+      payment: { method: "kakaopay" },
+      accounts: [
+        {
+          id: crypto.randomUUID(),
+          channel: "blog",
+          url: "https://blog.naver.com/kakao-new-701",
+          label: "",
+          approvalStatus: "approved",
+        },
+      ],
+    },
+  };
+  const result = await submitApplication(input, "701");
+  assert.equal((await kakaoOnboarding(identity)).status, "application_pending");
+  await assert.rejects(portalParticipant(identity));
+  assert.equal(
+    (await list("portal_links")).filter(
+      (l) => l.purpose === "kakao-link-request" && l.kakaoId === "701",
+    ).length,
+    0,
+  );
+  const app = (await listApplications()).find((a) => a.id === result.id)!;
+  const approved = await reviewApplication(
+    { id: app.id, version: app.version, action: "approve", data: input.data },
+    "admin",
+  );
+  assert.equal((await kakaoOnboarding(identity)).status, "approved");
+  assert.equal(
+    (await portalParticipant((await login(701)).session!)).id,
+    approved.participantId,
+  );
+  assert.equal((await login(702)).session, undefined);
 });

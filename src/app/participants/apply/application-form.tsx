@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import ApplicationFields, {
   freshApplication,
@@ -52,6 +53,7 @@ export default function ApplicationForm({
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState("");
   const [key, setKey] = useState("");
+  const [kakaoLinked, setKakaoLinked] = useState(false);
   const stage = receipt ? "done" : draft ? "form" : "terms";
   const readiness = applicationReadiness(draft, consent);
   const canSubmit = readiness.ready;
@@ -110,11 +112,14 @@ export default function ApplicationForm({
           consent,
           website: websiteRef.current,
           key,
+          requireKakao:
+            new URLSearchParams(location.search).get("kakao") === "1",
         }),
       });
       const body = await r.json();
       if (!r.ok) throw new Error(body.error || "신청하지 못했습니다.");
       setReceipt(body.id);
+      setKakaoLinked(body.kakaoLinked === true);
       setPopup("success");
     } catch (e) {
       dialogRef.current?.close();
@@ -151,6 +156,13 @@ export default function ApplicationForm({
                 신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다.
               </p>
               <p className="hint">접수번호: {receipt}</p>
+              {kakaoLinked && (
+                <p>
+                  <Link className="ui-text-link" href="/participants/portal">
+                    참여자 화면에서 신청 상태 확인
+                  </Link>
+                </p>
+              )}
             </div>
           ) : !draft ? (
             <>
