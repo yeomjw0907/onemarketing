@@ -1,3 +1,8 @@
+import { retentionMonitorTick } from "@/lib/retention-monitor";
+import {
+  retentionAdminConfiguration,
+  retentionAdminAlertTick,
+} from "@/lib/retention-admin-alert";
 import { checkRetention } from "@/lib/retention";
 import { requireActor, sameOrigin } from "@/lib/auth";
 import { get, list, transaction, lock, update, audit } from "@/lib/db";
@@ -26,11 +31,19 @@ import {
   workflowPolicySchema,
 } from "@/lib/workflow-policy";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function GET() {
   try {
     await requireActor();
     return Response.json(
-      { sens: sensConfiguration(), defaults: defaultWorkflowPolicy },
+      {
+        sens: sensConfiguration(),
+        defaults: defaultWorkflowPolicy,
+        retention: {
+          enabled: process.env.RETENTION_MONITOR_ENABLED === "true",
+          admin: retentionAdminConfiguration(),
+        },
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
@@ -165,6 +178,10 @@ export async function POST(request: Request) {
       case "notification-tick":
         await notificationTick();
         result = { ok: true };
+        break;
+      case "retention-monitor-tick":
+        result = await retentionMonitorTick();
+        await retentionAdminAlertTick();
         break;
       case "retention-check":
         if (typeof b.ok !== "boolean")

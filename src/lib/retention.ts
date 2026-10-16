@@ -49,7 +49,17 @@ export async function checkRetention(
             retentionReportedAt: null,
           }
         : {}),
-      ...(ok ? { retentionResolvedAt: now } : {}),
+      ...(ok
+        ? {
+            retentionResolvedAt: now,
+            retentionMonitorAlert: false,
+            retentionProbeState: null,
+            retentionProbeCount: 0,
+            retentionNextProbeAt: new Date(
+              Date.now() + 24 * 3600000,
+            ).toISOString(),
+          }
+        : {}),
     });
     if (!ok && t.participantId)
       await queueNotification(

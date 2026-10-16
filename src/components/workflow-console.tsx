@@ -113,6 +113,37 @@ export default function WorkflowConsole({
       {message && (
         <Feedback tone={failed ? "error" : "success"}>{message}</Feedback>
       )}
+      {data.tasks.some((t) => t.retentionMonitorAlert) && (
+        <Feedback>
+          <strong>
+            게시 유지 확인이 필요한 작업{" "}
+            {data.tasks.filter((t) => t.retentionMonitorAlert).length}건
+          </strong>
+          <p>
+            삭제·비공개 의심과 접속 제한을 구분해 표시해요. 게시물을 직접 확인한
+            뒤 복구 요청을 진행해주세요.
+          </p>
+          {data.tasks
+            .filter((t) => t.retentionMonitorAlert)
+            .map((t) => (
+              <p key={t.id}>
+                <Button
+                  disabled={busy}
+                  onClick={() => {
+                    setProjectId(String(t.projectId));
+                    setTab("review");
+                  }}
+                >
+                  {String(t.name)} 확인
+                </Button>
+                <span>
+                  {" "}
+                  {String(t.retentionProbeReason || "수동 확인 필요")}
+                </span>
+              </p>
+            ))}
+        </Feedback>
+      )}
       <Tabs
         label="캠페인 운영 업무"
         value={tab}
@@ -839,6 +870,39 @@ export default function WorkflowConsole({
               </Feedback>
             ))}
           <h3>검수·유지 관리</h3>
+          <p>
+            자동 확인{" "}
+            {config?.retention?.enabled
+              ? "켜짐 · 공개 게시물은 하루 1회, 이상 징후는 6시간 뒤 재확인"
+              : "꺼짐"}{" "}
+            · 관리자 카톡{" "}
+            {config?.retention?.admin?.enabled &&
+            config?.retention?.admin?.configured
+              ? "설정됨 · 승인 템플릿으로 발송"
+              : "설정·템플릿 승인 필요"}
+          </p>
+          {data.events
+            .filter((e) => e.type === "retention-monitor-health")
+            .map((e) => (
+              <p key={e.id}>
+                최근 실행{" "}
+                {e.lastCompletedAt
+                  ? new Date(String(e.lastCompletedAt)).toLocaleString("ko-KR")
+                  : "기록 없음"}{" "}
+                · 확인 {Number(e.checked || 0)}건{" "}
+                {!!e.error && <span> · 오류: {String(e.error)}</span>}
+                {e.lastCompletedAt &&
+                Date.parse(String(e.lastCompletedAt)) < Date.now() - 3600000
+                  ? " · 1시간 이상 실행 기록 없음, 스케줄러 확인 필요"
+                  : ""}
+              </p>
+            ))}
+          <Button
+            disabled={busy || !config?.retention?.enabled}
+            onClick={() => void act({ action: "retention-monitor-tick" })}
+          >
+            자동 확인 실행
+          </Button>
           {projectId &&
             !data.tasks.some(
               (t) =>
@@ -937,6 +1001,29 @@ export default function WorkflowConsole({
                         "ko-KR",
                       )}
                     </span>
+                    {!!t.retentionProbedAt && (
+                      <p>
+                        자동 확인:{" "}
+                        {t.retentionProbeState === "public"
+                          ? "공개 확인"
+                          : t.retentionProbeState === "missing"
+                            ? "삭제·비공개 의심"
+                            : "수동 확인 필요"}{" "}
+                        · {String(t.retentionProbeReason)} ·{" "}
+                        {new Date(String(t.retentionProbedAt)).toLocaleString(
+                          "ko-KR",
+                        )}{" "}
+                        {!!t.retentionNextProbeAt && (
+                          <span>
+                            {" "}
+                            · 다음 확인{" "}
+                            {new Date(
+                              String(t.retentionNextProbeAt),
+                            ).toLocaleString("ko-KR")}
+                          </span>
+                        )}
+                      </p>
+                    )}
                     <p>
                       유지 상태:{" "}
                       {t.retentionStatus === "needs_recovery"
@@ -1145,8 +1232,9 @@ export default function WorkflowConsole({
                 payment: "지급 완료",
                 reminder: "기한 안내",
                 retention: "유지 확인",
+                retention_admin: "관리자 게시 유지 알림",
               }[String(n.type)] || String(n.type)}{" "}
-              · {String(n.to)} ·{" "}
+              · {String(n.to || "관리자 번호 설정")} ·{" "}
               <StatusBadge context="notification" value={n.status} />
             </summary>
             <p style={{ whiteSpace: "pre-wrap" }}>{String(n.content)}</p>
@@ -1184,7 +1272,11 @@ export default function WorkflowConsole({
                 )}
               </div>
             )}
+            {!n.setupTest && !!n.error && (
+              <Feedback tone="error">{String(n.error)}</Feedback>
+            )}
             {!n.setupTest &&
+              n.type !== "retention_admin" &&
               ["queued", "failed"].includes(String(n.status)) && (
                 <Button
                   variant="primary"

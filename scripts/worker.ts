@@ -15,11 +15,30 @@ process.on("SIGTERM", () => {
   stopping = true;
 });
 const { notificationTick } = await import("../src/lib/sens");
+const { retentionMonitorTick } = await import("../src/lib/retention-monitor");
+const { retentionAdminAlertTick } =
+  await import("../src/lib/retention-admin-alert");
 let lastNotificationTick = 0;
 console.log("One Marketing worker started.");
 while (!stopping) {
   if (Date.now() - lastNotificationTick > 60000) {
     lastNotificationTick = Date.now();
+    try {
+      await retentionMonitorTick();
+    } catch (e) {
+      console.error(
+        "retention monitor failed",
+        e instanceof Error ? e.message : e,
+      );
+    }
+    try {
+      await retentionAdminAlertTick();
+    } catch (e) {
+      console.error(
+        "retention alert failed",
+        e instanceof Error ? e.message : e,
+      );
+    }
     try {
       await notificationTick();
     } catch (e) {

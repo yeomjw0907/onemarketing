@@ -1,3 +1,5 @@
+import { retentionMonitorTick } from "@/lib/retention-monitor";
+import { retentionAdminAlertTick } from "@/lib/retention-admin-alert";
 import { notificationTick } from "@/lib/sens";
 import { timingSafeEqual } from "node:crypto";
 import { actor } from "@/lib/auth";
@@ -20,14 +22,28 @@ async function handle(request: Request, background: boolean) {
       { error: "허용되지 않은 요청입니다." },
       { status: 401 },
     );
+  const started = Date.now();
   if (background) {
     scheduleTick(true);
     return Response.json({ scheduled: true }, { status: 202 });
   }
+  try {
+    await retentionMonitorTick();
+  } catch (e) {
+    console.error(
+      "retention monitor failed",
+      e instanceof Error ? e.message : e,
+    );
+  }
+  try {
+    await retentionAdminAlertTick();
+  } catch (e) {
+    console.error("retention alert failed", e instanceof Error ? e.message : e);
+  }
   await notificationTick();
   const runnable = await hasRunnableJobs();
   if (!runnable) return Response.json({ runnable: false, results: [] });
-  const result = await runTick();
+  const result = await runTick(Math.max(0, 240000 - (Date.now() - started)));
   return Response.json({ runnable: true, ...result });
 }
 // Cron은 GET으로 호출한다. 응답을 기다리는 동안 작업을 처리한다.

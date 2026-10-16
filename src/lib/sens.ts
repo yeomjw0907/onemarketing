@@ -306,7 +306,11 @@ export async function notificationTick() {
   });
   if (!sensConfiguration().enabled || !sensConfiguration().configured) return;
   for (const n of (await list("notification_outbox"))
-    .filter((n) => ["queued", "accepted"].includes(String(n.status)))
+    .filter(
+      (n) =>
+        n.type !== "retention_admin" &&
+        ["queued", "accepted"].includes(String(n.status)),
+    )
     .slice(0, 20)) {
     try {
       if (n.status === "accepted") await refreshNotification(n.id);
