@@ -1,3 +1,8 @@
+import { syncReferral } from "./referrals";
+import {
+  publicationIdentity,
+  publicationMatchesAccount,
+} from "./account-identity";
 import { salesCartSchema, cartQuote } from "./sales-cart";
 import { shootingTargets } from "./media-guidance";
 import { z } from "zod";
@@ -186,7 +191,19 @@ export function save(
       await requireRecord(id, kind);
       z.number().int().positive().parse(version);
     }
-    if (kind === "participants") await validateParticipant(data, id);
+    if (kind === "participants") {
+      await validateParticipant(data, id);
+      if (!id)
+        data.referralCode = crypto
+          .randomUUID()
+          .replaceAll("-", "")
+          .slice(0, 12);
+      if (id) {
+        const old = await requireRecord(id, kind);
+        if (data.referrerId !== undefined && data.referrerId !== old.referrerId)
+          throw new Error("추천 관계는 별도 변경 절차로 관리하세요.");
+      }
+    }
     if (kind === "participant_history") {
       await requireRecord(String(data.participantId), "participants");
       if (id) {
@@ -386,13 +403,20 @@ export async function projectCosts(p: RecordData) {
   const missing =
     tasks.some((t) => t.payout === null) ||
     costs.some((c) => c.confirmed !== true);
-  const expected = Number(p.payoutEstimate) + Number(p.aiEstimate);
+  const referralCost = (await list("referral_credits"))
+    .filter((c) => c.projectId === p.id && c.status !== "cancelled")
+    .reduce((n, c) => n + Number(c.amount), 0);
+  const expected =
+    Number(p.payoutEstimate) +
+    Number(p.aiEstimate) +
+    Number(p.referralEstimate || 0);
   return {
     sale: Number(p.sale),
     expected,
     expectedMargin: Number(p.sale) - expected,
-    actual: actual + payouts,
-    margin: Number(p.sale) - actual - payouts,
+    actual: actual + payouts + referralCost,
+    referralCost,
+    margin: Number(p.sale) - actual - payouts - referralCost,
     provisional: missing || p.settled !== true,
   };
 }
@@ -729,7 +753,24 @@ export function command(
       const u = new URL(link);
       if (!["https:", "http:"].includes(u.protocol))
         throw new Error("웹 링크를 입력하세요.");
-      if ((await list("tasks")).some((t) => t.id !== id && t.link === link))
+      await lock("publication-links");
+      let linkIdentity: string;
+      try {
+        linkIdentity = publicationIdentity(link);
+      } catch (e) {
+        if (parent?.workflowPolicy) throw e;
+        linkIdentity = link;
+      }
+      if (
+        (await list("tasks")).some((t) => {
+          if (t.id === id || !t.link) return false;
+          try {
+            return publicationIdentity(String(t.link)) === linkIdentity;
+          } catch {
+            return t.link === link;
+          }
+        })
+      )
         throw new Error("이미 등록된 게시 링크입니다.");
       if (
         (row.postingSetId || row.workSlotId) &&
@@ -739,7 +780,29 @@ export function command(
         throw new Error(
           "지급한 세트의 게시 링크를 변경하려면 먼저 세트 지급을 취소하세요.",
         );
+      const account = (
+        row.participantSnapshot as { account?: { url: string } } | null
+      )?.account;
+      if (
+        parent?.workflowPolicy &&
+        account &&
+        !publicationMatchesAccount(link, account.url)
+      )
+        throw new Error("배정된 계정의 게시물이 아닙니다.");
       const now = new Date().toISOString();
+      const policy = parent?.workflowPolicy as
+        { reviewDays?: number; retentionDays?: number } | undefined;
+      if (input.verified === true && policy && link !== row.link)
+        throw new Error("새 링크는 먼저 제출하고 3일 뒤 검수하세요.");
+      if (
+        input.verified === true &&
+        policy &&
+        (!row.submittedAt ||
+          Date.now() <
+            new Date(String(row.submittedAt)).getTime() +
+              (policy.reviewDays ?? 3) * 86400000)
+      )
+        throw new Error("제출 후 3일이 지나야 검수 승인할 수 있습니다.");
       const sameLink = link === row.link;
       const qualityScore =
         input.qualityScore === undefined
@@ -769,6 +832,16 @@ export function command(
             input.qualityNotes ?? row.qualityNotes ?? "",
           ),
           verifiedBy: input.verified === true ? actor : null,
+          ...(input.verified === true && policy
+            ? {
+                retentionUntil:
+                  row.retentionUntil && sameLink
+                    ? row.retentionUntil
+                    : new Date(
+                        Date.now() + (policy.retentionDays ?? 90) * 86400000,
+                      ).toISOString(),
+              }
+            : {}),
         },
         Number(input.version),
       );
@@ -791,6 +864,12 @@ export function command(
         throw new Error("참여자 게시 세트에서 통합 지급을 처리하세요.");
       if (row.kind !== "tasks" || row.payout === null)
         throw new Error("지급액을 먼저 확정하세요.");
+      if (
+        input.paid === true &&
+        parent?.workflowPolicy &&
+        row.status !== "verified"
+      )
+        throw new Error("검수 통과 후 지급하세요.");
       result = await update(
         id,
         {
@@ -799,6 +878,7 @@ export function command(
         },
         Number(input.version),
       );
+      await syncReferral(row, input.paid === true, actor);
     } else if (action === "cost") {
       if (row.kind !== "projects") throw new Error("프로젝트를 선택하세요.");
       result = await create("costs", {

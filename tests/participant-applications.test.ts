@@ -171,9 +171,33 @@ test("동의·웹 주소·중복 계정 검사와 하루 접수 제한", async (
     }),
   );
   for (let i = 0; i < 3; i++)
-    await submitApplication({ ...input, key: crypto.randomUUID() });
+    await submitApplication({
+      ...input,
+      key: crypto.randomUUID(),
+      data: {
+        ...input.data,
+        accounts: [
+          {
+            ...input.data.accounts[0],
+            url: "https://blog.naver.com/" + crypto.randomUUID(),
+          },
+        ],
+      },
+    });
   await assert.rejects(
-    submitApplication({ ...input, key: crypto.randomUUID() }),
+    submitApplication({
+      ...input,
+      key: crypto.randomUUID(),
+      data: {
+        ...input.data,
+        accounts: [
+          {
+            ...input.data.accounts[0],
+            url: "https://blog.naver.com/" + crypto.randomUUID(),
+          },
+        ],
+      },
+    }),
     /오늘 신청/,
   );
 });

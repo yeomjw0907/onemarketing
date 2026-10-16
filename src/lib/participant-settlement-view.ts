@@ -45,7 +45,8 @@ export function settlementItems(
         (t) =>
           t.participantId !== participantId ||
           t.status !== "verified" ||
-          t.payoutStatus === "paid" ||
+          (t.payoutStatus === "paid" &&
+            !((source.partialPaidTaskIds as string[]) || []).includes(t.id)) ||
           typeof t.payout !== "number",
       )
     )
@@ -53,7 +54,8 @@ export function settlementItems(
     const amount =
       source.kind === "participant_history"
         ? Number(source.amount)
-        : tasks.reduce((n, t) => n + Number(t.payout), 0);
+        : tasks.reduce((n, t) => n + Number(t.payout), 0) -
+          Number(source.partialPaidAmount || 0);
     if (!Number.isSafeInteger(amount) || amount < 0) return;
     const accounts = [
       ...new Set(

@@ -1,3 +1,4 @@
+import { syncReferral } from "./referrals";
 import { z } from "zod";
 import { create, update } from "./db";
 import { requireRecord } from "./domain";
@@ -14,7 +15,12 @@ export async function assignWorkSlot(
   input: Record<string, unknown>,
   actor: string,
 ) {
-  if (slot.kind !== "work_slots") throw new Error("판매 슬롯을 선택하세요.");
+  if (
+    slot.kind !== "work_slots" ||
+    slot.status === "cancelled" ||
+    !((slot.taskIds as string[]) || []).length
+  )
+    throw new Error("유효한 판매 슬롯을 선택하세요.");
   const project = await requireRecord(String(slot.projectId), "projects");
   if (
     project.hold ||
@@ -116,6 +122,8 @@ export async function assignWorkSlot(
     slot.id,
     {
       participantId: participant?.id || null,
+      referrerSnapshot: participant?.referrerId || null,
+      referralRate: slot.type === "bundle" ? 1200 : 500,
       participantName: participant?.nickname || participant?.name || "",
       participantSnapshot: participant
         ? {
@@ -151,6 +159,10 @@ export async function payWorkSlot(
   if (slot.kind !== "work_slots" || !slot.participantId)
     throw new Error("배정한 슬롯을 선택하세요.");
   const paid = z.boolean().parse(input.paid);
+  if (!paid && ((slot.partialPaidTaskIds as string[]) || []).length)
+    throw new Error(
+      "부분 지급 묶음 취소는 담당자 확인 후 개별 지급 기록을 먼저 정리하세요.",
+    );
   const tasks = await Promise.all(
     (slot.taskIds as string[]).map((id) => requireRecord(id, "tasks")),
   );
@@ -176,6 +188,7 @@ export async function payWorkSlot(
         },
         t.version,
       );
+  await syncReferral(slot, paid, actor);
   return update(
     slot.id,
     {

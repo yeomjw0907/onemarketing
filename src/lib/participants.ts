@@ -1,3 +1,4 @@
+import { accountIdentity } from "./account-identity";
 import { rewardDefaults } from "./sales-cart";
 import { z } from "zod";
 import { participantPaymentSchema } from "./participant-payment";
@@ -15,6 +16,8 @@ const profileUrl = z
     "웹 계정 링크를 입력하세요.",
   );
 export const participantSchema = z.object({
+  referrerId: z.string().uuid().nullable().optional(),
+  kakaoMarketingConsent: z.boolean().optional(),
   name: z.string().trim().min(1).max(200),
   operationType: z.enum(["self", "managed"]).default("self"),
   teamName: z.string().trim().max(200).default(""),
@@ -46,12 +49,14 @@ export const participantSchema = z.object({
         ]),
         url: profileUrl,
         label: z.string().trim().max(100).default(""),
+        ownershipVerifiedAt: z.string().datetime().optional(),
+        ownershipEvidence: z.string().max(2000).optional(),
         approvalStatus: z
           .enum(["pending", "approved", "rejected"])
           .default("approved"),
       }),
     )
-    .max(20)
+    .max(100)
     .default([]),
 });
 export const participantHistorySchema = z
@@ -78,8 +83,7 @@ export const participantHistorySchema = z
       });
   });
 export function normalizeProfile(url: string) {
-  const u = new URL(url);
-  return u.hostname.toLowerCase() + u.pathname.replace(/\/$/, "") + u.search;
+  return accountIdentity(url);
 }
 export async function validateParticipant(
   data: Record<string, unknown>,
@@ -101,6 +105,25 @@ export async function validateParticipant(
       )
     )
       throw new Error("다른 참여자에게 등록된 계정입니다.");
+  if (id) {
+    const old = await get(id);
+    for (const a of accounts) {
+      const previous = (
+        (old?.accounts as {
+          id: string;
+          url: string;
+          ownershipVerifiedAt?: string;
+        }[]) || []
+      ).find((x) => x.id === a.id);
+      if (
+        previous &&
+        normalizeProfile(previous.url) !== normalizeProfile(a.url)
+      ) {
+        delete (a as unknown as Record<string, unknown>).ownershipVerifiedAt;
+        delete (a as unknown as Record<string, unknown>).ownershipEvidence;
+      }
+    }
+  }
   if (id)
     for (const task of (await list("tasks")).filter(
       (t) =>
@@ -162,6 +185,32 @@ export async function participantAssignment(
     (task.participantId !== p.id || task.participantAccountId !== account.id)
   )
     throw new Error("지급 완료한 작업의 참여자는 변경할 수 없습니다.");
+  if (
+    (await list("tasks")).some((t) => {
+      if (
+        t.id === task.id ||
+        t.projectId !== task.projectId ||
+        t.channel !== task.channel ||
+        (t.status === "cancelled" &&
+          t.payoutStatus !== "paid" &&
+          !t.payoutCommitted)
+      )
+        return false;
+      const snapshot = (
+        t.participantSnapshot as { account?: { url?: string } } | null
+      )?.account?.url;
+      return (
+        (t.participantId === p.id && t.participantAccountId === account.id) ||
+        !!(
+          snapshot &&
+          normalizeProfile(snapshot) === normalizeProfile(account.url)
+        )
+      );
+    })
+  )
+    throw new Error(
+      "같은 캠페인에서 이 계정에 이미 배정한 채널 작업이 있습니다.",
+    );
   return {
     participantId: p.id,
     participantAccountId: account.id,

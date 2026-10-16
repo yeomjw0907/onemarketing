@@ -1,4 +1,5 @@
 "use client";
+import WorkflowConsole from "./workflow-console";
 import { accountAssignable } from "@/lib/participant-account-policy";
 import { shootingTargetOptions } from "@/lib/media-guidance";
 import Participants from "./participants";
@@ -60,6 +61,7 @@ const menus = [
   ["participants", "체험단 관리", Users],
   ["library", "자료실", FolderOpen],
   ["contracts", "계약·견적", FileText],
+  ["workflow", "캠페인 운영", Layers],
   ["projects", "프로젝트", Layers],
   ["reviews", "검수함", CheckCheck],
   ["publishing", "게시·지급", Send],
@@ -1068,6 +1070,12 @@ export default function Workspace() {
           <div role="alert" className="error">
             {error}
           </div>
+        )}
+        {page === "workflow" && (
+          <WorkflowConsole
+            data={data}
+            onReload={async () => setData(await api("/api/data"))}
+          />
         )}
         {page === "overview" && (
           <>

@@ -1,3 +1,4 @@
+import { syncReferral } from "./referrals";
 import { z } from "zod";
 import { create, get, list, lock, update } from "./db";
 import { participantAssignment } from "./participants";
@@ -182,6 +183,7 @@ export async function payPostingSet(
     throw new Error("게시 세트 연결을 확인하세요.");
   if (paid && tasks.some((t) => t?.status !== "verified"))
     throw new Error("블로그와 클립 게시를 모두 확인한 뒤 지급하세요.");
+  if (!set.workSlotId) await syncReferral(set, paid, actor);
   const paidAt = paid ? new Date().toISOString() : null;
   const result = await update(
     set.id,

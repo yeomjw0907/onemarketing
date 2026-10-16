@@ -1,4 +1,9 @@
 export type Kind =
+  | "quote_drafts"
+  | "work_offers"
+  | "referral_credits"
+  | "notification_outbox"
+  | "portal_links"
   | "customers"
   | "products"
   | "participants"
@@ -30,6 +35,11 @@ export type RecordData = {
 };
 export type DatabaseView = Record<Kind, RecordData[]>;
 export const kinds: Kind[] = [
+  "quote_drafts",
+  "work_offers",
+  "referral_credits",
+  "notification_outbox",
+  "portal_links",
   "customers",
   "products",
   "participants",

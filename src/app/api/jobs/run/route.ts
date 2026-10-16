@@ -1,3 +1,4 @@
+import { notificationTick } from "@/lib/sens";
 import { timingSafeEqual } from "node:crypto";
 import { actor } from "@/lib/auth";
 import { hasRunnableJobs } from "@/lib/jobs";
@@ -23,6 +24,7 @@ async function handle(request: Request, background: boolean) {
     scheduleTick(true);
     return Response.json({ scheduled: true }, { status: 202 });
   }
+  await notificationTick();
   const runnable = await hasRunnableJobs();
   if (!runnable) return Response.json({ runnable: false, results: [] });
   const result = await runTick();

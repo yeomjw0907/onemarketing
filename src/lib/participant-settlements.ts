@@ -1,5 +1,6 @@
+import { syncReferral } from "./referrals";
 import { z } from "zod";
-import { audit, create, get, lock, update, view } from "./db";
+import { audit, create, get, list, lock, update, view } from "./db";
 import { participantPaymentSchema } from "./participant-payment";
 import { settlementItems } from "./participant-settlement-view";
 import { payWorkSlot } from "./work-slots";
@@ -16,6 +17,7 @@ export async function settleParticipant(
   const body = z
     .object({
       version: z.number().int().positive(),
+      referralCreditIds: z.array(z.string().uuid()).max(1000).default([]),
       items: z
         .array(
           z.object({ id: z.string().uuid(), token: z.string().max(20000) }),
@@ -57,7 +59,25 @@ export async function settleParticipant(
       );
     return row;
   });
-  const total = selected.reduce((sum, item) => sum + item.amount, 0);
+  const credits = [];
+  for (const id of [...new Set(body.referralCreditIds)].sort()) {
+    const credit = await get(id);
+    if (
+      !credit ||
+      credit.kind !== "referral_credits" ||
+      credit.participantId !== current.id ||
+      credit.status !== "available"
+    )
+      throw new Error("추천료 내역이 변경되었습니다.");
+    await lock("referral-source:" + credit.sourceId);
+    const fresh = await get(id);
+    if (fresh?.status !== "available")
+      throw new Error("추천료 내역이 변경되었습니다.");
+    credits.push(fresh);
+  }
+  const total =
+    selected.reduce((sum, item) => sum + item.amount, 0) +
+    credits.reduce((sum, c) => sum + Number(c.amount), 0);
   if (!Number.isSafeInteger(total))
     throw new Error("합산 정산 금액을 확인하세요.");
   const settlement = await create("participant_settlements", {
@@ -67,12 +87,19 @@ export async function settleParticipant(
     payment,
     phone: current.phone,
     items: selected,
+    referralCreditIds: credits.map((c) => c.id),
     total,
     paidAt: new Date().toISOString(),
     paidBy: actor,
     note: body.note,
     status: "paid",
   });
+  for (const credit of credits)
+    await update(credit.id, {
+      status: "paid",
+      settlementId: settlement.id,
+      paidAt: settlement.paidAt,
+    });
   for (const item of selected) {
     const row = (await get(item.id))!;
     if (item.kind === "work_slots")
@@ -96,6 +123,7 @@ export async function settleParticipant(
         },
         row.version,
       );
+    if (item.kind === "tasks") await syncReferral(row, true, actor);
     await update(row.id, { settlementId: settlement.id });
     if (row.postingSetId)
       await update(String(row.postingSetId), { settlementId: settlement.id });
@@ -128,6 +156,26 @@ export async function cancelParticipantSettlement(
     current.status === "cancelled"
   )
     throw new Error("정산 기록이 변경되었습니다. 새로고침하세요.");
+  if (Array.isArray(current.referralCreditIds)) {
+    for (const creditId of current.referralCreditIds as string[]) {
+      const c = await get(creditId);
+      if (!c || c.settlementId !== current.id)
+        throw new Error("추천료 정산 연결을 확인하세요.");
+      await lock("referral-source:" + c.sourceId);
+      await update(c.id, {
+        status: c.status === "recovery_required" ? "cancelled" : "available",
+        settlementId: null,
+        paidAt: null,
+      });
+    }
+    await audit(actor, "referral-settlement-cancel", current.id);
+    if (!((current.items as unknown[]) || []).length)
+      return update(current.id, {
+        status: "cancelled",
+        cancelledBy: actor,
+        cancelledAt: new Date().toISOString(),
+      });
+  }
   const items = current.items as {
     id: string;
     kind: string;
@@ -175,6 +223,7 @@ export async function cancelParticipantSettlement(
         row.version,
       );
     else await update(row.id, { paid: false, paidDate: "" }, row.version);
+    if (item.kind === "tasks") await syncReferral(row, false, actor);
     await update(row.id, { settlementId: null });
     if (row.postingSetId)
       await update(String(row.postingSetId), { settlementId: null });

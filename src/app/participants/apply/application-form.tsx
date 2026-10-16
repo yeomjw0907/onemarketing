@@ -69,7 +69,10 @@ export default function ApplicationForm({
   }, [stage]);
   function start() {
     if (!readTerms) return;
-    setDraft(freshApplication());
+    setDraft({
+      ...freshApplication(),
+      referralCode: new URLSearchParams(location.search).get("ref") || "",
+    });
     setKey(crypto.randomUUID());
   }
   function submit(e: FormEvent<HTMLFormElement>) {

@@ -21,7 +21,17 @@ export default function ParticipantSettlements({
     [confirm, setConfirm] = useState(false);
   const available = settlementItems(data, participant.id);
   const picked = available.filter((i) => selected.includes(i.id));
-  const total = picked.reduce((n, i) => n + i.amount, 0);
+  const [includeReferrals, setIncludeReferrals] = useState(false);
+  const referralCredits = data.referral_credits.filter(
+    (c) => c.participantId === participant.id && c.status === "available",
+  );
+  const referralTotal = referralCredits.reduce(
+    (n, c) => n + Number(c.amount),
+    0,
+  );
+  const total =
+    picked.reduce((n, i) => n + i.amount, 0) +
+    (includeReferrals ? referralTotal : 0);
   const payment = participantPaymentSchema.safeParse(participant.payment);
   const history = data.participant_settlements.filter(
     (s) => s.participantId === participant.id,
@@ -39,6 +49,9 @@ export default function ParticipantSettlements({
           data: {
             id: participant.id,
             version: participant.version,
+            referralCreditIds: includeReferrals
+              ? referralCredits.map((c) => c.id)
+              : [],
             items: picked.map((i) => ({ id: i.id, token: i.token })),
           },
         }),
@@ -94,6 +107,16 @@ export default function ParticipantSettlements({
         <p className="hint">
           프로필 수정에서 담당자의 정산 정보를 먼저 등록해주세요.
         </p>
+      )}
+      {referralTotal > 0 && (
+        <label>
+          <input
+            type="checkbox"
+            checked={includeReferrals}
+            onChange={(e) => setIncludeReferrals(e.target.checked)}
+          />
+          추천료 {money(referralTotal)} 함께 지급
+        </label>
       )}
       <div className="row" style={{ flexWrap: "wrap", marginBottom: 14 }}>
         <button

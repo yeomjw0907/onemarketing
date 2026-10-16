@@ -1,3 +1,4 @@
+import { accountIdentity } from "./account-identity";
 import { z } from "zod";
 import { participantPaymentSchema } from "./participant-payment";
 import { normalizeApplicationAccount } from "./application-accounts";
@@ -12,6 +13,8 @@ export const applicationChannels = {
 } as const;
 export const applicationSchema = z
   .object({
+    referralCode: z.string().trim().max(40).optional(),
+    kakaoMarketingConsent: z.boolean().optional(),
     name: z.string().trim().min(1, "이름을 입력하세요.").max(200),
     operationType: z.enum(["self", "managed"]).optional(),
     teamName: z.string().trim().max(200).optional(),
@@ -76,7 +79,7 @@ export const applicationSchema = z
           }),
       )
       .min(1, "활동 계정을 하나 이상 입력하세요.")
-      .max(10),
+      .max(100),
   })
   .superRefine((data, ctx) => {
     if (data.operationType === "managed") {
@@ -97,10 +100,7 @@ export const applicationSchema = z
     }
     const urls = data.accounts.flatMap((a) => {
       try {
-        const u = new URL(a.url);
-        return [
-          u.hostname.toLowerCase() + u.pathname.replace(/\/$/, "") + u.search,
-        ];
+        return [accountIdentity(a.url)];
       } catch {
         return [];
       }

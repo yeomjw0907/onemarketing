@@ -14,8 +14,21 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   stopping = true;
 });
+const { notificationTick } = await import("../src/lib/sens");
+let lastNotificationTick = 0;
 console.log("One Marketing worker started.");
 while (!stopping) {
+  if (Date.now() - lastNotificationTick > 60000) {
+    lastNotificationTick = Date.now();
+    try {
+      await notificationTick();
+    } catch (e) {
+      console.error(
+        "notification tick failed",
+        e instanceof Error ? e.message : e,
+      );
+    }
+  }
   const job = await claimJob(owner);
   if (!job) {
     await new Promise((resolve) => setTimeout(resolve, 1500));

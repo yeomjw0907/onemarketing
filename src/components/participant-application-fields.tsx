@@ -44,6 +44,27 @@ export default function ApplicationFields({
       disabled={disabled}
       style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
     >
+      <h3>추천 및 모집 알림</h3>
+      <ApplicationInput
+        label="추천 코드 (선택)"
+        value={draft.referralCode || ""}
+        maxLength={40}
+        onChange={(referralCode) => onChange({ ...draft, referralCode })}
+      />
+      <label>
+        <input
+          type="checkbox"
+          checked={draft.kakaoMarketingConsent === true}
+          onChange={(e) =>
+            onChange({ ...draft, kakaoMarketingConsent: e.target.checked })
+          }
+        />
+        카카오톡 신규 캠페인 모집 광고 수신 동의 (선택)
+      </label>
+      <p>
+        동의하지 않아도 가입할 수 있으며 참여자 화면에서 언제든 철회할 수
+        있습니다.
+      </p>
       <h3>계정 운영 형태</h3>
       <div
         className={styles.paymentOptions}

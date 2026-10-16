@@ -101,6 +101,18 @@ async function fixture() {
       url: "https://m.naver.com/clip/profile/" + crypto.randomUUID(),
     },
   ];
+  accounts.push(
+    ...accounts.map((a) => ({
+      ...a,
+      id: crypto.randomUUID(),
+      url: a.url + "extra",
+    })),
+    {
+      id: crypto.randomUUID(),
+      channel: "clip",
+      url: "https://m.naver.com/clip/profile/" + crypto.randomUUID(),
+    },
+  );
   const participant = await save(
     "participants",
     {
@@ -157,11 +169,11 @@ test("new cart projects create unassigned slots, immutable scope, exact rewards,
   )!;
   const initialFingerprint = (await mediaBinding(p.id, imageTask.id, "image"))
     .fingerprint;
-  for (const slot of bundles.slice(0, 2))
+  for (const [index, slot] of bundles.slice(0, 2).entries())
     await act("work-slot-assign", slot.id, {
       participantId: participant.id,
-      blogAccountId: accounts[0].id,
-      clipAccountId: accounts[1].id,
+      blogAccountId: accounts[index * 2].id,
+      clipAccountId: accounts[index * 2 + 1].id,
     });
   const slot = (await get(bundles[0].id))!;
   assert.equal(slot.amount, 7000);

@@ -1,3 +1,5 @@
+import { accountIdentity } from "./account-identity";
+import { list } from "./db";
 import { z } from "zod";
 import { audit, execute, lock, query, transaction } from "./db";
 import { save } from "./domain";
@@ -26,6 +28,46 @@ export async function submitApplication(input: unknown) {
       [envelope.key],
     );
     if (existing.length) return { id: existing[0].id };
+    await lock("save:participants");
+    await lock("application-accounts");
+    const identities = envelope.data.accounts.map((a) =>
+      accountIdentity(a.url),
+    );
+    for (const p of await list("participants")) {
+      if (
+        (p.accounts as { url: string }[]).some((a) =>
+          identities.includes(accountIdentity(a.url)),
+        )
+      )
+        throw new Error(
+          "이미 등록된 활동 계정입니다. 담당자에게 계정 추가·변경을 문의해주세요.",
+        );
+    }
+    const pending = await query<{ data: { accounts: { url: string }[] } }>(
+      "select data from participant_applications where status='new'",
+    );
+    if (
+      pending.some((p) =>
+        p.data.accounts.some((a) =>
+          identities.includes(accountIdentity(a.url)),
+        ),
+      )
+    )
+      throw new Error("검토 중인 신청에 이미 포함된 활동 계정입니다.");
+    let referrerId: string | null = null;
+    if (envelope.data.referralCode) {
+      const referrer = (await list("participants")).find(
+        (p) => p.referralCode === envelope.data.referralCode,
+      );
+      if (!referrer || referrer.status !== "active")
+        throw new Error("유효한 추천 코드를 입력해주세요.");
+      if (
+        String(referrer.phone).replace(/\D/g, "") ===
+        envelope.data.phone.replace(/\D/g, "")
+      )
+        throw new Error("본인을 추천할 수 없습니다.");
+      referrerId = referrer.id;
+    }
     // Shared database lock keeps simultaneous submissions for one phone within the limit.
     const phone = envelope.data.phone.replace(/\D/g, "");
     await lock("application-phone:" + phone);
@@ -43,6 +85,7 @@ export async function submitApplication(input: unknown) {
         envelope.key,
         JSON.stringify({
           ...envelope.data,
+          referrerId,
           accounts: envelope.data.accounts.map((a) => ({
             ...a,
             approvalStatus: "pending",
@@ -70,6 +113,7 @@ export async function reviewApplication(input: unknown, actor: string) {
     })
     .parse(input);
   return transaction(async () => {
+    await lock("save:participants");
     await lock("application-review:" + body.id);
     const old = (
       await query<ParticipantApplication>(
@@ -92,6 +136,9 @@ export async function reviewApplication(input: unknown, actor: string) {
       const p = await save(
         "participants",
         {
+          referrerId:
+            (old.data as unknown as { referrerId?: string }).referrerId || null,
+          kakaoMarketingConsent: body.data.kakaoMarketingConsent === true,
           name: body.data.name,
           operationType: body.data.operationType || "self",
           teamName: body.data.teamName || "",
