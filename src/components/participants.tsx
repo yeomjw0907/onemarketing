@@ -67,6 +67,7 @@ export default function Participants({
 }) {
   const [query, setQuery] = useState(""),
     [status, setStatus] = useState(""),
+    [showDeleted, setShowDeleted] = useState(false),
     [sort, setSort] = useState("name"),
     [editing, setEditing] = useState(false),
     [draft, setDraft] = useState<Draft>(fresh),
@@ -171,6 +172,41 @@ export default function Participants({
       onSelect("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "삭제 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function restoreParticipant(target: RecordData) {
+    const restoredStatus =
+      states[String(target.statusBeforeDeletion)] || states.paused;
+    if (
+      !window.confirm(
+        `${String(target.name)} 참여자를 ‘${restoredStatus}’ 상태로 복구할까요? 체험단 목록과 연결된 승인 완료 목록에 다시 표시됩니다.`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "participant-restore",
+          key: crypto.randomUUID(),
+          data: { id: target.id, version: target.version },
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "복구 실패");
+      await onReload();
+      setShowDeleted(false);
+      setStatus("");
+      setEditing(false);
+      setTab(0);
+      onSelect(target.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "복구 실패");
     } finally {
       setBusy(false);
     }
@@ -293,6 +329,15 @@ export default function Participants({
           </p>
         </div>
         <div className="row" style={{ flexWrap: "wrap" }}>
+          {!!participant?.deletedAt && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => restoreParticipant(participant)}
+            >
+              참여자 복구
+            </button>
+          )}
           {participant && !participant.deletedAt && (
             <button
               type="button"
@@ -522,6 +567,43 @@ export default function Participants({
       )}
       {!participant && !editing && (
         <>
+          <div
+            className="row"
+            style={{ marginBottom: 16, flexWrap: "wrap" }}
+            role="group"
+            aria-label="참여자 목록 구분"
+          >
+            <button
+              type="button"
+              aria-pressed={!showDeleted}
+              className={!showDeleted ? "primary" : ""}
+              onClick={() => {
+                setShowDeleted(false);
+                setStatus("");
+              }}
+            >
+              등록된 참여자 (
+              {data.participants.filter((p) => !p.deletedAt).length})
+            </button>
+            <button
+              type="button"
+              aria-pressed={showDeleted}
+              className={showDeleted ? "primary" : ""}
+              onClick={() => {
+                setShowDeleted(true);
+                setStatus("");
+              }}
+            >
+              삭제된 참여자 (
+              {data.participants.filter((p) => p.deletedAt).length})
+            </button>
+          </div>
+          {showDeleted && (
+            <p className="hint">
+              삭제일과 기존 이력을 확인하고 복구할 수 있습니다. 삭제 전 상태를
+              알 수 없는 기존 삭제 건은 ‘섭외 보류’로 복구됩니다.
+            </p>
+          )}
           <div className={styles.filters}>
             <input
               aria-label="체험단 검색"
@@ -572,7 +654,7 @@ export default function Participants({
                 {data.participants
                   .filter(
                     (p) =>
-                      !p.deletedAt &&
+                      Boolean(p.deletedAt) === showDeleted &&
                       (!status || p.status === status) &&
                       (!query ||
                         [
@@ -622,7 +704,18 @@ export default function Participants({
                         </td>
                         <td>
                           {String(p.specialties || "—")}
-                          <small>{states[String(p.status)]}</small>
+                          <small>
+                            {p.deletedAt ? "삭제됨" : states[String(p.status)]}
+                          </small>
+                          {!!p.deletedAt && (
+                            <small>
+                              삭제일{" "}
+                              {new Date(String(p.deletedAt)).toLocaleString(
+                                "ko-KR",
+                                { timeZone: "Asia/Seoul" },
+                              )}
+                            </small>
+                          )}
                         </td>
                         <td>{s.count}건</td>
                         <td>
@@ -649,16 +742,32 @@ export default function Participants({
                           >
                             상세 보기
                           </button>
+                          {!!p.deletedAt && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => restoreParticipant(p)}
+                            >
+                              복구
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
                   })}
               </tbody>
             </table>
-            {!data.participants.some((p) => !p.deletedAt) && (
+            {!data.participants.some(
+              (p) => Boolean(p.deletedAt) === showDeleted,
+            ) && (
               <div className={`empty ${styles.empty}`}>
-                <h3>첫 체험단을 등록하세요</h3>등록 후 프로젝트 작업에서
-                담당자와 게시 계정을 선택할 수 있어요.
+                <h3>
+                  {showDeleted
+                    ? "삭제된 참여자가 없습니다"
+                    : "첫 체험단을 등록하세요"}
+                </h3>
+                {!showDeleted &&
+                  "등록 후 프로젝트 작업에서 담당자와 게시 계정을 선택할 수 있어요."}
               </div>
             )}
           </div>

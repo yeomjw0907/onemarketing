@@ -336,3 +336,86 @@ test("승인 참여자를 수정·삭제하면 승인 목록에서 제외하고 
   assert.equal(updated.status, "closed");
   assert.ok(updated.deletedAt);
 });
+
+test("삭제 후 복구는 이전 상태와 승인 연결·이력을 복원하고 오래된 요청을 차단한다", async () => {
+  const { command, save } = await import("../src/lib/domain");
+  const input = application();
+  input.data.phone = "010-7654-3200";
+  const submitted = await submitApplication(input);
+  const approved = await reviewApplication(
+    { id: submitted.id, version: 1, action: "approve", data: input.data },
+    actor,
+  );
+  let participant = (await get(approved.participantId!))!;
+  const accounts = participant.accounts;
+  for (const status of ["active", "paused", "closed"]) {
+    participant = await save(
+      "participants",
+      { ...participant, status },
+      actor,
+      participant.id,
+      participant.version,
+    );
+    const deleted = await command(
+      "participant-delete",
+      { id: participant.id, version: participant.version },
+      actor,
+      crypto.randomUUID(),
+    );
+    assert.equal(deleted.statusBeforeDeletion, status);
+    await assert.rejects(
+      command(
+        "participant-delete",
+        { id: deleted.id, version: deleted.version },
+        actor,
+        crypto.randomUUID(),
+      ),
+      /이미 삭제/,
+    );
+    await assert.rejects(
+      command(
+        "participant-restore",
+        { id: deleted.id, version: participant.version },
+        actor,
+        crypto.randomUUID(),
+      ),
+      /수정/,
+    );
+    assert.ok(!(await listApplications()).some((a) => a.id === submitted.id));
+    participant = await command(
+      "participant-restore",
+      { id: deleted.id, version: deleted.version },
+      actor,
+      crypto.randomUUID(),
+    );
+    assert.equal(participant.status, status);
+    assert.equal(participant.deletedAt, null);
+    assert.deepEqual(participant.accounts, accounts);
+    assert.ok(
+      (await listApplications()).some(
+        (a) => a.id === submitted.id && a.participant_id === participant.id,
+      ),
+    );
+    await assert.rejects(
+      command(
+        "participant-restore",
+        { id: participant.id, version: participant.version },
+        actor,
+        crypto.randomUUID(),
+      ),
+      /삭제된 참여자/,
+    );
+  }
+  const { update } = await import("../src/lib/db");
+  const legacy = await update(participant.id, {
+    deletedAt: new Date().toISOString(),
+    statusBeforeDeletion: null,
+  });
+  const restored = await command(
+    "participant-restore",
+    { id: legacy.id, version: legacy.version },
+    actor,
+    crypto.randomUUID(),
+  );
+  assert.equal(restored.status, "paused");
+});

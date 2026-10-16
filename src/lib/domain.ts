@@ -463,9 +463,11 @@ export function command(
       if (row.kind !== "participants") throw new Error("참여자를 선택하세요.");
       await lock("save:participants");
       row = await requireRecord(id, "participants");
+      if (row.deletedAt) throw new Error("이미 삭제된 참여자입니다.");
       result = await update(
         id,
         {
+          statusBeforeDeletion: row.status,
           status: "closed",
           deletedAt: new Date().toISOString(),
           deletedBy: actor,
@@ -473,6 +475,28 @@ export function command(
         Number(input.version),
       );
       await audit(actor, "participant-delete", id, { name: row.name });
+    } else if (action === "participant-restore") {
+      if (row.kind !== "participants") throw new Error("참여자를 선택하세요.");
+      await lock("save:participants");
+      row = await requireRecord(id, "participants");
+      if (!row.deletedAt) throw new Error("삭제된 참여자가 아닙니다.");
+      const restoredStatus = ["active", "paused", "closed"].includes(
+        String(row.statusBeforeDeletion),
+      )
+        ? String(row.statusBeforeDeletion)
+        : "paused";
+      result = await update(
+        id,
+        {
+          status: restoredStatus,
+          deletedAt: null,
+          deletedBy: null,
+          restoredAt: new Date().toISOString(),
+          restoredBy: actor,
+        },
+        Number(input.version),
+      );
+      await audit(actor, "participant-restore", id, { status: restoredStatus });
     } else if (action === "participant-settlement-cancel") {
       result = await (
         await import("./participant-settlements")
