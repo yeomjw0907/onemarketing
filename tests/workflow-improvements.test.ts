@@ -1,3 +1,4 @@
+import { randomBytes, createHash } from "node:crypto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -294,13 +295,27 @@ test("제안 수락·계정 중복·3일 검수·부분 지급·추천료 차액
   );
   const portal = await issuePortal(p.id, actor);
   const token = portal.url.split("access=")[1];
-  const person = await portalParticipant(token);
+
+  await assert.rejects(portalParticipant(token));
+  const parent = (await list("portal_links")).find(
+    (l) => l.participantId === p.id && !l.revokedAt,
+  )!;
+  const session = randomBytes(32).toString("hex");
+  await create("portal_links", {
+    purpose: "session",
+    participantId: p.id,
+    parentId: parent.id,
+    tokenHash: createHash("sha256").update(session).digest("hex"),
+    verifiedPhone: String(p.phone || "").replace(/\D/g, ""),
+    expiresAt: parent.expiresAt,
+  });
+  const person = await portalParticipant(session);
   const view = await portalView(person);
   assert.equal(view.participant.id, p.id);
   assert.equal(view.tasks.length, 2);
   assert.ok(!("phone" in view.participant));
   await issuePortal(p.id, actor);
-  await assert.rejects(portalParticipant(token), /만료/);
+  await assert.rejects(portalParticipant(session), /만료/);
 });
 test("SENS 서명은 결정적이고 템플릿 변수 누락은 거부한다", () => {
   assert.equal(

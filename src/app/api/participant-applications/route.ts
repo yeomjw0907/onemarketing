@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+import { pendingKakao } from "@/lib/kakao-auth";
 import { requireActor, sameOrigin } from "@/lib/auth";
 import {
   listApplications,
@@ -39,7 +41,11 @@ function failure(e: unknown) {
 }
 export async function POST(request: Request) {
   try {
-    return Response.json(await submitApplication(await read(request)), {
+    const input = await read(request);
+    const identity = (await cookies()).get("om_kakao_pending")?.value;
+    let kakaoId: string | undefined;
+    if (identity) kakaoId = String((await pendingKakao(identity)).kakaoId);
+    return Response.json(await submitApplication(input, kakaoId), {
       status: 201,
     });
   } catch (e) {

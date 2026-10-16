@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import KakaoLinkReview from "./kakao-link-review";
 import ParticipantApplications from "./participant-applications";
 import ParticipantAccountReview from "./participant-account-review";
 import ParticipantSettlements from "./participant-settlements";
@@ -446,6 +447,9 @@ export default function Participants({
         <div role="alert" className="error">
           {error}
         </div>
+      )}
+      {!participant && !editing && (
+        <KakaoLinkReview participants={data.participants} />
       )}
       {!participant && !editing && (
         <ParticipantApplications

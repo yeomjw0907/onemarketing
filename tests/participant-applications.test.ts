@@ -6,6 +6,7 @@ import {
   reviewApplication,
   listApplications,
 } from "../src/lib/participant-applications";
+import { bindKakao } from "../src/lib/kakao-auth";
 import { get, list } from "../src/lib/db";
 const actor = "application-review@local";
 function application() {
@@ -888,4 +889,46 @@ test("삭제된 신규 신청은 재접수를 막지 않으며 중복된 신청�
   assert.ok(
     !(await listApplications()).find((i) => i.id === a.id)!.data.deletedAt,
   );
+});
+
+test("trusted Kakao signup survives review edits and binds only on approval", async () => {
+  const input = application();
+  input.data.phone = "01055557777";
+  const result = await submitApplication(input, "900001");
+  const app = (await listApplications()).find((a) => a.id === result.id)!;
+  await reviewApplication(
+    { id: result.id, version: app.version, action: "save", data: input.data },
+    actor,
+  );
+  const edited = (await listApplications()).find((a) => a.id === result.id)!;
+  const approved = await reviewApplication(
+    {
+      id: result.id,
+      version: edited.version,
+      action: "approve",
+      data: input.data,
+    },
+    actor,
+  );
+  assert.ok(
+    (await list("portal_links")).some(
+      (l) =>
+        l.purpose === "kakao-account" &&
+        l.kakaoId === "900001" &&
+        l.participantId === approved.participantId,
+    ),
+  );
+  const next = application();
+  next.data.phone = "01055558888";
+  await assert.rejects(submitApplication(next, "900001"), /이미 연결/);
+});
+test("client-provided Kakao ID is discarded", async () => {
+  const input = application();
+  input.data.phone = "01055559999";
+  const result = await submitApplication({
+    ...input,
+    data: { ...input.data, trustedKakaoId: "forged" },
+  });
+  const app = (await listApplications()).find((a) => a.id === result.id)!;
+  assert.equal((app.data as any).trustedKakaoId, undefined);
 });

@@ -1,3 +1,9 @@
+import {
+  requestPortalCode,
+  verifyPortalCode,
+  portalLinkParticipant,
+  revokePortalSession,
+} from "@/lib/portal-auth";
 import { cookies } from "next/headers";
 import { sameOrigin } from "@/lib/auth";
 import { portalParticipant, portalView } from "@/lib/portal";
@@ -29,19 +35,63 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const b = await request.json();
+    if (b.action === "inspect-link") {
+      const participantId = await portalLinkParticipant(String(b.access || ""));
+      let authenticated = false;
+      try {
+        authenticated = (await portalParticipant()).id === participantId;
+      } catch {}
+      return Response.json({ authenticated }, { headers });
+    }
     if (b.action === "login") {
-      await portalParticipant(String(b.access));
-      (await cookies()).set("om_participant", String(b.access), {
+      return Response.json(
+        { error: "휴대폰 인증을 진행해주세요." },
+        { status: 401, headers },
+      );
+    }
+    if (b.action === "request-code") {
+      const result = await requestPortalCode({
+        access: typeof b.access === "string" ? b.access : undefined,
+        phone: typeof b.phone === "string" ? b.phone : undefined,
+        ip:
+          request.headers
+            .get("x-vercel-forwarded-for")
+            ?.split(",")[0]
+            ?.trim() ||
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          "unknown",
+      });
+      (await cookies()).set("om_participant_challenge", result.challenge, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 300,
+      });
+      return Response.json({ ok: true }, { headers });
+    }
+    if (b.action === "verify-code") {
+      const session = await verifyPortalCode(
+        (await cookies()).get("om_participant_challenge")?.value || "",
+        String(b.code || ""),
+      );
+      (await cookies()).set("om_participant", session, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
         maxAge: 30 * 86400,
       });
+      (await cookies()).delete("om_participant_challenge");
       return Response.json({ ok: true }, { headers });
     }
     if (b.action === "logout") {
+      await revokePortalSession(
+        (await cookies()).get("om_participant")?.value || "",
+      );
       (await cookies()).delete("om_participant");
+      (await cookies()).delete("om_participant_challenge");
+      (await cookies()).delete("om_kakao_pending");
       return Response.json({ ok: true }, { headers });
     }
     const p = await portalParticipant();

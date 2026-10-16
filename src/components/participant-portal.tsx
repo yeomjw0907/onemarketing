@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import KakaoPortalLogin from "./kakao-portal-login";
 import {
   Button,
   Field,
@@ -30,6 +31,7 @@ export default function ParticipantPortal() {
     [selected, setSelected] = useState<string[]>([]),
     [tab, setTab] = useState("offers"),
     [notice, setNotice] = useState("");
+  const [access, setAccess] = useState("");
   const { ask, dialog } = useDecisionDialog();
   async function load() {
     const r = await fetch("/api/participant-portal");
@@ -75,24 +77,29 @@ export default function ParticipantPortal() {
     let active = true;
     async function init() {
       const url = new URL(location.href),
-        access = url.searchParams.get("access");
+        access =
+          url.searchParams.get("access") ||
+          sessionStorage.getItem("om_portal_access");
       if (access) {
+        sessionStorage.setItem("om_portal_access", access);
         history.replaceState(null, "", url.pathname);
+        setAccess(access);
         const r = await fetch("/api/participant-portal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "login", access }),
+          body: JSON.stringify({ action: "inspect-link", access }),
         });
-        if (!r.ok)
-          throw new Error(
-            "접속 링크가 만료되었거나 유효하지 않아요. 담당자에게 새 링크를 요청해주세요.",
-          );
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        if (!d.authenticated) return;
       }
+      setAccess(access || sessionStorage.getItem("om_portal_access") || "");
       await load();
     }
     void init()
       .catch((e) => {
-        if (active) setError(e.message);
+        if (active && !String(e.message).includes("유효한 접속 링크"))
+          setError(e.message);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -122,6 +129,36 @@ export default function ParticipantPortal() {
           참여 가이드
         </Link>
       </header>
+      {data && (
+        <Button
+          type="button"
+          variant="text"
+          busy={busy}
+          onClick={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              const r = await fetch("/api/participant-portal", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "logout" }),
+              });
+              if (!r.ok) throw new Error("로그아웃을 다시 시도해주세요.");
+              setData(null);
+              setAccess("");
+
+              setNotice("");
+              sessionStorage.removeItem("om_portal_access");
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "다시 시도해주세요.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          로그아웃
+        </Button>
+      )}
       {error && <Feedback tone="error">{error}</Feedback>}
       {notice && <Feedback tone="success">{notice}</Feedback>}
       {loading ? (
@@ -132,9 +169,14 @@ export default function ParticipantPortal() {
           <p>내 작업을 불러오고 있어요.</p>
         </div>
       ) : !data ? (
-        <EmptyState
-          title="접속 링크를 확인해주세요"
-          description="담당자에게 받은 접속 링크로 들어오면 나의 작업을 볼 수 있어요."
+        <KakaoPortalLogin
+          access={access}
+          onAuthenticated={async () => {
+            await load();
+            setAccess("");
+            sessionStorage.removeItem("om_portal_access");
+            history.replaceState(null, "", location.pathname);
+          }}
         />
       ) : (
         <>

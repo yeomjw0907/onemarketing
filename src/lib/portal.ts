@@ -9,7 +9,10 @@ export async function issuePortal(participantId: string, actor: string) {
     const p = await get(participantId);
     if (p?.kind !== "participants") throw new Error("참여자를 선택하세요.");
     for (const old of (await list("portal_links")).filter(
-      (l) => l.participantId === p.id && !l.revokedAt,
+      (l) =>
+        l.participantId === p.id &&
+        !l.revokedAt &&
+        !String(l.purpose || "").startsWith("kakao-"),
     ))
       await update(old.id, { revokedAt: new Date().toISOString() });
     if (!p.referralCode)
@@ -30,6 +33,7 @@ export async function portalParticipant(token?: string) {
     throw new Error("접속 링크가 필요합니다.");
   const link = (await list("portal_links")).find(
     (l) =>
+      l.purpose === "session" &&
       l.tokenHash === hash(access) &&
       !l.revokedAt &&
       new Date(String(l.expiresAt)).getTime() > Date.now(),
@@ -38,9 +42,32 @@ export async function portalParticipant(token?: string) {
     throw new Error(
       "접속 링크가 만료되었습니다. 담당자에게 재발급을 요청하세요.",
     );
+  const parent = await get(String(link.parentId));
+  if (
+    !parent ||
+    parent.kind !== "portal_links" ||
+    parent.participantId !== link.participantId ||
+    parent.revokedAt ||
+    new Date(String(parent.expiresAt)).getTime() <= Date.now()
+  )
+    throw new Error(
+      "접속이 만료되었습니다. 카카오 로그인을 다시 진행해주세요.",
+    );
   const p = await get(String(link.participantId));
-  if (p?.kind !== "participants" || p.status !== "active")
+  if (p?.kind !== "participants" || p.status !== "active" || p.deletedAt)
     throw new Error("현재 참여할 수 없는 계정입니다.");
+  if (String(p.phone || "").replace(/\D/g, "") !== link.verifiedPhone)
+    throw new Error("휴대폰 번호가 변경되었습니다. 다시 인증해주세요.");
+  if (
+    link.provider === "kakao" &&
+    !(await list("portal_links")).some(
+      (l) =>
+        l.purpose === "kakao-account" &&
+        l.participantId === p.id &&
+        !l.revokedAt,
+    )
+  )
+    throw new Error("카카오 계정 연결이 해제되었습니다. 다시 로그인해주세요.");
   return p;
 }
 export async function portalView(

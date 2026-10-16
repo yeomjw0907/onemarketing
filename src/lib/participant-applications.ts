@@ -1,3 +1,4 @@
+import { bindKakao } from "./kakao-auth";
 import { accountIdentity } from "./account-identity";
 import { list } from "./db";
 import { z } from "zod";
@@ -9,7 +10,10 @@ import {
   type ParticipantApplication,
 } from "./participant-application-schema";
 
-export async function submitApplication(input: unknown) {
+export async function submitApplication(
+  input: unknown,
+  trustedKakaoId?: string,
+) {
   const envelope = z
     .object({
       data: applicationSchema.refine(
@@ -23,6 +27,28 @@ export async function submitApplication(input: unknown) {
     .parse(input);
   return transaction(async () => {
     await lock("application-submit:" + envelope.key);
+    if (trustedKakaoId) {
+      await lock("kakao-application:" + trustedKakaoId);
+      if (
+        (await list("portal_links")).some(
+          (l) =>
+            l.purpose === "kakao-account" &&
+            l.kakaoId === trustedKakaoId &&
+            !l.revokedAt,
+        )
+      )
+        throw new Error(
+          "이미 연결된 참여자 계정이에요. 참여자 화면을 이용해주세요.",
+        );
+      const prior = await query<{ id: string }>(
+        "select id from participant_applications where data->>'trustedKakaoId'=$1 and status in ('new','approved') and data->>'deletedAt' is null and id<>$2",
+        [trustedKakaoId, envelope.key],
+      );
+      if (prior.length)
+        throw new Error(
+          "이미 신청을 접수했어요. 담당자 확인 후 카카오로 다시 로그인해주세요.",
+        );
+    }
     const existing = await query<{ id: string }>(
       "select id from participant_applications where id=$1",
       [envelope.key],
@@ -85,6 +111,7 @@ export async function submitApplication(input: unknown) {
         envelope.key,
         JSON.stringify({
           ...envelope.data,
+          trustedKakaoId,
           referrerId,
           accounts: envelope.data.accounts.map((a) => ({
             ...a,
@@ -166,6 +193,15 @@ export async function reviewApplication(input: unknown, actor: string) {
         },
         actor,
       );
+      const trusted = (old.data as unknown as { trustedKakaoId?: string })
+        .trustedKakaoId;
+      if (trusted)
+        await bindKakao(
+          trusted,
+          p.id,
+          actor,
+          "카카오 로그인 상태에서 제출한 신청 승인",
+        );
       participantId = p.id;
     }
     const status =

@@ -1822,3 +1822,10 @@ td button {
     font-weight: 400;
   }
 }
+
+.portal-auth { max-width: 480px; margin-top: 28px; }
+.portal-auth h2 { font-size: 18px; line-height: 1.5; margin: 0 0 12px; }
+.portal-auth > p { margin: 0 0 24px; }
+.portal-auth .kakao-login-button { width:100%; min-height:48px; background:#fee500; color:rgba(0,0,0,.85); border-color:#fee500; gap:8px; }
+.portal-auth .kakao-login-button:hover { background:#f4dc00; border-color:#f4dc00; }
+.portal-auth .kakao-login-button + p { font-size:13px; margin-top:16px; }
