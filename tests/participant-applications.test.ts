@@ -639,3 +639,89 @@ test("일괄 승인 오류는 등록 전체를 되돌리고 일괄 반려는 참
       .every((i) => i.status === "rejected"),
   );
 });
+
+test("반려 신청 일괄 재승인은 반려 계정을 보존하고 상태 충돌 시 전체를 되돌린다", async () => {
+  const { reviewApplicationsBulk } =
+    await import("../src/lib/participant-applications");
+  const first = application(),
+    second = application();
+  first.data.phone = "010-9876-3001";
+  second.data.phone = "010-9876-3002";
+  first.data.accounts.push({
+    ...first.data.accounts[0],
+    id: crypto.randomUUID(),
+    url: "https://blog.naver.com/" + crypto.randomUUID(),
+    label: "개별 반려",
+    approvalStatus: "rejected",
+  });
+  const a = await submitApplication(first),
+    b = await submitApplication(second);
+  await reviewApplication(
+    { id: a.id, version: 1, action: "reject", data: first.data },
+    actor,
+  );
+  const count = (await list("participants")).length;
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-reapprove",
+        key: crypto.randomUUID(),
+        items: [
+          { id: a.id, version: 2 },
+          { id: b.id, version: 1 },
+        ],
+      },
+      actor,
+    ),
+    /변경/,
+  );
+  assert.equal((await list("participants")).length, count);
+  assert.equal(
+    (await listApplications()).find((i) => i.id === a.id)!.status,
+    "rejected",
+  );
+  await reviewApplication(
+    { id: b.id, version: 1, action: "reject", data: second.data },
+    actor,
+  );
+  const input = {
+    action: "bulk-reapprove",
+    key: crypto.randomUUID(),
+    items: [
+      { id: a.id, version: 2 },
+      { id: b.id, version: 2 },
+    ],
+  };
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        ...input,
+        key: crypto.randomUUID(),
+        items: [
+          { id: a.id, version: 2 },
+          { id: b.id, version: 1 },
+        ],
+      },
+      actor,
+    ),
+    /변경/,
+  );
+  assert.equal((await list("participants")).length, count);
+  const result = await reviewApplicationsBulk(input, actor);
+  assert.equal(result.processedCount, 2);
+  assert.equal((await list("participants")).length, count + 2);
+  assert.deepEqual(await reviewApplicationsBulk(input, actor), result);
+  assert.deepEqual(
+    (
+      (await get(result.participantIds[0]))!.accounts as {
+        approvalStatus: string;
+      }[]
+    ).map((a) => a.approvalStatus),
+    ["approved", "rejected"],
+  );
+  assert.ok(
+    (await listApplications())
+      .filter((i) => [a.id, b.id].includes(i.id))
+      .every((i) => i.status === "approved"),
+  );
+});

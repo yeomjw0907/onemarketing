@@ -56,7 +56,9 @@ export async function PATCH(request: Request) {
   try {
     const body = await read(request);
     return Response.json(
-      await (body.action === "bulk-approve" || body.action === "bulk-reject"
+      await (body.action === "bulk-approve" ||
+      body.action === "bulk-reject" ||
+      body.action === "bulk-reapprove"
         ? reviewApplicationsBulk(body, actor)
         : reviewApplication(body, actor)),
     );

@@ -191,7 +191,7 @@ export async function reviewApplication(input: unknown, actor: string) {
 export async function reviewApplicationsBulk(input: unknown, actor: string) {
   const body = z
     .object({
-      action: z.enum(["bulk-approve", "bulk-reject"]),
+      action: z.enum(["bulk-approve", "bulk-reject", "bulk-reapprove"]),
       key: z.string().uuid(),
       items: z
         .array(
@@ -220,11 +220,13 @@ export async function reviewApplicationsBulk(input: unknown, actor: string) {
         throw new Error(
           "신청을 찾을 수 없습니다. 새로고침 후 다시 선택해주세요.",
         );
-      if (old.status !== "new" || old.version !== item.version)
+      const expectedStatus =
+        body.action === "bulk-reapprove" ? "rejected" : "new";
+      if (old.status !== expectedStatus || old.version !== item.version)
         throw new Error(
           `${old.data.name}: 신청 상태나 내용이 변경되었습니다. 새로고침 후 다시 선택해주세요.`,
         );
-      const approve = body.action === "bulk-approve";
+      const approve = body.action !== "bulk-reject";
       const data = approve
         ? {
             ...old.data,

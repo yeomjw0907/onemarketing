@@ -24,19 +24,23 @@ export default function ParticipantApplications({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true);
-  const pending = items.filter((i) => i.status === "new");
+  const selectable = filter === "new" || filter === "rejected";
+  const pending = items.filter((i) => i.status === filter);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
-  async function bulkReview(action: "bulk-approve" | "bulk-reject") {
+  async function bulkReview(
+    action: "bulk-approve" | "bulk-reject" | "bulk-reapprove",
+  ) {
     if (!picked.length || busy || current) return;
-    const approve = action === "bulk-approve";
-    const verb = approve ? "승인" : "반려";
+    const approve = action !== "bulk-reject";
+    const verb =
+      action === "bulk-reapprove" ? "재승인" : approve ? "승인" : "반려";
     const names = picked
       .slice(0, 5)
       .map((i) => i.data.name)
       .join(", ");
     if (
       !window.confirm(
-        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 신규 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}`,
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}`,
       )
     )
       return;
@@ -155,7 +159,7 @@ export default function ParticipantApplications({
           </button>
         ))}
       </div>
-      {filter === "new" && !loading && (
+      {selectable && !loading && (
         <>
           <div className="row" style={{ marginBottom: 12, flexWrap: "wrap" }}>
             <strong>{picked.length}명 선택</strong>
@@ -170,17 +174,25 @@ export default function ParticipantApplications({
               type="button"
               className="primary"
               disabled={busy || !picked.length || !!current}
-              onClick={() => bulkReview("bulk-approve")}
+              onClick={() =>
+                bulkReview(
+                  filter === "rejected" ? "bulk-reapprove" : "bulk-approve",
+                )
+              }
             >
-              선택한 신청 승인
+              {filter === "rejected"
+                ? "선택한 신청 재승인"
+                : "선택한 신청 승인"}
             </button>
-            <button
-              type="button"
-              disabled={busy || !picked.length || !!current}
-              onClick={() => bulkReview("bulk-reject")}
-            >
-              선택한 신청 반려
-            </button>
+            {filter === "new" && (
+              <button
+                type="button"
+                disabled={busy || !picked.length || !!current}
+                onClick={() => bulkReview("bulk-reject")}
+              >
+                선택한 신청 반려
+              </button>
+            )}
           </div>
           <p className="hint">
             한 번에 최대 100명까지 처리합니다. 일괄 승인 시 검토 대기 계정도
@@ -201,12 +213,12 @@ export default function ParticipantApplications({
           <table>
             <thead>
               <tr>
-                {filter === "new" && (
+                {selectable && (
                   <th>
                     <input
                       type="checkbox"
                       style={{ width: 18 }}
-                      aria-label="신규 신청 목록 선택 (최대 100명)"
+                      aria-label={`${filter === "rejected" ? "반려" : "신규"} 신청 목록 선택 (최대 100명)`}
                       disabled={busy || !pending.length || !!current}
                       checked={
                         pending.length > 0 &&
@@ -248,7 +260,7 @@ export default function ParticipantApplications({
                 .filter((i) => i.status === filter)
                 .map((item) => (
                   <tr key={item.id}>
-                    {filter === "new" && (
+                    {selectable && (
                       <td>
                         <input
                           type="checkbox"
