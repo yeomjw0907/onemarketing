@@ -1568,3 +1568,257 @@ td button {
     min-height: 44px;
   }
 }
+/* Public workspace typography: consistent title/body/helper hierarchy and 8px spacing. */
+.participant-portal {
+  max-width: 880px;
+  margin: 40px auto;
+  padding: 0 28px 48px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.participant-portal .pagehead {
+  margin-bottom: 16px;
+  gap: 16px;
+}
+.participant-portal h1 {
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+.participant-portal h2 {
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: -0.3px;
+  margin: 0 0 8px;
+}
+.participant-portal .ui-eyebrow {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.participant-portal .pagehead p {
+  font-size: 14px;
+  margin-top: 8px;
+}
+.participant-portal .ui-text-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.participant-portal .portal-summary {
+  padding: 16px 0 24px;
+  margin-bottom: 0;
+}
+.participant-portal .portal-summary span {
+  font-size: 13px;
+}
+.participant-portal .portal-summary strong {
+  font-size: 24px;
+  margin-top: 4px;
+}
+.participant-portal .portal-summary small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.participant-portal .ui-tabs {
+  margin-bottom: 24px;
+  gap: 24px;
+}
+.participant-portal .ui-pane {
+  padding: 0;
+}
+.participant-portal .section-title {
+  margin: 0 0 20px;
+  gap: 12px;
+}
+.participant-portal .section-title h2 {
+  margin: 0;
+}
+.participant-portal .section-title .hint {
+  margin: 6px 0 0;
+}
+.participant-portal .hint {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.participant-portal .ui-work-item {
+  padding: 24px;
+  margin: 0 0 16px;
+  border-color: var(--line);
+  border-radius: 16px;
+}
+.participant-portal .ui-item-heading {
+  gap: 12px;
+}
+.participant-portal .ui-item-heading > :first-child {
+  min-width: 0;
+}
+.participant-portal .ui-item-heading h3 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+}
+.participant-portal .ui-item-heading .hint {
+  margin: 0 0 4px;
+}
+.participant-portal .portal-offer-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.participant-portal .portal-offer-title input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+}
+.participant-portal .ui-reward {
+  font-size: 24px;
+  line-height: 1.4;
+  margin: 16px 0 6px;
+  letter-spacing: -0.4px;
+}
+.participant-portal .ui-reward span {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 3px;
+}
+.participant-portal .ui-account-url {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.participant-portal .ui-details {
+  margin: 20px 0;
+  font-size: 14px;
+}
+.participant-portal .ui-details > div {
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 16px;
+  margin: 0;
+  padding: 5px 0;
+  align-items: baseline;
+}
+.participant-portal .ui-details dt {
+  font-size: 13px;
+}
+.participant-portal .ui-details dd {
+  font-weight: 500;
+}
+.participant-portal details {
+  margin: 16px 0;
+}
+.participant-portal .ui-actions {
+  margin-top: 20px;
+  gap: 8px;
+}
+.participant-portal .ui-amounts {
+  padding: 12px 0 24px;
+  gap: 40px;
+}
+.participant-portal .ui-amounts span {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.participant-portal .ui-amounts strong {
+  font-size: 24px;
+  line-height: 1.4;
+}
+.participant-portal .ui-settings-form {
+  margin-top: 20px;
+}
+.participant-portal .ui-divider {
+  margin: 28px 0;
+}
+.participant-portal .ui-list-row {
+  padding: 16px 0;
+}
+.participant-portal .ui-list-row p {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.participant-portal .portal-referral > button {
+  margin-top: 27px;
+}
+.customer-report .report-updated {
+  margin: 16px 0 0;
+  line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .participant-portal {
+    margin: 24px auto;
+    padding: 0 20px 40px;
+  }
+  .participant-portal h1 {
+    font-size: 22px;
+  }
+  .participant-portal h2 {
+    font-size: 17px;
+  }
+  .participant-portal .pagehead {
+    gap: 12px;
+  }
+  .participant-portal .pagehead p {
+    font-size: 13px;
+  }
+  .participant-portal .portal-summary {
+    gap: 12px;
+    padding: 12px 0 20px;
+  }
+  .participant-portal .portal-summary strong {
+    font-size: 22px;
+  }
+  .participant-portal .portal-summary span {
+    font-size: 12px;
+  }
+  .participant-portal .ui-tabs {
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .participant-portal .ui-tabs button {
+    font-size: 13px;
+    min-height: 48px;
+  }
+  .participant-portal .ui-work-item {
+    padding: 20px 16px;
+  }
+  .participant-portal .ui-item-heading h3 {
+    font-size: 15px;
+  }
+  .participant-portal .ui-item-heading {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .participant-portal .ui-item-heading > :first-child {
+    flex: 1 1 180px;
+  }
+  .participant-portal .ui-details > div {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .participant-portal .ui-amounts strong {
+    font-size: 22px;
+  }
+  .participant-portal .portal-referral > button {
+    margin-top: 0;
+  }
+  .customer-report .report-updated {
+    margin-top: 16px;
+  }
+  .customer-report .report-table td {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 4px 0;
+  }
+  .customer-report .report-table td::before {
+    font-size: 13px;
+    font-weight: 400;
+  }
+}

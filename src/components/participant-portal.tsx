@@ -13,7 +13,15 @@ import {
 } from "./ui/workflow-ui";
 type Row = Record<string, any>;
 const date = (v: string) =>
-  new Date(v).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+  new Date(v).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 export default function ParticipantPortal() {
   const [data, setData] = useState<Row | null>(null),
     [error, setError] = useState(""),
@@ -204,23 +212,25 @@ export default function ParticipantPortal() {
               <article className="ui-work-item" key={o.id}>
                 <div className="ui-item-heading">
                   <h3>
-                    {o.status === "proposed" &&
-                      new Date(o.expiresAt).getTime() > Date.now() && (
-                        <input
-                          type="checkbox"
-                          className="ui-inline-check"
-                          aria-label={o.name + " 선택"}
-                          checked={selected.includes(o.id)}
-                          onChange={(e) =>
-                            setSelected(
-                              e.target.checked
-                                ? [...selected, o.id]
-                                : selected.filter((id) => id !== o.id),
-                            )
-                          }
-                        />
-                      )}{" "}
-                    {o.name}
+                    <label className="portal-offer-title">
+                      {o.status === "proposed" &&
+                        new Date(o.expiresAt).getTime() > Date.now() && (
+                          <input
+                            type="checkbox"
+                            className="ui-inline-check"
+                            aria-label={o.name + " 선택"}
+                            checked={selected.includes(o.id)}
+                            onChange={(e) =>
+                              setSelected(
+                                e.target.checked
+                                  ? [...selected, o.id]
+                                  : selected.filter((id) => id !== o.id),
+                              )
+                            }
+                          />
+                        )}
+                      <span>{o.name}</span>
+                    </label>
                   </h3>
                   <StatusBadge
                     value={

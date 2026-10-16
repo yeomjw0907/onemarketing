@@ -37,7 +37,7 @@ export default async function ReportPage({
           {complete ? "완료 보고" : "진행 보고"} 엑셀 다운로드
         </a>
       </header>
-      <p className="muted">
+      <p className="muted report-updated">
         최종 업데이트{" "}
         {new Date(report.updatedAt).toLocaleString("ko-KR", {
           timeZone: "Asia/Seoul",
