@@ -30,19 +30,31 @@ export default function ParticipantApplications({
     [loading, setLoading] = useState(true),
     [exporting, setExporting] = useState(false);
   const selectable =
-    filter === "new" || filter === "rejected" || filter === "deleted";
+    filter === "new" ||
+    filter === "approved" ||
+    filter === "rejected" ||
+    filter === "deleted";
   const query = search.trim();
   const matches = (i: ParticipantApplication) =>
     matchesApplication(i, filter, query);
   const pending = items.filter(matches);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
-  async function downloadExcel() {
-    if (exporting || busy || loading || !pending.length) return;
+  async function downloadExcel(onlySelected = false) {
+    if (
+      exporting ||
+      busy ||
+      loading ||
+      !pending.length ||
+      (onlySelected && !picked.length)
+    )
+      return;
     setExporting(true);
     setError("");
     try {
+      const params = new URLSearchParams({ status: filter, search: query });
+      if (onlySelected) params.set("ids", picked.map((i) => i.id).join(","));
       const response = await fetch(
-        `/api/participant-applications/export?${new URLSearchParams({ status: filter, search: query })}`,
+        `/api/participant-applications/export?${params}`,
       );
       if (!response.ok) {
         const body = await response.json();
@@ -254,7 +266,7 @@ export default function ParticipantApplications({
         <button
           type="button"
           disabled={loading || busy || exporting || !pending.length}
-          onClick={downloadExcel}
+          onClick={() => downloadExcel()}
         >
           {exporting
             ? "엑셀 준비 중…"
@@ -283,25 +295,34 @@ export default function ParticipantApplications({
             </button>
             <button
               type="button"
-              className="primary"
-              disabled={busy || !picked.length || !!current}
-              onClick={() =>
-                bulkReview(
-                  filter === "deleted"
-                    ? "bulk-restore"
-                    : filter === "rejected"
-                      ? "bulk-reapprove"
-                      : "bulk-approve",
-                )
-              }
+              disabled={busy || loading || exporting || !picked.length}
+              onClick={() => downloadExcel(true)}
             >
-              {filter === "deleted"
-                ? "선택한 신청 복구"
-                : filter === "rejected"
-                  ? "선택한 신청 재승인"
-                  : "선택한 신청 승인"}
+              선택한 신청 엑셀 다운로드
             </button>
-            {filter !== "deleted" && (
+            {filter !== "approved" && (
+              <button
+                type="button"
+                className="primary"
+                disabled={busy || !picked.length || !!current}
+                onClick={() =>
+                  bulkReview(
+                    filter === "deleted"
+                      ? "bulk-restore"
+                      : filter === "rejected"
+                        ? "bulk-reapprove"
+                        : "bulk-approve",
+                  )
+                }
+              >
+                {filter === "deleted"
+                  ? "선택한 신청 복구"
+                  : filter === "rejected"
+                    ? "선택한 신청 재승인"
+                    : "선택한 신청 승인"}
+              </button>
+            )}
+            {filter !== "deleted" && filter !== "approved" && (
               <button
                 type="button"
                 disabled={busy || !picked.length || !!current}
@@ -321,9 +342,11 @@ export default function ParticipantApplications({
             )}
           </div>
           <p className="hint">
-            {filter === "deleted"
-              ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
-              : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
+            {filter === "approved"
+              ? "승인 완료된 신청도 선택한 건만 엑셀로 내려받을 수 있습니다."
+              : filter === "deleted"
+                ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
+                : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
             한 번에 최대 100명까지 처리합니다.
           </p>
         </>
@@ -346,7 +369,7 @@ export default function ParticipantApplications({
                     <input
                       type="checkbox"
                       style={{ width: 18 }}
-                      aria-label={`${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 목록 선택 (최대 100명)`}
+                      aria-label={`${filter === "deleted" ? "삭제된" : labels[filter as keyof typeof labels]} 신청 목록 선택 (최대 100명)`}
                       disabled={busy || !pending.length || !!current}
                       checked={
                         pending.length > 0 &&

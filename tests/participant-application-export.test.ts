@@ -112,3 +112,57 @@ test("엑셀의 사용자 입력은 수식이 되지 않고 검색 결과가 없
   );
   assert.equal(empty.getWorksheet("신청 목록")!.rowCount, 1);
 });
+
+test("네 목록에서 체크한 신청만 내보내고 체크하지 않은 검색 결과는 제외한다", async () => {
+  for (const status of ["new", "approved", "rejected", "deleted"] as const) {
+    const first = fixture(
+      status === "deleted" ? "new" : status,
+      status === "deleted",
+      true,
+    );
+    const second = fixture(
+      status === "deleted" ? "rejected" : status,
+      status === "deleted",
+      true,
+    );
+    const other = fixture(
+      status === "deleted" ? "new" : status,
+      status === "deleted",
+      false,
+    );
+    const rows = [first, second, other];
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(
+      (await applicationWorkbook(rows, status, "1111", [
+        second.id,
+      ])) as unknown as ExcelJS.Buffer,
+    );
+    const sheet = book.getWorksheet("신청 목록")!;
+    assert.equal(sheet.rowCount, 2);
+    assert.equal(sheet.getRow(2).getCell(1).value, second.id);
+    const multiple = new ExcelJS.Workbook();
+    await multiple.xlsx.load(
+      (await applicationWorkbook(rows, status, "", [
+        first.id,
+        second.id,
+      ])) as unknown as ExcelJS.Buffer,
+    );
+    assert.equal(multiple.getWorksheet("신청 목록")!.rowCount, 3);
+  }
+});
+test("빈 선택·중복·존재하지 않는 신청·현재 목록 밖 선택은 다운로드를 거절한다", async () => {
+  const row = fixture("new", false, true),
+    approved = fixture("approved", false, true);
+  for (const ids of [
+    [],
+    [row.id, row.id],
+    [crypto.randomUUID()],
+    [approved.id],
+  ]) {
+    await assert.rejects(applicationWorkbook([row, approved], "new", "", ids));
+  }
+  await assert.rejects(
+    applicationWorkbook([row], "new", "없는 이름", [row.id]),
+    /변경/,
+  );
+});

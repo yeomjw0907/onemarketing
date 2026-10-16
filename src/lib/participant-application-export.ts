@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { z } from "zod";
 import {
   applicationChannels,
   type ParticipantApplication,
@@ -16,7 +17,20 @@ export async function applicationWorkbook(
   items: ParticipantApplication[],
   status: keyof typeof applicationListLabels,
   search: string,
+  selectedIds?: string[],
 ) {
+  let rows = items.filter((i) => matchesApplication(i, status, search));
+  if (selectedIds !== undefined) {
+    const ids = z.array(z.string().uuid()).min(1).max(100).parse(selectedIds);
+    const wanted = new Set(ids);
+    if (wanted.size !== ids.length)
+      throw new Error("선택한 신청이 중복되었습니다.");
+    rows = rows.filter((i) => wanted.has(i.id));
+    if (rows.length !== wanted.size)
+      throw new Error(
+        "선택한 신청이나 검색 조건이 변경되었습니다. 목록을 새로고침 후 다시 선택해주세요.",
+      );
+  }
   const book = new ExcelJS.Workbook();
   book.creator = "One Marketing";
   const sheet = book.addWorksheet("신청 목록", {
@@ -49,9 +63,7 @@ export async function applicationWorkbook(
     header,
     width: header.includes("계정") ? 55 : header.includes("ID") ? 38 : 24,
   }));
-  for (const item of items.filter((i) =>
-    matchesApplication(i, status, search),
-  )) {
+  for (const item of rows) {
     const d = item.data;
     sheet.addRow([
       item.id,

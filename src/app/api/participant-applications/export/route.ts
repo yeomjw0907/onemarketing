@@ -21,12 +21,24 @@ export async function GET(request: Request) {
       .max(200)
       .parse(params.get("search") || "")
       .trim();
+    const selectedIds = params.has("ids")
+      ? z
+          .array(z.string().uuid())
+          .min(1)
+          .max(100)
+          .parse((params.get("ids") || "").split(","))
+      : undefined;
     const date = new Intl.DateTimeFormat("sv-SE", {
       timeZone: "Asia/Seoul",
     }).format(new Date());
-    const filename = `체험단_신청_${applicationListLabels[status]}_${date}${search ? "_검색결과" : ""}.xlsx`;
+    const filename = `체험단_신청_${applicationListLabels[status]}_${date}${selectedIds ? `_선택${selectedIds.length}건` : search ? "_검색결과" : ""}.xlsx`;
     return new Response(
-      await applicationWorkbook(await listApplications(), status, search),
+      await applicationWorkbook(
+        await listApplications(),
+        status,
+        search,
+        selectedIds,
+      ),
       {
         headers: {
           "Content-Type":
