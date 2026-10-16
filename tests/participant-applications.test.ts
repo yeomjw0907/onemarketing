@@ -274,3 +274,65 @@ test("관리 신청은 권한 동의와 별칭이 필요하고 공개 신청은 
     ["approved", "rejected"],
   );
 });
+
+test("승인 참여자를 수정·삭제하면 승인 목록에서 제외하고 원본과 이력은 보존한다", async () => {
+  const input = application();
+  input.data.phone = "010-7654-3210";
+  const submitted = await submitApplication(input);
+  const approved = await reviewApplication(
+    { id: submitted.id, version: 1, action: "approve", data: input.data },
+    actor,
+  );
+  const { command, save } = await import("../src/lib/domain");
+  const participant = (await get(approved.participantId!))!;
+  const edited = await save(
+    "participants",
+    { ...participant, name: "승인 후 수정", phone: "010-2222-8888" },
+    actor,
+    participant.id,
+    participant.version,
+  );
+  const history = await save(
+    "participant_history",
+    {
+      participantId: participant.id,
+      name: "기존 협업",
+      channel: "blog",
+      date: "2026-10-16",
+      amount: 3000,
+      paid: false,
+    },
+    actor,
+  );
+  await assert.rejects(
+    command(
+      "participant-delete",
+      { id: participant.id, version: participant.version },
+      actor,
+      crypto.randomUUID(),
+    ),
+    /수정/,
+  );
+  assert.ok((await listApplications()).some((a) => a.id === submitted.id));
+  const deleted = await command(
+    "participant-delete",
+    { id: participant.id, version: edited.version },
+    actor,
+    crypto.randomUUID(),
+  );
+  assert.ok(deleted.deletedAt);
+  assert.equal(deleted.status, "closed");
+  assert.equal(deleted.name, "승인 후 수정");
+  assert.ok(!(await listApplications()).some((a) => a.id === submitted.id));
+  assert.equal((await get(history.id))!.participantId, participant.id);
+  assert.equal((await get(history.id))!.paid, false);
+  const updated = await save(
+    "participants",
+    { ...deleted, name: "이력 정보 수정", status: "active" },
+    actor,
+    deleted.id,
+    deleted.version,
+  );
+  assert.equal(updated.status, "closed");
+  assert.ok(updated.deletedAt);
+});

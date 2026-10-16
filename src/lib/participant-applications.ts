@@ -100,7 +100,7 @@ export async function submitApplication(input: unknown) {
 }
 export function listApplications() {
   return query<ParticipantApplication>(
-    "select * from participant_applications order by created_at desc, id",
+    "select a.* from participant_applications a where not exists (select 1 from records r where r.id=a.participant_id and r.data->>'deletedAt' is not null) order by a.created_at desc, a.id",
   );
 }
 export async function reviewApplication(input: unknown, actor: string) {

@@ -160,6 +160,15 @@ export default function ParticipantApplications({
                     </td>
                     <td>{labels[item.status]}</td>
                     <td>
+                      {item.status === "approved" && item.participant_id && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => onApproved(item.participant_id!)}
+                        >
+                          참여자 수정 · 삭제
+                        </button>
+                      )}
                       <button
                         disabled={busy}
                         onClick={() => {

@@ -143,6 +143,38 @@ export default function Participants({
       setBusy(false);
     }
   }
+  async function removeParticipant() {
+    if (
+      !participant ||
+      !window.confirm(
+        `${String(participant.name)} 참여자를 삭제할까요? 체험단·승인 완료 목록에서 제외하고 신규 배정을 중단합니다. 기존 게시·정산 이력은 보존합니다.`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "participant-delete",
+          key: crypto.randomUUID(),
+          data: { id: participant.id, version: participant.version },
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "삭제 실패");
+      await onReload();
+      setEditing(false);
+      setHistory(null);
+      onSelect("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "삭제 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function payout(task: RecordData) {
     setBusy(true);
     setError("");
@@ -260,11 +292,33 @@ export default function Participants({
               : "체험단·기자단·클립 게시자의 계정과 협업 이력을 관리하세요."}
           </p>
         </div>
-        <button className="primary" onClick={() => begin(participant)}>
-          <Plus size={16} />
-          {participant ? "프로필 수정" : "체험단 등록"}
-        </button>
+        <div className="row" style={{ flexWrap: "wrap" }}>
+          {participant && !participant.deletedAt && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={removeParticipant}
+              style={{ color: "#dc3545" }}
+            >
+              참여자 삭제
+            </button>
+          )}
+          <button
+            className="primary"
+            disabled={busy}
+            onClick={() => begin(participant)}
+          >
+            <Plus size={16} />
+            {participant ? "프로필 수정" : "체험단 등록"}
+          </button>
+        </div>
       </div>
+      {!!participant?.deletedAt && (
+        <p className="hint">
+          삭제된 참여자입니다. 기존 게시·정산 이력 확인과 정보 수정만
+          가능합니다.
+        </p>
+      )}
       {error && (
         <div role="alert" className="error">
           {error}
@@ -518,6 +572,7 @@ export default function Participants({
                 {data.participants
                   .filter(
                     (p) =>
+                      !p.deletedAt &&
                       (!status || p.status === status) &&
                       (!query ||
                         [
@@ -600,7 +655,7 @@ export default function Participants({
                   })}
               </tbody>
             </table>
-            {!data.participants.length && (
+            {!data.participants.some((p) => !p.deletedAt) && (
               <div className={`empty ${styles.empty}`}>
                 <h3>첫 체험단을 등록하세요</h3>등록 후 프로젝트 작업에서
                 담당자와 게시 계정을 선택할 수 있어요.

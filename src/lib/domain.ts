@@ -200,6 +200,7 @@ export function save(
           .slice(0, 12);
       if (id) {
         const old = await requireRecord(id, kind);
+        if (old.deletedAt) data.status = "closed";
         if (data.referrerId !== undefined && data.referrerId !== old.referrerId)
           throw new Error("추천 관계는 별도 변경 절차로 관리하세요.");
       }
@@ -458,7 +459,21 @@ export function command(
       throw new Error(
         "합산 지급 내역입니다. 담당자 정산 화면에서 합산 지급을 취소하세요.",
       );
-    if (action === "participant-settlement-cancel") {
+    if (action === "participant-delete") {
+      if (row.kind !== "participants") throw new Error("참여자를 선택하세요.");
+      await lock("save:participants");
+      row = await requireRecord(id, "participants");
+      result = await update(
+        id,
+        {
+          status: "closed",
+          deletedAt: new Date().toISOString(),
+          deletedBy: actor,
+        },
+        Number(input.version),
+      );
+      await audit(actor, "participant-delete", id, { name: row.name });
+    } else if (action === "participant-settlement-cancel") {
       result = await (
         await import("./participant-settlements")
       ).cancelParticipantSettlement(row, input, actor);
