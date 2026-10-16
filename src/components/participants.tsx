@@ -68,6 +68,8 @@ export default function Participants({
   const [query, setQuery] = useState(""),
     [status, setStatus] = useState(""),
     [showDeleted, setShowDeleted] = useState(false),
+    [checked, setChecked] = useState<Record<string, number>>({}),
+    [notice, setNotice] = useState(""),
     [sort, setSort] = useState("name"),
     [editing, setEditing] = useState(false),
     [draft, setDraft] = useState<Draft>(fresh),
@@ -76,6 +78,35 @@ export default function Participants({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const participant = data.participants.find((p) => p.id === selected);
+  const visibleParticipants = data.participants
+    .filter(
+      (p) =>
+        Boolean(p.deletedAt) === showDeleted &&
+        (!status || p.status === status) &&
+        (!query ||
+          [
+            p.name,
+            p.nickname,
+            p.specialties,
+            p.contact,
+            p.phone,
+            p.email,
+            ...(p.accounts as Draft[]).map((a) => a.url),
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(query.toLowerCase())),
+    )
+    .sort((a, b) => {
+      const x = participantPerformance(data.tasks, a.id),
+        y = participantPerformance(data.tasks, b.id);
+      return sort === "speed"
+        ? (x.averageResponseMs ?? Infinity) - (y.averageResponseMs ?? Infinity)
+        : sort === "quality"
+          ? (y.averageQuality ?? -1) - (x.averageQuality ?? -1)
+          : String(a.name).localeCompare(String(b.name), "ko");
+    });
+  const picked = visibleParticipants.filter((p) => checked[p.id] !== undefined);
   const tasks = data.tasks.filter((t) => t.participantId === selected),
     manual = data.participant_history.filter(
       (h) => h.participantId === selected,
@@ -135,6 +166,7 @@ export default function Participants({
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "저장 실패");
       await onReload();
+      setChecked({});
       setEditing(false);
       setHistory(null);
       if (kind === "participants") onSelect(body.id);
@@ -167,6 +199,7 @@ export default function Participants({
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "삭제 실패");
       await onReload();
+      setChecked({});
       setEditing(false);
       setHistory(null);
       onSelect("");
@@ -200,6 +233,7 @@ export default function Participants({
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "복구 실패");
       await onReload();
+      setChecked({});
       setShowDeleted(false);
       setStatus("");
       setEditing(false);
@@ -207,6 +241,50 @@ export default function Participants({
       onSelect(target.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "복구 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function bulkLifecycle() {
+    if (!picked.length || busy) return;
+    const verb = showDeleted ? "복구" : "삭제";
+    const names = picked
+      .slice(0, 5)
+      .map((p) => String(p.name))
+      .join(", ");
+    if (
+      !window.confirm(
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${picked.length}명을 한 번에 ${verb}할까요?\n${showDeleted ? "삭제 전 활동 상태로 복구합니다. 이전 상태가 없는 분은 섭외 보류로 복구됩니다." : "목록에서 제외하고 신규 배정을 중단합니다. 기존 게시·정산 이력은 보존합니다."}`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: showDeleted
+            ? "participant-bulk-restore"
+            : "participant-bulk-delete",
+          key: crypto.randomUUID(),
+          data: {
+            items: picked.map((p) => ({ id: p.id, version: checked[p.id] })),
+          },
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `일괄 ${verb} 실패`);
+      setChecked({});
+      setNotice(`${body.processedCount}명을 ${verb}했습니다.`);
+      await onReload();
+    } catch (e) {
+      setError(
+        (e instanceof Error ? e.message : `일괄 ${verb} 실패`) +
+          " 선택 내역을 확인하고 새로고침 후 다시 시도해주세요.",
+      );
     } finally {
       setBusy(false);
     }
@@ -579,6 +657,8 @@ export default function Participants({
               className={!showDeleted ? "primary" : ""}
               onClick={() => {
                 setShowDeleted(false);
+                setChecked({});
+                setNotice("");
                 setStatus("");
               }}
             >
@@ -591,6 +671,8 @@ export default function Participants({
               className={showDeleted ? "primary" : ""}
               onClick={() => {
                 setShowDeleted(true);
+                setChecked({});
+                setNotice("");
                 setStatus("");
               }}
             >
@@ -609,12 +691,18 @@ export default function Participants({
               aria-label="체험단 검색"
               placeholder="이름·닉네임·블로그 주소 검색"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setChecked({});
+              }}
             />
             <select
               aria-label="활동 상태 필터"
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setChecked({});
+              }}
             >
               <option value="">모든 활동 상태</option>
               {Object.entries(states).map(([id, label]) => (
@@ -633,10 +721,69 @@ export default function Participants({
               <option value="quality">품질 평가 높은순</option>
             </select>
           </div>
+          <div className="row" style={{ margin: "12px 0", flexWrap: "wrap" }}>
+            <strong>{picked.length}명 선택</strong>
+            <button
+              type="button"
+              disabled={busy || !picked.length}
+              onClick={() => setChecked({})}
+            >
+              선택 해제
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || !picked.length}
+              onClick={bulkLifecycle}
+            >
+              {busy
+                ? "처리 중…"
+                : showDeleted
+                  ? "선택한 참여자 복구"
+                  : "선택한 참여자 삭제"}
+            </button>
+            <span className="hint">
+              한 번에 최대 100명까지 처리할 수 있습니다.
+            </span>
+          </div>
+          {notice && <p role="status">{notice}</p>}
           <div className="tablewrap">
             <table>
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      aria-label="현재 목록 선택 (최대 100명)"
+                      style={{ width: 18 }}
+                      disabled={busy || !visibleParticipants.length}
+                      checked={
+                        visibleParticipants.length > 0 &&
+                        visibleParticipants
+                          .slice(0, 100)
+                          .every((p) => checked[p.id] !== undefined)
+                      }
+                      ref={(el) => {
+                        if (el)
+                          el.indeterminate =
+                            picked.length > 0 &&
+                            !visibleParticipants
+                              .slice(0, 100)
+                              .every((p) => checked[p.id] !== undefined);
+                      }}
+                      onChange={(e) =>
+                        setChecked(
+                          e.target.checked
+                            ? Object.fromEntries(
+                                visibleParticipants
+                                  .slice(0, 100)
+                                  .map((p) => [p.id, p.version]),
+                              )
+                            : {},
+                        )
+                      }
+                    />
+                  </th>
                   {[
                     "체험단",
                     "활동 계정",
@@ -651,110 +798,99 @@ export default function Participants({
                 </tr>
               </thead>
               <tbody>
-                {data.participants
-                  .filter(
-                    (p) =>
-                      Boolean(p.deletedAt) === showDeleted &&
-                      (!status || p.status === status) &&
-                      (!query ||
-                        [
-                          p.name,
-                          p.nickname,
-                          p.specialties,
-                          p.contact,
-                          p.phone,
-                          p.email,
-                          ...(p.accounts as Draft[]).map((a) => a.url),
-                        ]
-                          .join(" ")
-                          .toLowerCase()
-                          .includes(query.toLowerCase())),
-                  )
-                  .sort((a, b) => {
-                    const x = participantPerformance(data.tasks, a.id),
-                      y = participantPerformance(data.tasks, b.id);
-                    return sort === "speed"
-                      ? (x.averageResponseMs ?? Infinity) -
-                          (y.averageResponseMs ?? Infinity)
-                      : sort === "quality"
-                        ? (y.averageQuality ?? -1) - (x.averageQuality ?? -1)
-                        : String(a.name).localeCompare(String(b.name), "ko");
-                  })
-                  .map((p) => {
-                    const s = summary(p.id);
-                    const performance = participantPerformance(
-                      data.tasks,
-                      p.id,
-                    );
-                    return (
-                      <tr key={p.id}>
-                        <td>
-                          <strong>{String(p.nickname || p.name)}</strong>
-                          <small>{String(p.name)}</small>
-                        </td>
-                        <td>
-                          {(p.accounts as Draft[]).map((a) => (
-                            <div key={a.id}>
-                              <a href={a.url} target="_blank" rel="noreferrer">
-                                {channels[a.channel]}
-                                {a.label ? " · " + a.label : ""} ↗
-                              </a>
-                            </div>
-                          ))}
-                        </td>
-                        <td>
-                          {String(p.specialties || "—")}
+                {visibleParticipants.map((p) => {
+                  const s = summary(p.id);
+                  const performance = participantPerformance(data.tasks, p.id);
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label={`${String(p.name)} 선택`}
+                          style={{ width: 18 }}
+                          checked={checked[p.id] !== undefined}
+                          disabled={
+                            busy ||
+                            (picked.length >= 100 &&
+                              checked[p.id] === undefined)
+                          }
+                          onChange={(e) =>
+                            setChecked((previous) => {
+                              const next = { ...previous };
+                              if (e.target.checked) next[p.id] = p.version;
+                              else delete next[p.id];
+                              return next;
+                            })
+                          }
+                        />
+                      </td>
+                      <td>
+                        <strong>{String(p.nickname || p.name)}</strong>
+                        <small>{String(p.name)}</small>
+                      </td>
+                      <td>
+                        {(p.accounts as Draft[]).map((a) => (
+                          <div key={a.id}>
+                            <a href={a.url} target="_blank" rel="noreferrer">
+                              {channels[a.channel]}
+                              {a.label ? " · " + a.label : ""} ↗
+                            </a>
+                          </div>
+                        ))}
+                      </td>
+                      <td>
+                        {String(p.specialties || "—")}
+                        <small>
+                          {p.deletedAt ? "삭제됨" : states[String(p.status)]}
+                        </small>
+                        {!!p.deletedAt && (
                           <small>
-                            {p.deletedAt ? "삭제됨" : states[String(p.status)]}
+                            삭제일{" "}
+                            {new Date(String(p.deletedAt)).toLocaleString(
+                              "ko-KR",
+                              { timeZone: "Asia/Seoul" },
+                            )}
                           </small>
-                          {!!p.deletedAt && (
-                            <small>
-                              삭제일{" "}
-                              {new Date(String(p.deletedAt)).toLocaleString(
-                                "ko-KR",
-                                { timeZone: "Asia/Seoul" },
-                              )}
-                            </small>
-                          )}
-                        </td>
-                        <td>{s.count}건</td>
-                        <td>
-                          {elapsedLabel(performance.averageResponseMs)}
-                          <small>
-                            {performance.averageQuality === null
-                              ? "미평가"
-                              : performance.averageQuality.toFixed(1) +
-                                " / 5점"}{" "}
-                            · 접수 {performance.submitted}건 / 평가{" "}
-                            {performance.qualityCount}건
-                          </small>
-                        </td>
-                        <td>
-                          {money(s.unpaid)}
-                          {s.missing && <small>미정 금액 별도</small>}
-                        </td>
-                        <td>
+                        )}
+                      </td>
+                      <td>{s.count}건</td>
+                      <td>
+                        {elapsedLabel(performance.averageResponseMs)}
+                        <small>
+                          {performance.averageQuality === null
+                            ? "미평가"
+                            : performance.averageQuality.toFixed(1) +
+                              " / 5점"}{" "}
+                          · 접수 {performance.submitted}건 / 평가{" "}
+                          {performance.qualityCount}건
+                        </small>
+                      </td>
+                      <td>
+                        {money(s.unpaid)}
+                        {s.missing && <small>미정 금액 별도</small>}
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => {
+                            onSelect(p.id);
+                            setTab(0);
+                          }}
+                        >
+                          상세 보기
+                        </button>
+                        {!!p.deletedAt && (
                           <button
-                            onClick={() => {
-                              onSelect(p.id);
-                              setTab(0);
-                            }}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => restoreParticipant(p)}
                           >
-                            상세 보기
+                            복구
                           </button>
-                          {!!p.deletedAt && (
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => restoreParticipant(p)}
-                            >
-                              복구
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {!data.participants.some(

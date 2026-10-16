@@ -419,3 +419,85 @@ test("삭제 후 복구는 이전 상태와 승인 연결·이력을 복원하�
   );
   assert.equal(restored.status, "paused");
 });
+
+test("일괄 삭제·복구는 전체 성공 또는 롤백하고 중복 요청은 한 번만 처리한다", async () => {
+  const { command, save } = await import("../src/lib/domain");
+  const first = await save(
+    "participants",
+    { name: "일괄 A", status: "active", accounts: [] },
+    actor,
+  );
+  const second = await save(
+    "participants",
+    { name: "일괄 B", status: "paused", accounts: [] },
+    actor,
+  );
+  const item = (p: { id: string; version: number }) => ({
+    id: p.id,
+    version: p.version,
+  });
+  const items = [item(first), item(second)];
+  await assert.rejects(
+    command(
+      "participant-bulk-delete",
+      { items: [items[0], { ...items[1], version: 99 }] },
+      actor,
+      crypto.randomUUID(),
+    ),
+    /수정/,
+  );
+  assert.equal((await get(first.id))!.version, first.version);
+  assert.ok(!(await get(first.id))!.deletedAt);
+  await assert.rejects(
+    command(
+      "participant-bulk-delete",
+      { items: [items[0], items[0]] },
+      actor,
+      crypto.randomUUID(),
+    ),
+    /중복/,
+  );
+  await assert.rejects(
+    command(
+      "participant-bulk-delete",
+      { items: [] },
+      actor,
+      crypto.randomUUID(),
+    ),
+  );
+  const key = crypto.randomUUID();
+  const deleted = await command(
+    "participant-bulk-delete",
+    { items },
+    actor,
+    key,
+  );
+  assert.equal(deleted.processedCount, 2);
+  assert.deepEqual(
+    await command("participant-bulk-delete", { items }, actor, key),
+    deleted,
+  );
+  const archived = [(await get(first.id))!, (await get(second.id))!];
+  assert.ok(archived.every((p) => p.deletedAt));
+  await assert.rejects(
+    command(
+      "participant-bulk-restore",
+      { items: [item(archived[0]), { ...item(archived[1]), version: 99 }] },
+      actor,
+      crypto.randomUUID(),
+    ),
+    /수정/,
+  );
+  assert.ok((await get(first.id))!.deletedAt);
+  assert.equal((await get(first.id))!.version, archived[0].version);
+  const restored = await command(
+    "participant-bulk-restore",
+    { items: archived.map(item) },
+    actor,
+    crypto.randomUUID(),
+  );
+  assert.equal(restored.processedCount, 2);
+  assert.equal((await get(first.id))!.status, "active");
+  assert.equal((await get(second.id))!.status, "paused");
+  assert.equal((await get(first.id))!.deletedAt, null);
+});

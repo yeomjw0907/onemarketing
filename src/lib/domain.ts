@@ -421,6 +421,50 @@ export async function projectCosts(p: RecordData) {
     provisional: missing || p.settled !== true,
   };
 }
+async function participantLifecycle(
+  action: "participant-delete" | "participant-restore",
+  id: string,
+  version: number,
+  actor: string,
+): Promise<RecordData> {
+  await lock("save:participants");
+  const row = await requireRecord(id, "participants");
+  let result: RecordData;
+  if (action === "participant-delete") {
+    if (row.deletedAt) throw new Error("이미 삭제된 참여자입니다.");
+    result = await update(
+      id,
+      {
+        statusBeforeDeletion: row.status,
+        status: "closed",
+        deletedAt: new Date().toISOString(),
+        deletedBy: actor,
+      },
+      version,
+    );
+    await audit(actor, "participant-delete", id, { name: row.name });
+  } else {
+    if (!row.deletedAt) throw new Error("삭제된 참여자가 아닙니다.");
+    const restoredStatus = ["active", "paused", "closed"].includes(
+      String(row.statusBeforeDeletion),
+    )
+      ? String(row.statusBeforeDeletion)
+      : "paused";
+    result = await update(
+      id,
+      {
+        status: restoredStatus,
+        deletedAt: null,
+        deletedBy: null,
+        restoredAt: new Date().toISOString(),
+        restoredBy: actor,
+      },
+      version,
+    );
+    await audit(actor, "participant-restore", id, { status: restoredStatus });
+  }
+  return result;
+}
 export function command(
   action: string,
   input: Record<string, unknown>,
@@ -429,6 +473,41 @@ export function command(
 ) {
   z.string().min(1).max(100).parse(key);
   return once(actor + ":" + key, async () => {
+    if (
+      action === "participant-bulk-delete" ||
+      action === "participant-bulk-restore"
+    ) {
+      const items = z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            version: z.number().int().positive(),
+          }),
+        )
+        .min(1)
+        .max(100)
+        .parse(input.items);
+      if (new Set(items.map((i) => i.id)).size !== items.length)
+        throw new Error("참여자 선택이 중복되었습니다.");
+      await lock("save:participants");
+      const results: RecordData[] = [];
+      for (const item of items)
+        results.push(
+          await participantLifecycle(
+            action === "participant-bulk-delete"
+              ? "participant-delete"
+              : "participant-restore",
+            item.id,
+            item.version,
+            actor,
+          ),
+        );
+      return {
+        ...results[0],
+        processedCount: results.length,
+        processedIds: results.map((r) => r.id),
+      };
+    }
     const id = String(input.id || "");
     let row = await requireRecord(id);
     let result: RecordData = row;
@@ -459,44 +538,13 @@ export function command(
       throw new Error(
         "합산 지급 내역입니다. 담당자 정산 화면에서 합산 지급을 취소하세요.",
       );
-    if (action === "participant-delete") {
-      if (row.kind !== "participants") throw new Error("참여자를 선택하세요.");
-      await lock("save:participants");
-      row = await requireRecord(id, "participants");
-      if (row.deletedAt) throw new Error("이미 삭제된 참여자입니다.");
-      result = await update(
+    if (action === "participant-delete" || action === "participant-restore") {
+      result = await participantLifecycle(
+        action,
         id,
-        {
-          statusBeforeDeletion: row.status,
-          status: "closed",
-          deletedAt: new Date().toISOString(),
-          deletedBy: actor,
-        },
         Number(input.version),
+        actor,
       );
-      await audit(actor, "participant-delete", id, { name: row.name });
-    } else if (action === "participant-restore") {
-      if (row.kind !== "participants") throw new Error("참여자를 선택하세요.");
-      await lock("save:participants");
-      row = await requireRecord(id, "participants");
-      if (!row.deletedAt) throw new Error("삭제된 참여자가 아닙니다.");
-      const restoredStatus = ["active", "paused", "closed"].includes(
-        String(row.statusBeforeDeletion),
-      )
-        ? String(row.statusBeforeDeletion)
-        : "paused";
-      result = await update(
-        id,
-        {
-          status: restoredStatus,
-          deletedAt: null,
-          deletedBy: null,
-          restoredAt: new Date().toISOString(),
-          restoredBy: actor,
-        },
-        Number(input.version),
-      );
-      await audit(actor, "participant-restore", id, { status: restoredStatus });
     } else if (action === "participant-settlement-cancel") {
       result = await (
         await import("./participant-settlements")
