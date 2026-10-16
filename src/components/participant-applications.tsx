@@ -28,6 +28,8 @@ export default function ParticipantApplications({
     [filter, setFilter] = useState("new"),
     [search, setSearch] = useState(""),
     [order, setOrder] = useState<ApplicationSort>("newest"),
+    [page, setPage] = useState(1),
+    [pageSize, setPageSize] = useState(20),
     [startDate, setStartDate] = useState(""),
     [endDate, setEndDate] = useState(""),
     [datePreset, setDatePreset] = useState<ApplicationDatePreset | null>(null),
@@ -52,6 +54,14 @@ export default function ParticipantApplications({
     matchesApplication(i, filter, query, range);
   const pending = sortApplications(items.filter(matches), order);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
+  const pageCount = Math.max(1, Math.ceil(pending.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageItems = pending.slice(pageStart, pageStart + pageSize);
+  const pagePicked = pageItems.filter((i) => checked[i.id] !== undefined);
+  useEffect(() => {
+    setPage((previous) => Math.min(previous, pageCount));
+  }, [pageCount]);
   async function downloadExcel(onlySelected = false) {
     if (
       exporting ||
@@ -236,6 +246,7 @@ export default function ParticipantApplications({
             className={filter === key ? "primary" : ""}
             onClick={() => {
               setFilter(key);
+              setPage(1);
               setChecked({});
               setMessage("");
               setCurrent(null);
@@ -273,6 +284,7 @@ export default function ParticipantApplications({
               setStartDate(dates.startDate);
               setEndDate(dates.endDate);
               setDatePreset(preset);
+              setPage(1);
               setChecked({});
               setMessage("");
               setError("");
@@ -295,6 +307,7 @@ export default function ParticipantApplications({
           style={{ width: 320, maxWidth: "100%", height: 40 }}
           onChange={(e) => {
             setSearch(e.target.value);
+            setPage(1);
             setChecked({});
             setMessage("");
           }}
@@ -310,6 +323,7 @@ export default function ParticipantApplications({
             style={{ width: 170, height: 40 }}
             onChange={(e) => {
               setStartDate(e.target.value);
+              setPage(1);
               setDatePreset(null);
               setChecked({});
               setMessage("");
@@ -328,6 +342,7 @@ export default function ParticipantApplications({
             style={{ width: 170, height: 40 }}
             onChange={(e) => {
               setEndDate(e.target.value);
+              setPage(1);
               setDatePreset(null);
               setChecked({});
               setMessage("");
@@ -341,7 +356,10 @@ export default function ParticipantApplications({
             value={order}
             disabled={busy}
             style={{ width: 170, height: 40 }}
-            onChange={(e) => setOrder(e.target.value as ApplicationSort)}
+            onChange={(e) => {
+              setOrder(e.target.value as ApplicationSort);
+              setPage(1);
+            }}
           >
             <option value="newest">신청일 최신순</option>
             <option value="oldest">신청일 오래된순</option>
@@ -354,6 +372,7 @@ export default function ParticipantApplications({
             onClick={() => {
               setStartDate("");
               setEndDate("");
+              setPage(1);
               setDatePreset(null);
               setChecked({});
             }}
@@ -367,6 +386,7 @@ export default function ParticipantApplications({
             disabled={busy}
             onClick={() => {
               setSearch("");
+              setPage(1);
               setChecked({});
             }}
           >
@@ -468,7 +488,9 @@ export default function ParticipantApplications({
               : filter === "deleted"
                 ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
                 : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
-            한 번에 최대 100명까지 처리합니다.
+            한 번에 최대 100명까지 처리합니다. 체크는 페이지를 이동해도
+            유지됩니다. 목록 위 엑셀 다운로드는 현재 페이지가 아닌 검색·기간
+            조건의 전체 결과입니다.
           </p>
         </>
       )}
@@ -490,33 +512,34 @@ export default function ParticipantApplications({
                     <input
                       type="checkbox"
                       style={{ width: 18 }}
-                      aria-label={`${filter === "deleted" ? "삭제된" : labels[filter as keyof typeof labels]} 신청 목록 선택 (최대 100명)`}
-                      disabled={busy || !pending.length || !!current}
+                      aria-label="현재 페이지 신청 전체 선택"
+                      disabled={busy || !pageItems.length || !!current}
                       checked={
-                        pending.length > 0 &&
-                        pending
-                          .slice(0, 100)
-                          .every((i) => checked[i.id] !== undefined)
+                        pageItems.length > 0 &&
+                        pagePicked.length === pageItems.length
                       }
                       ref={(el) => {
                         if (el)
                           el.indeterminate =
-                            picked.length > 0 &&
-                            !pending
-                              .slice(0, 100)
-                              .every((i) => checked[i.id] !== undefined);
+                            pagePicked.length > 0 &&
+                            pagePicked.length < pageItems.length;
                       }}
-                      onChange={(e) =>
-                        setChecked(
-                          e.target.checked
-                            ? Object.fromEntries(
-                                pending
-                                  .slice(0, 100)
-                                  .map((i) => [i.id, i.version]),
+                      onChange={(e) => {
+                        const select = e.target.checked;
+                        setChecked((previous) => {
+                          const next = { ...previous };
+                          for (const item of pageItems) {
+                            if (select) {
+                              if (
+                                Object.keys(next).length < 100 ||
+                                next[item.id] !== undefined
                               )
-                            : {},
-                        )
-                      }
+                                next[item.id] = item.version;
+                            } else delete next[item.id];
+                          }
+                          return next;
+                        });
+                      }}
                     />
                   </th>
                 )}
@@ -528,7 +551,7 @@ export default function ParticipantApplications({
               </tr>
             </thead>
             <tbody>
-              {pending.map((item) => (
+              {pageItems.map((item) => (
                 <tr key={item.id}>
                   {selectable && (
                     <td>
@@ -625,6 +648,70 @@ export default function ParticipantApplications({
               ))}
             </tbody>
           </table>
+          <nav
+            aria-label="신청 목록 페이지"
+            className="row"
+            style={{
+              padding: "16px 0",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
+            <span role="status">
+              전체 {pending.length}건 · {pending.length ? pageStart + 1 : 0}–
+              {Math.min(pageStart + pageSize, pending.length)}건 표시 ·{" "}
+              {currentPage} / {pageCount} 페이지
+            </span>
+            <div className="row" style={{ flexWrap: "wrap" }}>
+              <label>
+                페이지당{" "}
+                <select
+                  aria-label="신청 목록 페이지당 개수"
+                  value={pageSize}
+                  disabled={busy}
+                  style={{ width: 90, height: 40 }}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}개
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={busy || currentPage === 1}
+                onClick={() => setPage(1)}
+              >
+                처음
+              </button>
+              <button
+                type="button"
+                disabled={busy || currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}
+              >
+                이전
+              </button>
+              <button
+                type="button"
+                disabled={busy || currentPage === pageCount}
+                onClick={() => setPage(currentPage + 1)}
+              >
+                다음
+              </button>
+              <button
+                type="button"
+                disabled={busy || currentPage === pageCount}
+                onClick={() => setPage(pageCount)}
+              >
+                마지막
+              </button>
+            </div>
+          </nav>
           {!items.some(matches) && (
             <p className="empty">
               {hasConditions
