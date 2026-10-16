@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { customerReport, reportStatus } from "@/lib/customer-reports";
+import { EmptyState, StatusBadge } from "@/components/ui/workflow-ui";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "One Marketing · 고객 캠페인 보고",
@@ -25,11 +26,14 @@ export default async function ReportPage({
     <main className="customer-report">
       <header className="report-header">
         <div>
-          <span className="muted">ONE MARKETING · CAMPAIGN REPORT</span>
+          <span className="ui-eyebrow">원케이션 · 고객 보고</span>
           <h1>{report.customerName}</h1>
           <p>{complete ? "캠페인 완료 보고" : "캠페인 진행 보고"}</p>
         </div>
-        <a className="button-link" href={`/api/reports/${token}/excel`}>
+        <a
+          className="ui-button primary report-download"
+          href={`/api/reports/${token}/excel`}
+        >
           {complete ? "완료 보고" : "진행 보고"} 엑셀 다운로드
         </a>
       </header>
@@ -63,20 +67,21 @@ export default async function ReportPage({
         </div>
       </div>
       {!report.projects.length && (
-        <section className="section">
-          <h2>캠페인 준비 중입니다</h2>
-          <p>프로젝트가 등록되면 이 화면에서 진행 상황을 확인할 수 있습니다.</p>
-        </section>
+        <EmptyState
+          title="캠페인 준비 중이에요"
+          description="프로젝트가 등록되면 진행 상황을 이곳에서 확인할 수 있어요."
+        />
       )}
       {report.projects.map((p, i) => (
-        <section className="section" key={i}>
+        <section className="ui-pane report-project" key={i}>
           <div className="section-title">
             <h2>{p.name}</h2>
-            <span className="badge">{reportStatus(p.status)}</span>
+            <StatusBadge value={p.status} label={reportStatus(p.status)} />
           </div>
           <p className="muted">마감일 {p.due || "협의 중"}</p>
           <div className="tablewrap">
-            <table>
+            <table className="report-table">
+              <caption className="sr-only">{p.name} 콘텐츠 진행 현황</caption>
               <thead>
                 <tr>
                   {[
@@ -94,10 +99,10 @@ export default async function ReportPage({
               <tbody>
                 {p.tasks.map((t, n) => (
                   <tr key={n}>
-                    <td>{t.participant}</td>
-                    <td>{t.channel}</td>
-                    <td>{t.label}</td>
-                    <td>
+                    <td data-label="참여자">{t.participant}</td>
+                    <td data-label="채널">{t.channel}</td>
+                    <td data-label="콘텐츠명">{t.label}</td>
+                    <td data-label="게시 링크">
                       {t.link ? (
                         <a
                           href={t.link}
@@ -110,19 +115,30 @@ export default async function ReportPage({
                         "등록 대기"
                       )}
                     </td>
-                    <td>
+                    <td data-label="게시 확인일">
                       {t.verifiedAt
                         ? new Date(t.verifiedAt).toLocaleDateString("ko-KR", {
                             timeZone: "Asia/Seoul",
                           })
                         : "—"}
                     </td>
-                    <td>{reportStatus(t.status)}</td>
+                    <td data-label="상태">
+                      <StatusBadge
+                        value={t.status}
+                        label={reportStatus(t.status)}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {!p.tasks.length && (
+            <EmptyState
+              title="콘텐츠를 준비하고 있어요"
+              description="작업이 등록되면 채널별 진행 상황을 확인할 수 있어요."
+            />
+          )}
         </section>
       ))}
       <footer className="muted">

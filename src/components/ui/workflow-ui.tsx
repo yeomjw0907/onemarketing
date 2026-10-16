@@ -205,18 +205,21 @@ export function statusLabel(value: unknown) {
 export function StatusBadge({
   value,
   context,
+  label,
 }: {
   value: unknown;
   context?: "notification";
+  label?: string;
 }) {
   const s = String(value);
   return (
     <span
       className={`badge ${["verified", "accepted", "succeeded", "paid", "confirmed"].includes(s) ? "green" : ["failed", "uncertain", "changes", "needs_recovery"].includes(s) ? "orange" : "blue"}`}
     >
-      {context === "notification" && s === "accepted"
-        ? "발송 접수"
-        : statusLabel(value)}
+      {label ??
+        (context === "notification" && s === "accepted"
+          ? "발송 접수"
+          : statusLabel(value))}
     </span>
   );
 }

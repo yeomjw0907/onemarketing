@@ -130,6 +130,29 @@ export default function ParticipantPortal() {
         />
       ) : (
         <>
+          <div className="portal-summary" aria-label="내 작업 요약">
+            <div>
+              <span>수락 대기</span>
+              <strong>
+                {availableOffers.length}
+                <small>건</small>
+              </strong>
+            </div>
+            <div>
+              <span>게시할 작업</span>
+              <strong>
+                {data.tasks.filter((t: Row) => t.status === "delivered").length}
+                <small>건</small>
+              </strong>
+            </div>
+            <div>
+              <span>검수 대기</span>
+              <strong>
+                {data.tasks.filter((t: Row) => t.status === "submitted").length}
+                <small>건</small>
+              </strong>
+            </div>
+          </div>
           <Tabs
             label="나의 작업 메뉴"
             value={tab}
@@ -232,7 +255,7 @@ export default function ParticipantPortal() {
                   </div>
                 </dl>
                 <details>
-                  <summary>참여 가이드 · v{o.guideVersion}</summary>
+                  <summary>참여 가이드 · v{o.guideVersion || 1}</summary>
                   <p className="ui-prewrap">{o.guide}</p>
                 </details>
                 {o.status === "proposed" &&
@@ -501,7 +524,10 @@ export default function ParticipantPortal() {
             </Form>
             <div className="ui-divider" />
             <h2>모집 알림 설정</h2>
-            <Field>
+            <Field
+              className="portal-consent"
+              help="현재 작업의 진행 안내와 별도이며 언제든 철회할 수 있어요."
+            >
               <input
                 disabled={busy}
                 type="checkbox"
@@ -515,9 +541,6 @@ export default function ParticipantPortal() {
               />
               카카오톡 신규 모집 광고 수신 동의 (선택)
             </Field>
-            <p className="hint">
-              현재 작업의 진행 안내와 별도이며 언제든 철회할 수 있어요.
-            </p>
           </section>
           <section
             className="ui-pane"
@@ -536,20 +559,39 @@ export default function ParticipantPortal() {
               </div>
             </div>
             {data.participant.referralCode && (
-              <Field help="링크를 복사해 공유해주세요. 가입 시 추천 코드가 자동으로 입력돼요.">
-                내 추천 링크
-                <input
-                  readOnly
-                  value={
-                    typeof location !== "undefined"
-                      ? location.origin +
-                        "/participants/apply?ref=" +
-                        data.participant.referralCode
-                      : ""
-                  }
-                  onFocus={(e) => e.target.select()}
-                />
-              </Field>
+              <div className="portal-referral">
+                <Field help="링크로 가입하면 추천 코드가 자동으로 적용돼요.">
+                  내 추천 링크
+                  <input
+                    readOnly
+                    value={
+                      typeof location !== "undefined"
+                        ? location.origin +
+                          "/participants/apply?ref=" +
+                          data.participant.referralCode
+                        : ""
+                    }
+                    onFocus={(e) => e.target.select()}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(
+                        location.origin +
+                          "/participants/apply?ref=" +
+                          data.participant.referralCode,
+                      );
+                      setNotice("추천 링크를 복사했어요.");
+                    } catch {
+                      setError("주소를 선택해 직접 복사해주세요.");
+                    }
+                  }}
+                >
+                  추천 링크 복사
+                </Button>
+              </div>
             )}
             <div className="ui-divider" />
             <h2>지급 내역</h2>

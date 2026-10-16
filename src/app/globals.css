@@ -1317,3 +1317,224 @@ td button {
     font-size: 16px;
   }
 }
+/* Participant and customer views share workflow typography, controls and status badges. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.portal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding: 24px 0 28px;
+  margin-bottom: 12px;
+}
+.portal-summary > div + div {
+  border-left: 1px solid var(--line);
+  padding-left: 24px;
+}
+.portal-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+}
+.portal-summary strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.4;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.portal-summary small {
+  font-size: 15px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+.portal-referral {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+.portal-referral > button {
+  margin-top: 27px;
+}
+.portal-consent {
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius-panel);
+  min-height: 56px;
+}
+.customer-report {
+  max-width: 1120px;
+  line-height: 1.7;
+}
+.customer-report h1 {
+  font-size: 30px;
+  line-height: 1.4;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.customer-report h2 {
+  font-size: 20px;
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.report-header > div {
+  min-width: 0;
+  flex: 1;
+}
+.report-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--surface);
+}
+.customer-report .section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.customer-report .section-title h2 {
+  margin: 0;
+}
+.customer-report .badge {
+  white-space: nowrap;
+}
+.report-project {
+  margin-top: 24px;
+}
+.report-table {
+  width: 100%;
+  table-layout: fixed;
+}
+.report-table td,
+.report-table th {
+  overflow-wrap: anywhere;
+}
+.report-table a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: var(--blue);
+  font-weight: 600;
+}
+.customer-report :focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+.customer-report footer {
+  margin-top: 24px;
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .portal-summary {
+    gap: 12px;
+    padding: 16px 0 24px;
+  }
+  .portal-summary > div + div {
+    padding-left: 12px;
+  }
+  .portal-summary span {
+    font-size: 12px;
+  }
+  .portal-summary strong {
+    font-size: 24px;
+  }
+  .portal-referral {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .portal-referral > button {
+    margin-top: 0;
+  }
+  .customer-report {
+    padding: 28px 20px 40px;
+  }
+  .customer-report h1 {
+    font-size: 26px;
+  }
+  .customer-report h2 {
+    font-size: 18px;
+  }
+  .report-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .customer-report .stats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 16px 0;
+  }
+  .customer-report .stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 0;
+    padding: 12px 0;
+  }
+  .customer-report .stat strong {
+    font-size: 24px;
+    margin: 0;
+  }
+  .customer-report .stat + .stat {
+    border-top: 1px solid var(--line);
+  }
+  .report-project {
+    padding: 20px 16px;
+  }
+  .customer-report .tablewrap {
+    border: 0;
+    overflow: visible;
+  }
+  .report-table,
+  .report-table tbody {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+  .report-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .report-table tr {
+    display: grid;
+    gap: 6px;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+  }
+  .report-table td {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 3px 0;
+    border: 0;
+    font-size: 14px;
+  }
+  .report-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .report-table td .badge,
+  .report-table td a {
+    justify-self: start;
+  }
+  .report-table td a {
+    min-height: 44px;
+  }
+}
