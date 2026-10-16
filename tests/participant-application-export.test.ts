@@ -6,7 +6,10 @@ import {
   type ParticipantApplication,
 } from "../src/lib/participant-application-schema";
 import { applicationWorkbook } from "../src/lib/participant-application-export";
-import { matchesApplication } from "../src/lib/participant-application-filter";
+import {
+  matchesApplication,
+  applicationDateRangeError,
+} from "../src/lib/participant-application-filter";
 function fixture(
   status: ParticipantApplication["status"],
   deleted: boolean,
@@ -165,4 +168,87 @@ test("빈 선택·중복·존재하지 않는 신청·현재 목록 밖 선택�
     applicationWorkbook([row], "new", "없는 이름", [row.id]),
     /변경/,
   );
+});
+
+test("신청일 기간은 한국 시간 시작·종료일 전체를 포함하고 모든 상태와 엑셀에 적용된다", async () => {
+  for (const status of ["new", "approved", "rejected", "deleted"] as const) {
+    const rows = [
+      "2026-10-14T14:59:59.999Z",
+      "2026-10-14T15:00:00Z",
+      "2026-10-15T14:59:59.999Z",
+      "2026-10-15T15:00:00Z",
+    ].map((created_at) => ({
+      ...fixture(
+        status === "deleted" ? "rejected" : status,
+        status === "deleted",
+        true,
+      ),
+      created_at,
+    }));
+    const range = { startDate: "2026-10-15", endDate: "2026-10-15" };
+    assert.deepEqual(
+      rows
+        .filter((i) => matchesApplication(i, status, "", range))
+        .map((i) => i.id),
+      [rows[1].id, rows[2].id],
+    );
+    assert.equal(
+      rows.filter((i) =>
+        matchesApplication(i, status, "", { startDate: "2026-10-15" }),
+      ).length,
+      3,
+    );
+    assert.equal(
+      rows.filter((i) =>
+        matchesApplication(i, status, "", { endDate: "2026-10-15" }),
+      ).length,
+      3,
+    );
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(
+      (await applicationWorkbook(
+        rows,
+        status,
+        "1111",
+        undefined,
+        range,
+      )) as unknown as ExcelJS.Buffer,
+    );
+    assert.equal(book.getWorksheet("신청 목록")!.rowCount, 3);
+    const selected = new ExcelJS.Workbook();
+    await selected.xlsx.load(
+      (await applicationWorkbook(
+        rows,
+        status,
+        "김이름",
+        [rows[2].id],
+        range,
+      )) as unknown as ExcelJS.Buffer,
+    );
+    assert.equal(selected.getWorksheet("신청 목록")!.rowCount, 2);
+    assert.equal(
+      selected.getWorksheet("신청 목록")!.getRow(2).getCell(1).value,
+      rows[2].id,
+    );
+    await assert.rejects(
+      applicationWorkbook(rows, status, "", [rows[0].id], range),
+      /변경/,
+    );
+  }
+});
+test("잘못된 날짜와 역전된 기간은 전체 다운로드로 바뀌지 않고 오류를 반환한다", async () => {
+  const row = fixture("new", false, true);
+  for (const range of [
+    { startDate: "2026-10-17", endDate: "2026-10-16" },
+    { startDate: "2026-02-30" },
+    { endDate: "not-a-date" },
+  ]) {
+    assert.ok(applicationDateRangeError(range));
+    assert.equal(matchesApplication(row, "new", "", range), false);
+    await assert.rejects(
+      applicationWorkbook([row], "new", "", undefined, range),
+    );
+  }
+  assert.equal(applicationDateRangeError({}), "");
+  assert.equal(applicationDateRangeError({ startDate: "2024-02-29" }), "");
 });

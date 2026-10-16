@@ -7,6 +7,8 @@ import {
 import {
   applicationListLabels,
   matchesApplication,
+  applicationDateRangeError,
+  type ApplicationDateRange,
 } from "./participant-application-filter";
 import { accountStatusLabels } from "./participant-account-policy";
 const date = (value?: string | null) =>
@@ -18,8 +20,11 @@ export async function applicationWorkbook(
   status: keyof typeof applicationListLabels,
   search: string,
   selectedIds?: string[],
+  range: ApplicationDateRange = {},
 ) {
-  let rows = items.filter((i) => matchesApplication(i, status, search));
+  const error = applicationDateRangeError(range);
+  if (error) throw new Error(error);
+  let rows = items.filter((i) => matchesApplication(i, status, search, range));
   if (selectedIds !== undefined) {
     const ids = z.array(z.string().uuid()).min(1).max(100).parse(selectedIds);
     const wanted = new Set(ids);

@@ -10,6 +10,7 @@ import type {
 import {
   applicationListLabels as labels,
   matchesApplication,
+  applicationDateRangeError,
 } from "@/lib/participant-application-filter";
 export default function ParticipantApplications({
   onApproved,
@@ -21,6 +22,8 @@ export default function ParticipantApplications({
   const [items, setItems] = useState<ParticipantApplication[]>([]),
     [filter, setFilter] = useState("new"),
     [search, setSearch] = useState(""),
+    [startDate, setStartDate] = useState(""),
+    [endDate, setEndDate] = useState(""),
     [checked, setChecked] = useState<Record<string, number>>({}),
     [current, setCurrent] = useState<ParticipantApplication | null>(null),
     [draft, setDraft] = useState<ApplicationDraft | null>(null),
@@ -35,8 +38,11 @@ export default function ParticipantApplications({
     filter === "rejected" ||
     filter === "deleted";
   const query = search.trim();
+  const range = { startDate, endDate };
+  const rangeError = applicationDateRangeError(range);
+  const hasConditions = Boolean(query || startDate || endDate);
   const matches = (i: ParticipantApplication) =>
-    matchesApplication(i, filter, query);
+    matchesApplication(i, filter, query, range);
   const pending = items.filter(matches);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
   async function downloadExcel(onlySelected = false) {
@@ -51,7 +57,12 @@ export default function ParticipantApplications({
     setExporting(true);
     setError("");
     try {
-      const params = new URLSearchParams({ status: filter, search: query });
+      const params = new URLSearchParams({
+        status: filter,
+        search: query,
+        startDate,
+        endDate,
+      });
       if (onlySelected) params.set("ids", picked.map((i) => i.id).join(","));
       const response = await fetch(
         `/api/participant-applications/export?${params}`,
@@ -251,6 +262,52 @@ export default function ParticipantApplications({
             setMessage("");
           }}
         />
+        <label style={{ display: "grid", gap: 4 }}>
+          신청일 시작
+          <input
+            type="date"
+            aria-label="신청일 시작"
+            value={startDate}
+            disabled={busy}
+            max={endDate || "9999-12-31"}
+            style={{ width: 170, height: 40 }}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setChecked({});
+              setMessage("");
+            }}
+          />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          신청일 종료
+          <input
+            type="date"
+            aria-label="신청일 종료"
+            value={endDate}
+            disabled={busy}
+            min={startDate || undefined}
+            max="9999-12-31"
+            style={{ width: 170, height: 40 }}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setChecked({});
+              setMessage("");
+            }}
+          />
+        </label>
+        {(startDate || endDate) && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              setChecked({});
+            }}
+          >
+            기간 지우기
+          </button>
+        )}
         {search && (
           <button
             type="button"
@@ -270,18 +327,29 @@ export default function ParticipantApplications({
         >
           {exporting
             ? "엑셀 준비 중…"
-            : query
+            : hasConditions
               ? "검색 결과 엑셀 다운로드"
               : "엑셀 다운로드"}
         </button>
         {!loading && (
           <span role="status" className="hint">
             {labels[filter as keyof typeof labels]} ·{" "}
-            {query ? "검색 결과 " : ""}
+            {hasConditions ? "검색 결과 " : ""}
             {pending.length}건
           </span>
         )}
       </div>
+      {rangeError && (
+        <p role="alert" className="error">
+          {rangeError}
+        </p>
+      )}
+      {(startDate || endDate) && !rangeError && (
+        <p className="hint">
+          신청일 기준 · 한국 시간 · {startDate || "처음"} ~{" "}
+          {endDate || "제한 없음"} (시작일·종료일 포함)
+        </p>
+      )}
       {selectable && !loading && (
         <>
           <div className="row" style={{ marginBottom: 12, flexWrap: "wrap" }}>
@@ -506,7 +574,7 @@ export default function ParticipantApplications({
           </table>
           {!items.some(matches) && (
             <p className="empty">
-              {query
+              {hasConditions
                 ? "검색 결과가 없습니다."
                 : `${labels[filter as keyof typeof labels]} 신청이 없습니다.`}
             </p>

@@ -1,7 +1,10 @@
 import { requireActor } from "@/lib/auth";
 import { listApplications } from "@/lib/participant-applications";
 import { applicationWorkbook } from "@/lib/participant-application-export";
-import { applicationListLabels } from "@/lib/participant-application-filter";
+import {
+  applicationListLabels,
+  applicationDateRangeError,
+} from "@/lib/participant-application-filter";
 import { z } from "zod";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -21,6 +24,13 @@ export async function GET(request: Request) {
       .max(200)
       .parse(params.get("search") || "")
       .trim();
+    const range = {
+      startDate: params.get("startDate") || "",
+      endDate: params.get("endDate") || "",
+    };
+    const rangeError = applicationDateRangeError(range);
+    if (rangeError)
+      return Response.json({ error: rangeError }, { status: 400 });
     const selectedIds = params.has("ids")
       ? z
           .array(z.string().uuid())
@@ -31,13 +41,14 @@ export async function GET(request: Request) {
     const date = new Intl.DateTimeFormat("sv-SE", {
       timeZone: "Asia/Seoul",
     }).format(new Date());
-    const filename = `체험단_신청_${applicationListLabels[status]}_${date}${selectedIds ? `_선택${selectedIds.length}건` : search ? "_검색결과" : ""}.xlsx`;
+    const filename = `체험단_신청_${applicationListLabels[status]}_${date}${selectedIds ? `_선택${selectedIds.length}건` : search || range.startDate || range.endDate ? "_검색결과" : ""}.xlsx`;
     return new Response(
       await applicationWorkbook(
         await listApplications(),
         status,
         search,
         selectedIds,
+        range,
       ),
       {
         headers: {
