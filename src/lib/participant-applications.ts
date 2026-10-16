@@ -1,7 +1,7 @@
 import { accountIdentity } from "./account-identity";
 import { list } from "./db";
 import { z } from "zod";
-import { audit, execute, lock, query, transaction } from "./db";
+import { audit, execute, lock, query, transaction, once } from "./db";
 import { save } from "./domain";
 import { participantPaymentSchema } from "./participant-payment";
 import {
@@ -185,5 +185,75 @@ export async function reviewApplication(input: unknown, actor: string) {
       participantId,
     });
     return { participantId };
+  });
+}
+
+export async function reviewApplicationsBulk(input: unknown, actor: string) {
+  const body = z
+    .object({
+      action: z.enum(["bulk-approve", "bulk-reject"]),
+      key: z.string().uuid(),
+      items: z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            version: z.number().int().positive(),
+          }),
+        )
+        .min(1)
+        .max(100),
+    })
+    .parse(input);
+  if (new Set(body.items.map((i) => i.id)).size !== body.items.length)
+    throw new Error("신청 선택이 중복되었습니다.");
+  return once(actor + ":application-bulk:" + body.key, async () => {
+    await lock("save:participants");
+    const participantIds: string[] = [];
+    for (const item of body.items) {
+      const old = (
+        await query<ParticipantApplication>(
+          "select * from participant_applications where id=$1",
+          [item.id],
+        )
+      )[0];
+      if (!old)
+        throw new Error(
+          "신청을 찾을 수 없습니다. 새로고침 후 다시 선택해주세요.",
+        );
+      if (old.status !== "new" || old.version !== item.version)
+        throw new Error(
+          `${old.data.name}: 신청 상태나 내용이 변경되었습니다. 새로고침 후 다시 선택해주세요.`,
+        );
+      const approve = body.action === "bulk-approve";
+      const data = approve
+        ? {
+            ...old.data,
+            accounts: old.data.accounts.map((a) => ({
+              ...a,
+              approvalStatus:
+                a.approvalStatus === "rejected"
+                  ? ("rejected" as const)
+                  : ("approved" as const),
+            })),
+          }
+        : old.data;
+      try {
+        const result = await reviewApplication(
+          {
+            id: item.id,
+            version: item.version,
+            action: approve ? "approve" : "reject",
+            data,
+          },
+          actor,
+        );
+        if (result.participantId) participantIds.push(result.participantId);
+      } catch (e) {
+        throw new Error(
+          `${old.data.name}: ${e instanceof Error ? e.message : "처리하지 못했습니다."}`,
+        );
+      }
+    }
+    return { processedCount: body.items.length, participantIds };
   });
 }

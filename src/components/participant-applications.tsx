@@ -17,12 +17,60 @@ export default function ParticipantApplications({
 }) {
   const [items, setItems] = useState<ParticipantApplication[]>([]),
     [filter, setFilter] = useState("new"),
+    [checked, setChecked] = useState<Record<string, number>>({}),
     [current, setCurrent] = useState<ParticipantApplication | null>(null),
     [draft, setDraft] = useState<ApplicationDraft | null>(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true);
+  const pending = items.filter((i) => i.status === "new");
+  const picked = pending.filter((i) => checked[i.id] !== undefined);
+  async function bulkReview(action: "bulk-approve" | "bulk-reject") {
+    if (!picked.length || busy || current) return;
+    const approve = action === "bulk-approve";
+    const verb = approve ? "승인" : "반려";
+    const names = picked
+      .slice(0, 5)
+      .map((i) => i.data.name)
+      .join(", ");
+    if (
+      !window.confirm(
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 신규 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    let applied = false;
+    try {
+      const response = await fetch("/api/participant-applications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          key: crypto.randomUUID(),
+          items: picked.map((i) => ({ id: i.id, version: checked[i.id] })),
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "일괄 처리 실패");
+      applied = true;
+      setChecked({});
+      await load();
+      setMessage(
+        `${body.processedCount}건을 ${verb}했습니다.${approve ? " 참여자로 등록되었습니다." : ""}`,
+      );
+      if (approve) await onApproved("");
+    } catch (e) {
+      setError(
+        `${e instanceof Error ? e.message : "일괄 처리 실패"} ${applied ? "처리는 완료됐습니다. 목록을 새로고침해주세요." : "일괄 변경은 적용되지 않았습니다."}`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function load() {
     const r = await fetch("/api/participant-applications", {
       cache: "no-store",
@@ -57,6 +105,7 @@ export default function ParticipantApplications({
       await load();
       setCurrent(null);
       setDraft(null);
+      setChecked({});
       setMessage(
         action === "approve"
           ? "승인하고 참여자로 등록했습니다."
@@ -96,6 +145,8 @@ export default function ParticipantApplications({
             className={filter === key ? "primary" : ""}
             onClick={() => {
               setFilter(key);
+              setChecked({});
+              setMessage("");
               setCurrent(null);
               setDraft(null);
             }}
@@ -104,6 +155,39 @@ export default function ParticipantApplications({
           </button>
         ))}
       </div>
+      {filter === "new" && !loading && (
+        <>
+          <div className="row" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+            <strong>{picked.length}명 선택</strong>
+            <button
+              type="button"
+              disabled={busy || !picked.length}
+              onClick={() => setChecked({})}
+            >
+              선택 해제
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || !picked.length || !!current}
+              onClick={() => bulkReview("bulk-approve")}
+            >
+              선택한 신청 승인
+            </button>
+            <button
+              type="button"
+              disabled={busy || !picked.length || !!current}
+              onClick={() => bulkReview("bulk-reject")}
+            >
+              선택한 신청 반려
+            </button>
+          </div>
+          <p className="hint">
+            한 번에 최대 100명까지 처리합니다. 일괄 승인 시 검토 대기 계정도
+            승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요.
+          </p>
+        </>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}
@@ -117,6 +201,41 @@ export default function ParticipantApplications({
           <table>
             <thead>
               <tr>
+                {filter === "new" && (
+                  <th>
+                    <input
+                      type="checkbox"
+                      style={{ width: 18 }}
+                      aria-label="신규 신청 목록 선택 (최대 100명)"
+                      disabled={busy || !pending.length || !!current}
+                      checked={
+                        pending.length > 0 &&
+                        pending
+                          .slice(0, 100)
+                          .every((i) => checked[i.id] !== undefined)
+                      }
+                      ref={(el) => {
+                        if (el)
+                          el.indeterminate =
+                            picked.length > 0 &&
+                            !pending
+                              .slice(0, 100)
+                              .every((i) => checked[i.id] !== undefined);
+                      }}
+                      onChange={(e) =>
+                        setChecked(
+                          e.target.checked
+                            ? Object.fromEntries(
+                                pending
+                                  .slice(0, 100)
+                                  .map((i) => [i.id, i.version]),
+                              )
+                            : {},
+                        )
+                      }
+                    />
+                  </th>
+                )}
                 <th>이름</th>
                 <th>연락처</th>
                 <th>신청일</th>
@@ -129,6 +248,31 @@ export default function ParticipantApplications({
                 .filter((i) => i.status === filter)
                 .map((item) => (
                   <tr key={item.id}>
+                    {filter === "new" && (
+                      <td>
+                        <input
+                          type="checkbox"
+                          style={{ width: 18 }}
+                          aria-label={`${item.data.name} 신청 선택`}
+                          checked={checked[item.id] !== undefined}
+                          disabled={
+                            busy ||
+                            !!current ||
+                            (picked.length >= 100 &&
+                              checked[item.id] === undefined)
+                          }
+                          onChange={(e) =>
+                            setChecked((previous) => {
+                              const next = { ...previous };
+                              if (e.target.checked)
+                                next[item.id] = item.version;
+                              else delete next[item.id];
+                              return next;
+                            })
+                          }
+                        />
+                      </td>
+                    )}
                     <td>
                       <strong>{item.data.name}</strong>
                     </td>
@@ -172,6 +316,7 @@ export default function ParticipantApplications({
                       <button
                         disabled={busy}
                         onClick={() => {
+                          setChecked({});
                           setCurrent(item);
                           setDraft(structuredClone(item.data));
                           setError("");

@@ -501,3 +501,141 @@ test("일괄 삭제·복구는 전체 성공 또는 롤백하고 중복 요청�
   assert.equal((await get(second.id))!.status, "paused");
   assert.equal((await get(first.id))!.deletedAt, null);
 });
+
+test("신규 신청 일괄 승인은 계정별 반려를 보존하고 중복 요청에도 한 번만 등록한다", async () => {
+  const { reviewApplicationsBulk } =
+    await import("../src/lib/participant-applications");
+  const first = application(),
+    second = application();
+  first.data.phone = "010-9876-1001";
+  second.data.phone = "010-9876-1002";
+  first.data.accounts.push({
+    ...first.data.accounts[0],
+    id: crypto.randomUUID(),
+    url: "https://blog.naver.com/" + crypto.randomUUID(),
+    label: "반려 계정",
+    approvalStatus: "rejected",
+  });
+  const a = await submitApplication(first),
+    b = await submitApplication(second);
+  await reviewApplication(
+    {
+      id: a.id,
+      version: 1,
+      action: "save",
+      data: {
+        ...first.data,
+        accounts: first.data.accounts.map((account, i) => ({
+          ...account,
+          approvalStatus: i === 1 ? "rejected" : "pending",
+        })),
+      },
+    },
+    actor,
+  );
+  const input = {
+    action: "bulk-approve",
+    key: crypto.randomUUID(),
+    items: [
+      { id: a.id, version: 2 },
+      { id: b.id, version: 1 },
+    ],
+  };
+  const result = await reviewApplicationsBulk(input, actor);
+  assert.equal(result.processedCount, 2);
+  assert.equal(result.participantIds.length, 2);
+  assert.deepEqual(await reviewApplicationsBulk(input, actor), result);
+  const participant = (await get(result.participantIds[0]))!;
+  assert.deepEqual(
+    (participant.accounts as { approvalStatus: string }[]).map(
+      (a) => a.approvalStatus,
+    ),
+    ["approved", "rejected"],
+  );
+  await assert.rejects(
+    reviewApplicationsBulk({ ...input, key: crypto.randomUUID() }, actor),
+    /변경/,
+  );
+});
+
+test("일괄 승인 오류는 등록 전체를 되돌리고 일괄 반려는 참여자를 생성하지 않는다", async () => {
+  const { reviewApplicationsBulk } =
+    await import("../src/lib/participant-applications");
+  const first = application(),
+    second = application();
+  first.data.phone = "010-9876-2001";
+  second.data.phone = "010-9876-2002";
+  const a = await submitApplication(first),
+    b = await submitApplication(second);
+  const originalCount = (await list("participants")).length;
+  const items = [
+    { id: a.id, version: 1 },
+    { id: b.id, version: 1 },
+  ];
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-approve",
+        key: crypto.randomUUID(),
+        items: [items[0], { ...items[1], version: 99 }],
+      },
+      actor,
+    ),
+    /변경/,
+  );
+  assert.equal((await list("participants")).length, originalCount);
+  assert.equal(
+    (await listApplications()).find((i) => i.id === a.id)!.version,
+    1,
+  );
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-approve",
+        key: crypto.randomUUID(),
+        items: [items[0], items[0]],
+      },
+      actor,
+    ),
+    /중복/,
+  );
+  await reviewApplication(
+    {
+      id: b.id,
+      version: 1,
+      action: "save",
+      data: {
+        ...second.data,
+        accounts: [
+          { ...second.data.accounts[0], url: first.data.accounts[0].url },
+        ],
+      },
+    },
+    actor,
+  );
+  items[1].version = 2;
+  await assert.rejects(
+    reviewApplicationsBulk(
+      { action: "bulk-approve", key: crypto.randomUUID(), items },
+      actor,
+    ),
+    /다른 참여자/,
+  );
+  assert.equal((await list("participants")).length, originalCount);
+  assert.equal(
+    (await listApplications()).find((i) => i.id === a.id)!.status,
+    "new",
+  );
+  const rejected = await reviewApplicationsBulk(
+    { action: "bulk-reject", key: crypto.randomUUID(), items },
+    actor,
+  );
+  assert.equal(rejected.processedCount, 2);
+  assert.equal(rejected.participantIds.length, 0);
+  assert.equal((await list("participants")).length, originalCount);
+  assert.ok(
+    (await listApplications())
+      .filter((i) => [a.id, b.id].includes(i.id))
+      .every((i) => i.status === "rejected"),
+  );
+});

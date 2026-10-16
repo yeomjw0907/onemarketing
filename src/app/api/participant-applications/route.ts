@@ -2,10 +2,12 @@ import { requireActor, sameOrigin } from "@/lib/auth";
 import {
   listApplications,
   reviewApplication,
+  reviewApplicationsBulk,
   submitApplication,
 } from "@/lib/participant-applications";
 import { ZodError } from "zod";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 export async function GET() {
   try {
     await requireActor();
@@ -52,7 +54,12 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
   try {
-    return Response.json(await reviewApplication(await read(request), actor));
+    const body = await read(request);
+    return Response.json(
+      await (body.action === "bulk-approve" || body.action === "bulk-reject"
+        ? reviewApplicationsBulk(body, actor)
+        : reviewApplication(body, actor)),
+    );
   } catch (e) {
     return failure(e);
   }
