@@ -725,3 +725,167 @@ test("반려 신청 일괄 재승인은 반려 계정을 보존하고 상태 충
       .every((i) => i.status === "approved"),
   );
 });
+
+test("신규·반려 신청 일괄 삭제는 원본을 보존하고 복구 시 이전 상태로 돌아온다", async () => {
+  const { reviewApplicationsBulk } =
+    await import("../src/lib/participant-applications");
+  const first = application(),
+    second = application();
+  first.data.phone = "010-9876-4001";
+  second.data.phone = "010-9876-4002";
+  const a = await submitApplication(first),
+    b = await submitApplication(second);
+  await reviewApplication(
+    { id: b.id, version: 1, action: "reject", data: second.data },
+    actor,
+  );
+  const items = [
+    { id: a.id, version: 1 },
+    { id: b.id, version: 2 },
+  ];
+  const count = (await list("participants")).length;
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-delete",
+        key: crypto.randomUUID(),
+        items: [items[0], { ...items[1], version: 99 }],
+      },
+      actor,
+    ),
+    /변경/,
+  );
+  assert.ok(
+    !(await listApplications()).find((i) => i.id === a.id)!.data.deletedAt,
+  );
+  const input = { action: "bulk-delete", key: crypto.randomUUID(), items };
+  const result = await reviewApplicationsBulk(input, actor);
+  assert.equal(result.processedCount, 2);
+  assert.deepEqual(await reviewApplicationsBulk(input, actor), result);
+  const deleted = (await listApplications()).filter((i) =>
+    [a.id, b.id].includes(i.id),
+  );
+  assert.ok(deleted.every((i) => i.data.deletedAt));
+  assert.deepEqual(
+    deleted.find((i) => i.id === a.id)!.data.accounts[0].url,
+    first.data.accounts[0].url,
+  );
+  await assert.rejects(
+    reviewApplication(
+      { id: a.id, version: 2, action: "approve", data: first.data },
+      actor,
+    ),
+    /복구/,
+  );
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-approve",
+        key: crypto.randomUUID(),
+        items: [{ id: a.id, version: 2 }],
+      },
+      actor,
+    ),
+    /복구/,
+  );
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-restore",
+        key: crypto.randomUUID(),
+        items: [
+          { id: a.id, version: 2 },
+          { id: b.id, version: 99 },
+        ],
+      },
+      actor,
+    ),
+    /변경/,
+  );
+  assert.ok(
+    (await listApplications()).find((i) => i.id === a.id)!.data.deletedAt,
+  );
+  const restoreInput = {
+    action: "bulk-restore",
+    key: crypto.randomUUID(),
+    items: deleted.map((i) => ({ id: i.id, version: i.version })),
+  };
+  const restored = await reviewApplicationsBulk(restoreInput, actor);
+  assert.equal(restored.processedCount, 2);
+  assert.deepEqual(await reviewApplicationsBulk(restoreInput, actor), restored);
+  const rows = (await listApplications()).filter((i) =>
+    [a.id, b.id].includes(i.id),
+  );
+  assert.ok(rows.every((i) => !i.data.deletedAt));
+  assert.equal(rows.find((i) => i.id === a.id)!.status, "new");
+  assert.equal(rows.find((i) => i.id === b.id)!.status, "rejected");
+  assert.equal((await list("participants")).length, count);
+  const approved = (await listApplications()).find(
+    (i) => i.status === "approved",
+  )!;
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-delete",
+        key: crypto.randomUUID(),
+        items: [{ id: approved.id, version: approved.version }],
+      },
+      actor,
+    ),
+    /변경/,
+  );
+});
+
+test("삭제된 신규 신청은 재접수를 막지 않으며 중복된 신청이 있으면 복구하지 않는다", async () => {
+  const { reviewApplicationsBulk } =
+    await import("../src/lib/participant-applications");
+  const first = application();
+  first.data.phone = "010-9876-5001";
+  const a = await submitApplication(first);
+  await reviewApplicationsBulk(
+    {
+      action: "bulk-delete",
+      key: crypto.randomUUID(),
+      items: [{ id: a.id, version: 1 }],
+    },
+    actor,
+  );
+  const replacement = await submitApplication({
+    ...first,
+    key: crypto.randomUUID(),
+    data: { ...first.data, phone: "010-9876-5002" },
+  });
+  await assert.rejects(
+    reviewApplicationsBulk(
+      {
+        action: "bulk-restore",
+        key: crypto.randomUUID(),
+        items: [{ id: a.id, version: 2 }],
+      },
+      actor,
+    ),
+    /중복/,
+  );
+  assert.ok(
+    (await listApplications()).find((i) => i.id === a.id)!.data.deletedAt,
+  );
+  await reviewApplicationsBulk(
+    {
+      action: "bulk-delete",
+      key: crypto.randomUUID(),
+      items: [{ id: replacement.id, version: 1 }],
+    },
+    actor,
+  );
+  await reviewApplicationsBulk(
+    {
+      action: "bulk-restore",
+      key: crypto.randomUUID(),
+      items: [{ id: a.id, version: 2 }],
+    },
+    actor,
+  );
+  assert.ok(
+    !(await listApplications()).find((i) => i.id === a.id)!.data.deletedAt,
+  );
+});

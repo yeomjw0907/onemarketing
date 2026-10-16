@@ -123,6 +123,10 @@ export type ParticipantApplication = {
     consentAt: string;
     consentVersion: string;
     reviewedBy?: string;
+    deletedAt?: string | null;
+    deletedBy?: string | null;
+    restoredAt?: string;
+    restoredBy?: string;
   };
   participant_id: string | null;
   created_at: string;

@@ -44,7 +44,7 @@ export async function submitApplication(input: unknown) {
         );
     }
     const pending = await query<{ data: { accounts: { url: string }[] } }>(
-      "select data from participant_applications where status='new'",
+      "select data from participant_applications where status='new' and data->>'deletedAt' is null",
     );
     if (
       pending.some((p) =>
@@ -122,6 +122,8 @@ export async function reviewApplication(input: unknown, actor: string) {
       )
     )[0];
     if (!old) throw new Error("신청을 찾을 수 없습니다.");
+    if (old.data.deletedAt)
+      throw new Error("삭제된 신청입니다. 먼저 복구해주세요.");
     if (old.status === "approved" && body.action === "approve")
       return { participantId: old.participant_id };
     if (old.status === "approved") throw new Error("이미 승인한 신청입니다.");
@@ -191,7 +193,13 @@ export async function reviewApplication(input: unknown, actor: string) {
 export async function reviewApplicationsBulk(input: unknown, actor: string) {
   const body = z
     .object({
-      action: z.enum(["bulk-approve", "bulk-reject", "bulk-reapprove"]),
+      action: z.enum([
+        "bulk-approve",
+        "bulk-reject",
+        "bulk-reapprove",
+        "bulk-delete",
+        "bulk-restore",
+      ]),
       key: z.string().uuid(),
       items: z
         .array(
@@ -219,6 +227,69 @@ export async function reviewApplicationsBulk(input: unknown, actor: string) {
       if (!old)
         throw new Error(
           "신청을 찾을 수 없습니다. 새로고침 후 다시 선택해주세요.",
+        );
+      if (body.action === "bulk-delete" || body.action === "bulk-restore") {
+        const restoring = body.action === "bulk-restore";
+        if (
+          old.version !== item.version ||
+          !["new", "rejected"].includes(old.status) ||
+          Boolean(old.data.deletedAt) !== restoring
+        )
+          throw new Error(
+            `${old.data.name}: 신청 상태나 내용이 변경되었습니다. 새로고침 후 다시 선택해주세요.`,
+          );
+        if (restoring && old.status === "new") {
+          const identities = old.data.accounts.map((a) =>
+            accountIdentity(a.url),
+          );
+          const registered = (await list("participants")).some((p) =>
+            (p.accounts as { url: string }[]).some((a) =>
+              identities.includes(accountIdentity(a.url)),
+            ),
+          );
+          const pending = await query<ParticipantApplication>(
+            "select * from participant_applications where status='new' and data->>'deletedAt' is null and id<>$1",
+            [old.id],
+          );
+          if (
+            registered ||
+            pending.some((p) =>
+              p.data.accounts.some((a) =>
+                identities.includes(accountIdentity(a.url)),
+              ),
+            )
+          )
+            throw new Error(
+              `${old.data.name}: 같은 계정의 등록 또는 신규 신청이 있습니다. 중복 내역을 정리한 뒤 복구해주세요.`,
+            );
+        }
+        const now = new Date().toISOString();
+        const data = restoring
+          ? {
+              ...old.data,
+              deletedAt: null,
+              deletedBy: null,
+              restoredAt: now,
+              restoredBy: actor,
+            }
+          : { ...old.data, deletedAt: now, deletedBy: actor };
+        await execute(
+          "update participant_applications set data=$1::jsonb,version=version+1,updated_at=now() where id=$2",
+          [JSON.stringify(data), old.id],
+        );
+        await audit(
+          actor,
+          restoring
+            ? "participant-application-restore"
+            : "participant-application-delete",
+          old.id,
+          { status: old.status },
+        );
+        continue;
+      }
+      if (old.data.deletedAt)
+        throw new Error(
+          `${old.data.name}: 삭제된 신청입니다. 먼저 복구해주세요.`,
         );
       const expectedStatus =
         body.action === "bulk-reapprove" ? "rejected" : "new";

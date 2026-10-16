@@ -7,7 +7,12 @@ import type {
   ApplicationDraft,
   ParticipantApplication,
 } from "@/lib/participant-application-schema";
-const labels = { new: "신규", approved: "승인 완료", rejected: "반려" };
+const labels = {
+  new: "신규",
+  approved: "승인 완료",
+  rejected: "반려",
+  deleted: "삭제된 신청",
+};
 export default function ParticipantApplications({
   onApproved,
   refreshSignal,
@@ -24,23 +29,41 @@ export default function ParticipantApplications({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true);
-  const selectable = filter === "new" || filter === "rejected";
-  const pending = items.filter((i) => i.status === filter);
+  const selectable =
+    filter === "new" || filter === "rejected" || filter === "deleted";
+  const matches = (i: ParticipantApplication) =>
+    filter === "deleted"
+      ? Boolean(i.data.deletedAt)
+      : !i.data.deletedAt && i.status === filter;
+  const pending = items.filter(matches);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
   async function bulkReview(
-    action: "bulk-approve" | "bulk-reject" | "bulk-reapprove",
+    action:
+      | "bulk-approve"
+      | "bulk-reject"
+      | "bulk-reapprove"
+      | "bulk-delete"
+      | "bulk-restore",
   ) {
     if (!picked.length || busy || current) return;
-    const approve = action !== "bulk-reject";
+    const approve = action === "bulk-approve" || action === "bulk-reapprove";
     const verb =
-      action === "bulk-reapprove" ? "재승인" : approve ? "승인" : "반려";
+      action === "bulk-delete"
+        ? "삭제"
+        : action === "bulk-restore"
+          ? "복구"
+          : action === "bulk-reapprove"
+            ? "재승인"
+            : approve
+              ? "승인"
+              : "반려";
     const names = picked
       .slice(0, 5)
       .map((i) => i.data.name)
       .join(", ");
     if (
       !window.confirm(
-        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}`,
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}`,
       )
     )
       return;
@@ -130,7 +153,11 @@ export default function ParticipantApplications({
         <h2>
           체험단 참여 신청{" "}
           <span className="badge">
-            신규 {items.filter((i) => i.status === "new").length}
+            신규{" "}
+            {
+              items.filter((i) => !i.data.deletedAt && i.status === "new")
+                .length
+            }
           </span>
         </h2>
         <a href="/participants/apply" target="_blank" rel="noreferrer">
@@ -155,7 +182,15 @@ export default function ParticipantApplications({
               setDraft(null);
             }}
           >
-            {label} ({items.filter((i) => i.status === key).length})
+            {label} (
+            {
+              items.filter((i) =>
+                key === "deleted"
+                  ? Boolean(i.data.deletedAt)
+                  : !i.data.deletedAt && i.status === key,
+              ).length
+            }
+            )
           </button>
         ))}
       </div>
@@ -176,14 +211,29 @@ export default function ParticipantApplications({
               disabled={busy || !picked.length || !!current}
               onClick={() =>
                 bulkReview(
-                  filter === "rejected" ? "bulk-reapprove" : "bulk-approve",
+                  filter === "deleted"
+                    ? "bulk-restore"
+                    : filter === "rejected"
+                      ? "bulk-reapprove"
+                      : "bulk-approve",
                 )
               }
             >
-              {filter === "rejected"
-                ? "선택한 신청 재승인"
-                : "선택한 신청 승인"}
+              {filter === "deleted"
+                ? "선택한 신청 복구"
+                : filter === "rejected"
+                  ? "선택한 신청 재승인"
+                  : "선택한 신청 승인"}
             </button>
+            {filter !== "deleted" && (
+              <button
+                type="button"
+                disabled={busy || !picked.length || !!current}
+                onClick={() => bulkReview("bulk-delete")}
+              >
+                선택한 신청 삭제
+              </button>
+            )}
             {filter === "new" && (
               <button
                 type="button"
@@ -195,8 +245,10 @@ export default function ParticipantApplications({
             )}
           </div>
           <p className="hint">
-            한 번에 최대 100명까지 처리합니다. 일괄 승인 시 검토 대기 계정도
-            승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요.
+            {filter === "deleted"
+              ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
+              : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
+            한 번에 최대 100명까지 처리합니다.
           </p>
         </>
       )}
@@ -218,7 +270,7 @@ export default function ParticipantApplications({
                     <input
                       type="checkbox"
                       style={{ width: 18 }}
-                      aria-label={`${filter === "rejected" ? "반려" : "신규"} 신청 목록 선택 (최대 100명)`}
+                      aria-label={`${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 목록 선택 (최대 100명)`}
                       disabled={busy || !pending.length || !!current}
                       checked={
                         pending.length > 0 &&
@@ -256,95 +308,104 @@ export default function ParticipantApplications({
               </tr>
             </thead>
             <tbody>
-              {items
-                .filter((i) => i.status === filter)
-                .map((item) => (
-                  <tr key={item.id}>
-                    {selectable && (
-                      <td>
-                        <input
-                          type="checkbox"
-                          style={{ width: 18 }}
-                          aria-label={`${item.data.name} 신청 선택`}
-                          checked={checked[item.id] !== undefined}
-                          disabled={
-                            busy ||
-                            !!current ||
-                            (picked.length >= 100 &&
-                              checked[item.id] === undefined)
-                          }
-                          onChange={(e) =>
-                            setChecked((previous) => {
-                              const next = { ...previous };
-                              if (e.target.checked)
-                                next[item.id] = item.version;
-                              else delete next[item.id];
-                              return next;
-                            })
-                          }
-                        />
-                      </td>
-                    )}
+              {items.filter(matches).map((item) => (
+                <tr key={item.id}>
+                  {selectable && (
                     <td>
-                      <strong>{item.data.name}</strong>
+                      <input
+                        type="checkbox"
+                        style={{ width: 18 }}
+                        aria-label={`${item.data.name} 신청 선택`}
+                        checked={checked[item.id] !== undefined}
+                        disabled={
+                          busy ||
+                          !!current ||
+                          (picked.length >= 100 &&
+                            checked[item.id] === undefined)
+                        }
+                        onChange={(e) =>
+                          setChecked((previous) => {
+                            const next = { ...previous };
+                            if (e.target.checked) next[item.id] = item.version;
+                            else delete next[item.id];
+                            return next;
+                          })
+                        }
+                      />
                     </td>
-                    <td>
-                      {[
-                        ["휴대전화", item.data.phone],
-                        ["이메일", item.data.email],
-                      ]
-                        .filter(([, value]) => value)
-                        .map(([label, value]) => (
-                          <div
-                            key={label}
-                            className="row"
-                            style={{
-                              gap: 8,
-                              margin: "4px 0",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <span>{value}</span>
-                            <CopyButton value={value} label={label} />
-                          </div>
-                        ))}
-                    </td>
-                    <td>
-                      {new Date(item.created_at).toLocaleString("ko-KR", {
-                        timeZone: "Asia/Seoul",
-                      })}
-                    </td>
-                    <td>{labels[item.status]}</td>
-                    <td>
-                      {item.status === "approved" && item.participant_id && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => onApproved(item.participant_id!)}
+                  )}
+                  <td>
+                    <strong>{item.data.name}</strong>
+                  </td>
+                  <td>
+                    {[
+                      ["휴대전화", item.data.phone],
+                      ["이메일", item.data.email],
+                    ]
+                      .filter(([, value]) => value)
+                      .map(([label, value]) => (
+                        <div
+                          key={label}
+                          className="row"
+                          style={{
+                            gap: 8,
+                            margin: "4px 0",
+                            flexWrap: "wrap",
+                          }}
                         >
-                          참여자 수정 · 삭제
-                        </button>
-                      )}
+                          <span>{value}</span>
+                          <CopyButton value={value} label={label} />
+                        </div>
+                      ))}
+                  </td>
+                  <td>
+                    {new Date(item.created_at).toLocaleString("ko-KR", {
+                      timeZone: "Asia/Seoul",
+                    })}
+                  </td>
+                  <td>
+                    {item.data.deletedAt
+                      ? `삭제됨 · 이전 ${labels[item.status]}`
+                      : labels[item.status]}
+                    {!!item.data.deletedAt && (
+                      <small>
+                        삭제일{" "}
+                        {new Date(item.data.deletedAt).toLocaleString("ko-KR", {
+                          timeZone: "Asia/Seoul",
+                        })}
+                      </small>
+                    )}
+                  </td>
+                  <td>
+                    {item.status === "approved" && item.participant_id && (
                       <button
+                        type="button"
                         disabled={busy}
-                        onClick={() => {
-                          setChecked({});
-                          setCurrent(item);
-                          setDraft(structuredClone(item.data));
-                          setError("");
-                          setMessage("");
-                        }}
+                        onClick={() => onApproved(item.participant_id!)}
                       >
-                        {item.status !== "approved"
-                          ? "검토 · 수정"
-                          : "내용 보기"}
+                        참여자 수정 · 삭제
                       </button>
-                    </td>
-                  </tr>
-                ))}
+                    )}
+                    <button
+                      disabled={busy}
+                      onClick={() => {
+                        setChecked({});
+                        setCurrent(item);
+                        setDraft(structuredClone(item.data));
+                        setError("");
+                        setMessage("");
+                      }}
+                    >
+                      {!item.data.deletedAt && item.status !== "approved"
+                        ? "검토 · 수정"
+                        : "내용 보기"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          {!items.some((i) => i.status === filter) && (
+          {!items.some(matches) && (
             <p className="empty">
               {labels[filter as keyof typeof labels]} 신청이 없습니다.
             </p>
@@ -384,7 +445,9 @@ export default function ParticipantApplications({
             key={current.id}
             draft={draft}
             onChange={setDraft}
-            disabled={busy || current.status === "approved"}
+            disabled={
+              busy || current.status === "approved" || !!current.data.deletedAt
+            }
           />
           <section className="section" aria-label="신청 계정별 검토">
             <h3>계정별 승인</h3>
@@ -402,7 +465,11 @@ export default function ParticipantApplications({
                 <span style={{ overflowWrap: "anywhere" }}>{account.url}</span>
                 <select
                   aria-label={`${account.label || `계정 ${i + 1}`} 승인 상태`}
-                  disabled={busy || current.status === "approved"}
+                  disabled={
+                    busy ||
+                    current.status === "approved" ||
+                    !!current.data.deletedAt
+                  }
                   value={
                     account.approvalStatus ||
                     (current.status === "approved" ? "approved" : "pending")
@@ -456,7 +523,7 @@ export default function ParticipantApplications({
             >
               닫기
             </button>
-            {current.status !== "approved" && (
+            {!current.data.deletedAt && current.status !== "approved" && (
               <>
                 {current.status === "new" && (
                   <button
