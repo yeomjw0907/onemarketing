@@ -87,7 +87,11 @@ export async function queueNotification(
     attempts: 0,
   });
 }
-async function sensRequest(method: string, path: string, body?: unknown) {
+export async function sensRequest(
+  method: string,
+  path: string,
+  body?: unknown,
+) {
   const timestamp = String(Date.now()),
     key = process.env.NCP_ACCESS_KEY!,
     secret = process.env.NCP_SECRET_KEY!;
@@ -262,6 +266,8 @@ export async function refreshNotification(id: string) {
   });
 }
 export async function notificationTick() {
+  const { templateMonitorTick } = await import("./sens-template-monitor");
+  await templateMonitorTick();
   await transaction(async () => {
     for (const stale of (await list("notification_outbox")).filter(
       (n) =>

@@ -68,3 +68,11 @@ Vercel에서는 기존 `/api/jobs/run` Cron이 알림 큐도 처리한다. 별�
 - 본문/변수/웹링크 버튼은 src/lib/sens.ts와 일치. 기본형/업무알림/내부 업무 알림, 보안 미설정, 버튼명 `참여자 화면`, PC/Mobile https://www.onemarketing.kr/participants/portal.
 - 각 템플릿 코드 Vercel production 환경변수 매핑 저장 완료. SENS_ENABLED=false 유지.
 - 승인 확인 후 본인 대상 실제 수신 테스트 및 큐 점검 필요. 아직 실제 알림톡 발송 테스트는 하지 않음.
+
+## 검수 주기 확인 및 승인 후 1회 테스트
+- SENS_MONITOR_ENABLED=true + SENS_TEST_PHONE 서버 환경변수로 활성화. SENS_ENABLED는 false 유지.
+- 기존 10분 Vercel Cron의 notificationTick에서 5종 상세 검수 상태를 조회. 동시 실행 및 9분 이내 재조회는 DB 잠금·시각 기록으로 방지.
+- 5종 모두 COMPLETE + ACTIVE/READY + 휴면/차단 아님 + 본문/버튼/채널 일치할 때 설정된 본인 번호로 자료 준비 템플릿 테스트 1건만 발송. SMS 대체 발송 없음.
+- 일반 참여자 알림 대기열은 발송하지 않음. 테스트는 별도 outbox 레코드(setupTest)로 기록하며, 전송 결과 불명확/실패는 자동 재발송하지 않음.
+- 관리자 캠페인 운영 > 알림 이력에서 검수 상태·최근 확인·오류·테스트 접수/수신 결과 확인 가능. 승인 알림은 본인 테스트 카톡으로 전달하며 Codex 채팅 예약 알림은 설정하지 않음(현재 세션에 예약 작업 도구 없음).
+- 검수 중에는 수신 알림 없음. 승인 뒤 테스트 요청 결과를 기록하고 후속 tick에서 수신 성공/실패 조회.

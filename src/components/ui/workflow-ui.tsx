@@ -183,6 +183,8 @@ export function EmptyState({
   );
 }
 const labels: Record<string, string> = {
+  waiting_approval: "검수 대기",
+  rejected: "반려",
   ...stageLabels,
   proposed: "수락 대기",
   accepted: "수락 완료",

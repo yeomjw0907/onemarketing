@@ -1056,6 +1056,7 @@ export default function WorkflowConsole({
         {data.notification_outbox.map((n) => (
           <details key={n.id}>
             <summary>
+              {n.setupTest ? "검수 확인·본인 테스트 · " : ""}
               {{
                 materials: "자료 전달",
                 revision: "수정 요청",
@@ -1067,17 +1068,52 @@ export default function WorkflowConsole({
               <StatusBadge context="notification" value={n.status} />
             </summary>
             <p style={{ whiteSpace: "pre-wrap" }}>{String(n.content)}</p>
-            {["queued", "failed"].includes(String(n.status)) && (
-              <Button
-                variant="primary"
-                disabled={busy}
-                onClick={() =>
-                  void act({ action: "notification-send", id: n.id })
-                }
-              >
-                확인 후 발송·재시도
-              </Button>
+            {!!n.setupTest && (
+              <div>
+                <p className="hint">
+                  10분 주기로 확인하며 5종 승인·문구·버튼 일치 시 테스트 1건만
+                  발송해요. 일반 자동 발송 설정은 변경하지 않아요.
+                </p>
+                {((n.templateStates || []) as Row[]).map((t) => (
+                  <p key={t.code}>
+                    {t.code} ·{" "}
+                    {(
+                      {
+                        ACCEPT: "접수",
+                        REGISTER: "대기",
+                        INSPECT: "처리 중",
+                        COMPLETE: "승인",
+                        REJECT: "반려",
+                        MISSING: "확인 필요",
+                      } as Row
+                    )[t.inspection] || t.inspection}
+                  </p>
+                ))}
+                {!!n.lastCheckedAt && (
+                  <p className="hint">
+                    최근 확인{" "}
+                    {new Date(String(n.lastCheckedAt)).toLocaleString("ko-KR", {
+                      timeZone: "Asia/Seoul",
+                    })}
+                  </p>
+                )}
+                {!!n.error && (
+                  <Feedback tone="error">{String(n.error)}</Feedback>
+                )}
+              </div>
             )}
+            {!n.setupTest &&
+              ["queued", "failed"].includes(String(n.status)) && (
+                <Button
+                  variant="primary"
+                  disabled={busy}
+                  onClick={() =>
+                    void act({ action: "notification-send", id: n.id })
+                  }
+                >
+                  확인 후 발송·재시도
+                </Button>
+              )}
             {!!n.messageId && (
               <Button
                 disabled={busy}
