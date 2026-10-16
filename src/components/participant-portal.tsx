@@ -114,7 +114,7 @@ export default function ParticipantPortal() {
         o.status === "proposed" && new Date(o.expiresAt).getTime() > Date.now(),
     ) || [];
   return (
-    <main className="participant-portal">
+    <main className={`participant-portal${!data ? " portal-entry" : ""}`}>
       <header className="pagehead">
         <div>
           <span className="ui-eyebrow">원케이션</span>

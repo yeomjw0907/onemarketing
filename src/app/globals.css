@@ -1829,3 +1829,10 @@ td button {
 .portal-auth .kakao-login-button { width:100%; min-height:48px; background:#fee500; color:rgba(0,0,0,.85); border-color:#fee500; gap:8px; }
 .portal-auth .kakao-login-button:hover { background:#f4dc00; border-color:#f4dc00; }
 .portal-auth .kakao-login-button + p { font-size:13px; margin-top:16px; }
+
+.participant-portal.portal-entry { max-width: 536px; margin: 64px auto 0; }
+.portal-entry .portal-auth { width: 100%; margin: 32px auto 0; }
+.portal-entry .portal-auth > .ui-text-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 16px; }
+@media (max-width: 640px) {
+  .participant-portal.portal-entry { margin-top: 32px; }
+}

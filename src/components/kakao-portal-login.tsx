@@ -173,9 +173,6 @@ export default function KakaoPortalLogin({
           {!enabled && (
             <p className="muted">카카오 로그인 연결을 준비 중이에요.</p>
           )}
-          <p className="muted">
-            원케이션 채널 추가는 선택이에요. 추가하지 않아도 참여할 수 있어요.
-          </p>
         </>
       )}
       <a
