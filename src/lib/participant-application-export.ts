@@ -29,7 +29,11 @@ export async function applicationWorkbook(
   if (error) throw new Error(error);
   let rows = items.filter((i) => matchesApplication(i, status, search, range));
   if (selectedIds !== undefined) {
-    const ids = z.array(z.string().uuid()).min(1).max(100).parse(selectedIds);
+    const ids = z
+      .array(z.string().uuid())
+      .min(1)
+      .max(100000)
+      .parse(selectedIds);
     const wanted = new Set(ids);
     if (wanted.size !== ids.length)
       throw new Error("선택한 신청이 중복되었습니다.");

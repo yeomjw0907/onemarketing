@@ -410,3 +410,36 @@ test("신청일이 같은 행은 식별자로 순서를 고정한다", () => {
       [a.id, b.id],
     );
 });
+
+test("검색 결과 전체를 선택하면 100건을 넘는 선택도 네 상태에서 모두 내보낸다", async () => {
+  for (const status of ["new", "approved", "rejected", "deleted"] as const) {
+    const rows = Array.from({ length: 125 }, () =>
+      fixture(
+        status === "deleted" ? "new" : status,
+        status === "deleted",
+        true,
+      ),
+    );
+    const excluded = fixture(
+      status === "deleted" ? "new" : status,
+      status === "deleted",
+      false,
+    );
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(
+      (await applicationWorkbook(
+        [...rows, excluded],
+        status,
+        "1111",
+        rows.map((i) => i.id),
+      )) as unknown as ExcelJS.Buffer,
+    );
+    const sheet = book.getWorksheet("신청 목록")!;
+    assert.equal(sheet.rowCount, 126);
+    const ids = [];
+    for (let n = 2; n <= sheet.rowCount; n++)
+      ids.push(sheet.getRow(n).getCell(1).value);
+    assert.deepEqual(new Set(ids), new Set(rows.map((i) => i.id)));
+    assert.ok(!ids.includes(excluded.id));
+  }
+});

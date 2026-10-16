@@ -81,10 +81,20 @@ export default function ParticipantApplications({
         startDate,
         endDate,
       });
-      if (onlySelected) params.set("ids", picked.map((i) => i.id).join(","));
-      const response = await fetch(
-        `/api/participant-applications/export?${params}`,
-      );
+      const response = onlySelected
+        ? await fetch("/api/participant-applications/export", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: filter,
+              search: query,
+              sort: order,
+              startDate,
+              endDate,
+              ids: picked.map((i) => i.id),
+            }),
+          })
+        : await fetch(`/api/participant-applications/export?${params}`);
       if (!response.ok) {
         const body = await response.json();
         throw new Error(body.error || "엑셀 다운로드 실패");
@@ -133,41 +143,72 @@ export default function ParticipantApplications({
       .join(", ");
     if (
       !window.confirm(
-        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}`,
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}${picked.length > 100 ? "\n100건씩 순서대로 처리합니다. 중간 오류가 발생하면 완료된 건은 유지하고 나머지는 중단합니다." : ""}`,
       )
     )
       return;
     setBusy(true);
     setError("");
     setMessage("");
-    let applied = false;
+    const selected = picked.map((i) => ({ id: i.id, version: checked[i.id] }));
+    let completed = 0;
+    let processingFinished = false;
     try {
-      const response = await fetch("/api/participant-applications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      for (let offset = 0; offset < selected.length; offset += 100) {
+        const batch = selected.slice(offset, offset + 100);
+        const payload = JSON.stringify({
           action,
           key: crypto.randomUUID(),
-          items: picked.map((i) => ({ id: i.id, version: checked[i.id] })),
-        }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "일괄 처리 실패");
-      applied = true;
-      setChecked({});
-      await load();
+          items: batch,
+        });
+        setMessage(
+          `${selected.length}건 중 ${completed}건 ${verb} 완료 · 처리 중…`,
+        );
+        let response: Response | undefined;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            response = await fetch("/api/participant-applications", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: payload,
+            });
+            if (response.status < 500 || attempt === 1) break;
+          } catch (e) {
+            if (attempt === 1) throw e;
+          }
+        }
+        if (!response) throw new Error("서버 응답을 확인하지 못했습니다.");
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "일괄 처리 실패");
+        completed += body.processedCount;
+        setChecked((previous) => {
+          const next = { ...previous };
+          for (const item of batch) delete next[item.id];
+          return next;
+        });
+      }
+      processingFinished = true;
       setMessage(
-        `${body.processedCount}건을 ${verb}했습니다.${approve ? " 참여자로 등록되었습니다." : ""}`,
+        `${completed}건을 ${verb}했습니다.${approve ? " 참여자로 등록되었습니다." : ""}`,
       );
+      await load();
       if (approve) await onApproved("");
     } catch (e) {
+      setMessage("");
       setError(
-        `${e instanceof Error ? e.message : "일괄 처리 실패"} ${applied ? "처리는 완료됐습니다. 목록을 새로고침해주세요." : "일괄 변경은 적용되지 않았습니다."}`,
+        `${e instanceof Error ? e.message : "일괄 처리 실패"} ${processingFinished ? "처리는 완료됐습니다. 목록을 새로고침해주세요." : `완료 확인 ${completed}/${selected.length}건. 나머지 처리를 중단했습니다. 이미 완료된 건은 유지되며, 목록을 새로고침한 뒤 남은 신청을 확인해주세요.`}`,
       );
+      try {
+        await load();
+        if (approve && completed) await onApproved("");
+      } catch {
+        /* Refresh can be retried with the workspace refresh button. */
+      }
     } finally {
       setBusy(false);
     }
   }
+
   async function load() {
     const r = await fetch("/api/participant-applications", {
       cache: "no-store",
@@ -429,6 +470,18 @@ export default function ParticipantApplications({
             <strong>{picked.length}명 선택</strong>
             <button
               type="button"
+              disabled={busy || loading || !pending.length || !!current}
+              onClick={() => {
+                setChecked(
+                  Object.fromEntries(pending.map((i) => [i.id, i.version])),
+                );
+                setMessage("");
+              }}
+            >
+              검색·기간 결과 전체 선택 ({pending.length}건)
+            </button>
+            <button
+              type="button"
               disabled={busy || !picked.length}
               onClick={() => setChecked({})}
             >
@@ -488,9 +541,10 @@ export default function ParticipantApplications({
               : filter === "deleted"
                 ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
                 : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
-            한 번에 최대 100명까지 처리합니다. 체크는 페이지를 이동해도
-            유지됩니다. 목록 위 엑셀 다운로드는 현재 페이지가 아닌 검색·기간
-            조건의 전체 결과입니다.
+            전체 선택은 검색·기간에 맞는 모든 페이지에 적용됩니다. 일괄 처리는
+            100건씩 진행하며, 오류가 나면 완료된 건을 유지하고 나머지는
+            중단합니다. 체크는 페이지를 이동해도 유지됩니다. 목록 위 엑셀
+            다운로드는 현재 페이지가 아닌 검색·기간 조건의 전체 결과입니다.
           </p>
         </>
       )}
@@ -530,11 +584,7 @@ export default function ParticipantApplications({
                           const next = { ...previous };
                           for (const item of pageItems) {
                             if (select) {
-                              if (
-                                Object.keys(next).length < 100 ||
-                                next[item.id] !== undefined
-                              )
-                                next[item.id] = item.version;
+                              next[item.id] = item.version;
                             } else delete next[item.id];
                           }
                           return next;
@@ -560,12 +610,7 @@ export default function ParticipantApplications({
                         style={{ width: 18 }}
                         aria-label={`${item.data.name} 신청 선택`}
                         checked={checked[item.id] !== undefined}
-                        disabled={
-                          busy ||
-                          !!current ||
-                          (picked.length >= 100 &&
-                            checked[item.id] === undefined)
-                        }
+                        disabled={busy || !!current}
                         onChange={(e) =>
                           setChecked((previous) => {
                             const next = { ...previous };

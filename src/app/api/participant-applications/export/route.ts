@@ -1,4 +1,4 @@
-import { requireActor } from "@/lib/auth";
+import { requireActor, sameOrigin } from "@/lib/auth";
 import { listApplications } from "@/lib/participant-applications";
 import { applicationWorkbook } from "@/lib/participant-application-export";
 import {
@@ -8,14 +8,38 @@ import {
 import { z } from "zod";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-export async function GET(request: Request) {
+async function exportRequest(request: Request, selectedPost = false) {
   try {
     await requireActor();
   } catch {
     return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
   try {
-    const params = new URL(request.url).searchParams;
+    let params = new URL(request.url).searchParams;
+    let postedIds: string[] | undefined;
+    if (selectedPost) {
+      sameOrigin(request);
+      const text = await request.text();
+      if (text.length > 4000000) throw new Error("선택 내역이 너무 큽니다.");
+      const data = z
+        .object({
+          status: z.enum(["new", "approved", "rejected", "deleted"]),
+          search: z.string().max(200).default(""),
+          sort: z.enum(["newest", "oldest"]).default("newest"),
+          startDate: z.string().max(10).default(""),
+          endDate: z.string().max(10).default(""),
+          ids: z.array(z.string().uuid()).min(1).max(100000),
+        })
+        .parse(JSON.parse(text));
+      postedIds = data.ids;
+      params = new URLSearchParams({
+        status: data.status,
+        search: data.search,
+        sort: data.sort,
+        startDate: data.startDate,
+        endDate: data.endDate,
+      });
+    }
     const status = z
       .enum(["new", "approved", "rejected", "deleted"])
       .parse(params.get("status"));
@@ -34,13 +58,15 @@ export async function GET(request: Request) {
     const rangeError = applicationDateRangeError(range);
     if (rangeError)
       return Response.json({ error: rangeError }, { status: 400 });
-    const selectedIds = params.has("ids")
-      ? z
-          .array(z.string().uuid())
-          .min(1)
-          .max(100)
-          .parse((params.get("ids") || "").split(","))
-      : undefined;
+    const selectedIds =
+      postedIds ||
+      (params.has("ids")
+        ? z
+            .array(z.string().uuid())
+            .min(1)
+            .max(100000)
+            .parse((params.get("ids") || "").split(","))
+        : undefined);
     const date = new Intl.DateTimeFormat("sv-SE", {
       timeZone: "Asia/Seoul",
     }).format(new Date());
@@ -72,4 +98,11 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+}
+
+export async function GET(request: Request) {
+  return exportRequest(request);
+}
+export async function POST(request: Request) {
+  return exportRequest(request, true);
 }
