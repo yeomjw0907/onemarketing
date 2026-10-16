@@ -59,3 +59,12 @@ Vercel에서는 기존 `/api/jobs/run` Cron이 알림 큐도 처리한다. 별�
 - 솔라피 공식 FAQ의 동일 오류 설명: 중계사 발신 프로필 휴면/DB 삭제 가능성, 고객센터 확인 필요. https://solapi.com/guides/kakao-faq
 - 기존 채널/템플릿을 임의 삭제하거나 연결 해제하지 않음. 문의 후 조치, SENS 템플릿 등록/승인, 본인 수신 테스트, 대기 알림 점검 순서로 진행.
 - SENS 입력 검증상 템플릿 코드는 영문/숫자만 허용. 사용할 코드: ONEMATERIALSV1, ONEREVISIONV1, ONEPAYMENTV1, ONEREMINDERV1, ONERETENTIONV1. 템플릿 이름도 공백 없이 입력. 실제 등록·승인 후 환경변수에 매핑.
+
+## 휴면 해제 후 템플릿 등록 (2026-10-16 17:46 KST)
+- 사용자에게 전달된 솔라피 담당자 답변: 17:40 채널 휴면 해제 완료. SENS 재시도 성공으로 확인.
+- 위 발신 프로필 오류는 현재 해소됨. 기존 채널/템플릿 삭제 없이 진행.
+- 다음 5종 SENS 등록 완료 및 목록 확인: ONEMATERIALSV1 / ONEREVISIONV1 / ONEPAYMENTV1 / ONEREMINDERV1 / ONERETENTIONV1.
+- 확인 시 5종 모두 템플릿 상태 `등록 대기중`, 검수 상태 `접수`. 아직 승인 완료 아님.
+- 본문/변수/웹링크 버튼은 src/lib/sens.ts와 일치. 기본형/업무알림/내부 업무 알림, 보안 미설정, 버튼명 `참여자 화면`, PC/Mobile https://www.onemarketing.kr/participants/portal.
+- 각 템플릿 코드 Vercel production 환경변수 매핑 저장 완료. SENS_ENABLED=false 유지.
+- 승인 확인 후 본인 대상 실제 수신 테스트 및 큐 점검 필요. 아직 실제 알림톡 발송 테스트는 하지 않음.
