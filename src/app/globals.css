@@ -1373,17 +1373,47 @@ td button {
   min-height: 56px;
 }
 .customer-report {
-  max-width: 1120px;
-  line-height: 1.7;
+  max-width: 1080px;
+  padding: 32px 24px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.customer-report .stats {
+  margin: 24px 0;
+  padding: 0 0 20px;
+}
+.customer-report .stat strong {
+  font-size: 22px;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+.customer-report .muted {
+  font-size: 12px;
+}
+.customer-report .ui-eyebrow {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.customer-report .report-table td,
+.customer-report .report-table th {
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.customer-report .report-table th {
+  font-size: 12px;
+  font-weight: 500;
+}
+.customer-report .report-download {
+  font-size: 13px;
 }
 .customer-report h1 {
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.4;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 .customer-report h2 {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.5;
   word-break: keep-all;
   overflow-wrap: anywhere;
@@ -1461,10 +1491,10 @@ td button {
     padding: 28px 20px 40px;
   }
   .customer-report h1 {
-    font-size: 26px;
+    font-size: 22px;
   }
   .customer-report h2 {
-    font-size: 18px;
+    font-size: 16px;
   }
   .report-header {
     align-items: stretch;
@@ -1481,10 +1511,10 @@ td button {
     align-items: center;
     justify-content: space-between;
     border: 0;
-    padding: 12px 0;
+    padding: 10px 0;
   }
   .customer-report .stat strong {
-    font-size: 24px;
+    font-size: 20px;
     margin: 0;
   }
   .customer-report .stat + .stat {
@@ -1512,18 +1542,18 @@ td button {
   }
   .report-table tr {
     display: grid;
-    gap: 6px;
-    padding: 18px 0;
+    gap: 2px;
+    padding: 14px 0;
     border-top: 1px solid var(--line);
   }
-  .report-table td {
+  .customer-report .report-table td {
     display: grid;
     grid-template-columns: 80px minmax(0, 1fr);
     align-items: center;
-    gap: 12px;
-    padding: 3px 0;
+    gap: 8px;
+    padding: 2px 0;
     border: 0;
-    font-size: 14px;
+    font-size: 13px;
   }
   .report-table td::before {
     content: attr(data-label);
