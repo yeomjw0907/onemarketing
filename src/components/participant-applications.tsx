@@ -11,6 +11,9 @@ import {
   applicationListLabels as labels,
   matchesApplication,
   applicationDateRangeError,
+  applicationDatePresets,
+  applicationPresetRange,
+  type ApplicationDatePreset,
 } from "@/lib/participant-application-filter";
 export default function ParticipantApplications({
   onApproved,
@@ -24,6 +27,7 @@ export default function ParticipantApplications({
     [search, setSearch] = useState(""),
     [startDate, setStartDate] = useState(""),
     [endDate, setEndDate] = useState(""),
+    [datePreset, setDatePreset] = useState<ApplicationDatePreset | null>(null),
     [checked, setChecked] = useState<Record<string, number>>({}),
     [current, setCurrent] = useState<ParticipantApplication | null>(null),
     [draft, setDraft] = useState<ApplicationDraft | null>(null),
@@ -246,6 +250,35 @@ export default function ParticipantApplications({
           </button>
         ))}
       </div>
+      <div
+        className="row"
+        style={{ marginBottom: 12, flexWrap: "wrap" }}
+        role="group"
+        aria-label="신청일 빠른 선택"
+      >
+        {Object.entries(applicationDatePresets).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            disabled={busy}
+            aria-pressed={datePreset === key}
+            className={datePreset === key ? "primary" : ""}
+            onClick={() => {
+              const preset = key as ApplicationDatePreset;
+              const dates = applicationPresetRange(preset);
+              setStartDate(dates.startDate);
+              setEndDate(dates.endDate);
+              setDatePreset(preset);
+              setChecked({});
+              setMessage("");
+              setError("");
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="hint">한국 날짜 기준 · 최근 7일은 오늘 포함</span>
+      </div>
       <div className="row" style={{ marginBottom: 16, flexWrap: "wrap" }}>
         <input
           type="search"
@@ -273,6 +306,7 @@ export default function ParticipantApplications({
             style={{ width: 170, height: 40 }}
             onChange={(e) => {
               setStartDate(e.target.value);
+              setDatePreset(null);
               setChecked({});
               setMessage("");
             }}
@@ -290,6 +324,7 @@ export default function ParticipantApplications({
             style={{ width: 170, height: 40 }}
             onChange={(e) => {
               setEndDate(e.target.value);
+              setDatePreset(null);
               setChecked({});
               setMessage("");
             }}
@@ -302,6 +337,7 @@ export default function ParticipantApplications({
             onClick={() => {
               setStartDate("");
               setEndDate("");
+              setDatePreset(null);
               setChecked({});
             }}
           >

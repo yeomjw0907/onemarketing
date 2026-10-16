@@ -6,6 +6,35 @@ export const applicationListLabels = {
   deleted: "삭제된 신청",
 } as const;
 export type ApplicationDateRange = { startDate?: string; endDate?: string };
+export const applicationDatePresets = {
+  today: "오늘",
+  last7: "최근 7일",
+  thisMonth: "이번 달",
+  lastMonth: "지난달",
+} as const;
+export type ApplicationDatePreset = keyof typeof applicationDatePresets;
+export function applicationPresetRange(
+  preset: ApplicationDatePreset,
+  now = new Date(),
+): Required<ApplicationDateRange> {
+  const korea = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const year = korea.getUTCFullYear(),
+    month = korea.getUTCMonth(),
+    day = korea.getUTCDate();
+  const date = (m: number, d: number) =>
+    new Date(Date.UTC(year, m, d)).toISOString().slice(0, 10);
+  const today = date(month, day);
+  switch (preset) {
+    case "today":
+      return { startDate: today, endDate: today };
+    case "last7":
+      return { startDate: date(month, day - 6), endDate: today };
+    case "thisMonth":
+      return { startDate: date(month, 1), endDate: date(month + 1, 0) };
+    case "lastMonth":
+      return { startDate: date(month - 1, 1), endDate: date(month, 0) };
+  }
+}
 export function applicationDateRangeError({
   startDate = "",
   endDate = "",

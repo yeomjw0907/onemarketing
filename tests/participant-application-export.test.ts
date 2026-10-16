@@ -9,6 +9,7 @@ import { applicationWorkbook } from "../src/lib/participant-application-export";
 import {
   matchesApplication,
   applicationDateRangeError,
+  applicationPresetRange,
 } from "../src/lib/participant-application-filter";
 function fixture(
   status: ParticipantApplication["status"],
@@ -251,4 +252,82 @@ test("잘못된 날짜와 역전된 기간은 전체 다운로드로 바뀌지 �
   }
   assert.equal(applicationDateRangeError({}), "");
   assert.equal(applicationDateRangeError({ startDate: "2024-02-29" }), "");
+});
+
+test("빠른 기간 선택은 한국 날짜와 오늘 포함 7일·월말·연말·윤년을 계산한다", () => {
+  const beforeMidnight = new Date("2026-10-15T14:59:59Z"),
+    afterMidnight = new Date("2026-10-15T15:00:00Z");
+  assert.deepEqual(applicationPresetRange("today", beforeMidnight), {
+    startDate: "2026-10-15",
+    endDate: "2026-10-15",
+  });
+  assert.deepEqual(applicationPresetRange("today", afterMidnight), {
+    startDate: "2026-10-16",
+    endDate: "2026-10-16",
+  });
+  assert.deepEqual(applicationPresetRange("last7", afterMidnight), {
+    startDate: "2026-10-10",
+    endDate: "2026-10-16",
+  });
+  assert.deepEqual(applicationPresetRange("thisMonth", afterMidnight), {
+    startDate: "2026-10-01",
+    endDate: "2026-10-31",
+  });
+  assert.deepEqual(applicationPresetRange("lastMonth", afterMidnight), {
+    startDate: "2026-09-01",
+    endDate: "2026-09-30",
+  });
+  const newYear = new Date("2025-12-31T15:00:00Z");
+  assert.deepEqual(applicationPresetRange("last7", newYear), {
+    startDate: "2025-12-26",
+    endDate: "2026-01-01",
+  });
+  assert.deepEqual(applicationPresetRange("lastMonth", newYear), {
+    startDate: "2025-12-01",
+    endDate: "2025-12-31",
+  });
+  assert.deepEqual(
+    applicationPresetRange("lastMonth", new Date("2024-03-01T00:00:00Z")),
+    { startDate: "2024-02-01", endDate: "2024-02-29" },
+  );
+});
+test("빠른 선택 기간은 모든 상태의 검색 결과·선택 엑셀에 그대로 적용된다", async () => {
+  for (const preset of ["today", "last7", "thisMonth", "lastMonth"] as const) {
+    const range = applicationPresetRange(
+      preset,
+      new Date("2026-10-16T00:00:00Z"),
+    );
+    for (const status of ["new", "approved", "rejected", "deleted"] as const) {
+      const included = {
+        ...fixture(
+          status === "deleted" ? "rejected" : status,
+          status === "deleted",
+          true,
+        ),
+        created_at: `${range.startDate}T00:00:00+09:00`,
+      };
+      const excluded = {
+        ...included,
+        id: crypto.randomUUID(),
+        created_at: "2026-08-01T00:00:00+09:00",
+      };
+      assert.equal(matchesApplication(included, status, "1111", range), true);
+      assert.equal(matchesApplication(excluded, status, "1111", range), false);
+      const book = new ExcelJS.Workbook();
+      await book.xlsx.load(
+        (await applicationWorkbook(
+          [included, excluded],
+          status,
+          "1111",
+          [included.id],
+          range,
+        )) as unknown as ExcelJS.Buffer,
+      );
+      assert.equal(book.getWorksheet("신청 목록")!.rowCount, 2);
+      assert.equal(
+        book.getWorksheet("신청 목록")!.getRow(2).getCell(1).value,
+        included.id,
+      );
+    }
+  }
 });
