@@ -50,3 +50,12 @@ Vercel에서는 기존 `/api/jobs/run` Cron이 알림 큐도 처리한다. 별�
 - 브랜드 메시지 조건: https://guide.ncloud-docs.com/docs/sens-bmoverview
 
 확인일: 2026-10-16. 자격·메뉴·요금은 서비스 정책 변경 시 재확인한다.
+
+## 실제 연결 진행 상태 (2026-10-16)
+- SENS `onemarketing` 프로젝트에 `@onecation` 채널 등록 완료. 채널 상태/등록 상태 정상, SMS 대체 발송 미설정.
+- 기존 API 키는 유지하고 이번 연결용 새 키를 발급하여 Vercel production의 NCP_ACCESS_KEY/NCP_SECRET_KEY/SENS_SERVICE_ID/SENS_CHANNEL_ID에 저장. SENS_ENABLED=false 유지. 비밀값은 소스/문서에 저장하지 않음.
+- 자료 준비 템플릿 등록 시 `템플릿 등록 가능한 발신 프로필/그룹이 아닙니다. 상태를 확인 해주세요.` (HTTP 400) 발생. 재시도 동일. 5종 모두 등록 완료로 간주하면 안 됨.
+- 과거 솔라피 연결 이력과 기존 템플릿 확인. 현재 미사용. 솔라피 채널 상세 UI는 오류로 조회 불가해 휴면/DB 삭제 여부 미확정.
+- 솔라피 공식 FAQ의 동일 오류 설명: 중계사 발신 프로필 휴면/DB 삭제 가능성, 고객센터 확인 필요. https://solapi.com/guides/kakao-faq
+- 기존 채널/템플릿을 임의 삭제하거나 연결 해제하지 않음. 문의 후 조치, SENS 템플릿 등록/승인, 본인 수신 테스트, 대기 알림 점검 순서로 진행.
+- SENS 입력 검증상 템플릿 코드는 영문/숫자만 허용. 사용할 코드: ONEMATERIALSV1, ONEREVISIONV1, ONEPAYMENTV1, ONEREMINDERV1, ONERETENTIONV1. 템플릿 이름도 공백 없이 입력. 실제 등록·승인 후 환경변수에 매핑.
