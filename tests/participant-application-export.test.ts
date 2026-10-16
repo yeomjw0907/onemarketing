@@ -10,6 +10,7 @@ import {
   matchesApplication,
   applicationDateRangeError,
   applicationPresetRange,
+  sortApplications,
 } from "../src/lib/participant-application-filter";
 function fixture(
   status: ParticipantApplication["status"],
@@ -330,4 +331,82 @@ test("빠른 선택 기간은 모든 상태의 검색 결과·선택 엑셀에 �
       );
     }
   }
+});
+
+test("신청일 정렬은 네 목록과 검색·기간·선택 엑셀에서 같은 순서로 적용된다", async () => {
+  for (const status of ["new", "approved", "rejected", "deleted"] as const) {
+    const rows = [
+      "2026-10-16T00:00:00Z",
+      "2026-10-14T00:00:00Z",
+      "2026-10-15T00:00:00Z",
+    ].map((created_at) => ({
+      ...fixture(
+        status === "deleted" ? "rejected" : status,
+        status === "deleted",
+        true,
+      ),
+      created_at,
+    }));
+    const originalIds = rows.map((i) => i.id);
+    for (const order of ["newest", "oldest"] as const) {
+      const expected =
+        order === "newest"
+          ? [rows[0], rows[2], rows[1]]
+          : [rows[1], rows[2], rows[0]];
+      assert.deepEqual(
+        sortApplications(rows, order).map((i) => i.id),
+        expected.map((i) => i.id),
+      );
+      const book = new ExcelJS.Workbook();
+      await book.xlsx.load(
+        (await applicationWorkbook(
+          rows,
+          status,
+          "1111",
+          undefined,
+          { startDate: "2026-10-14", endDate: "2026-10-16" },
+          order,
+        )) as unknown as ExcelJS.Buffer,
+      );
+      const sheet = book.getWorksheet("신청 목록")!;
+      assert.deepEqual(
+        [2, 3, 4].map((n) => sheet.getRow(n).getCell(1).value),
+        expected.map((i) => i.id),
+      );
+      const selected = new ExcelJS.Workbook();
+      await selected.xlsx.load(
+        (await applicationWorkbook(
+          rows,
+          status,
+          "1111",
+          [rows[0].id, rows[1].id],
+          {},
+          order,
+        )) as unknown as ExcelJS.Buffer,
+      );
+      const wanted = expected.filter((i) => i.id !== rows[2].id);
+      assert.deepEqual(
+        [2, 3].map(
+          (n) => selected.getWorksheet("신청 목록")!.getRow(n).getCell(1).value,
+        ),
+        wanted.map((i) => i.id),
+      );
+    }
+    assert.deepEqual(
+      rows.map((i) => i.id),
+      originalIds,
+    );
+  }
+});
+test("신청일이 같은 행은 식별자로 순서를 고정한다", () => {
+  const a = {
+    ...fixture("new", false, true),
+    id: "00000000-0000-4000-8000-000000000001",
+  };
+  const b = { ...a, id: "00000000-0000-4000-8000-000000000002" };
+  for (const order of ["newest", "oldest"] as const)
+    assert.deepEqual(
+      sortApplications([b, a], order).map((i) => i.id),
+      [a.id, b.id],
+    );
 });

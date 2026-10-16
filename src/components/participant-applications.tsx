@@ -14,6 +14,8 @@ import {
   applicationDatePresets,
   applicationPresetRange,
   type ApplicationDatePreset,
+  sortApplications,
+  type ApplicationSort,
 } from "@/lib/participant-application-filter";
 export default function ParticipantApplications({
   onApproved,
@@ -25,6 +27,7 @@ export default function ParticipantApplications({
   const [items, setItems] = useState<ParticipantApplication[]>([]),
     [filter, setFilter] = useState("new"),
     [search, setSearch] = useState(""),
+    [order, setOrder] = useState<ApplicationSort>("newest"),
     [startDate, setStartDate] = useState(""),
     [endDate, setEndDate] = useState(""),
     [datePreset, setDatePreset] = useState<ApplicationDatePreset | null>(null),
@@ -47,7 +50,7 @@ export default function ParticipantApplications({
   const hasConditions = Boolean(query || startDate || endDate);
   const matches = (i: ParticipantApplication) =>
     matchesApplication(i, filter, query, range);
-  const pending = items.filter(matches);
+  const pending = sortApplications(items.filter(matches), order);
   const picked = pending.filter((i) => checked[i.id] !== undefined);
   async function downloadExcel(onlySelected = false) {
     if (
@@ -64,6 +67,7 @@ export default function ParticipantApplications({
       const params = new URLSearchParams({
         status: filter,
         search: query,
+        sort: order,
         startDate,
         endDate,
       });
@@ -330,6 +334,19 @@ export default function ParticipantApplications({
             }}
           />
         </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          정렬
+          <select
+            aria-label="신청일 정렬"
+            value={order}
+            disabled={busy}
+            style={{ width: 170, height: 40 }}
+            onChange={(e) => setOrder(e.target.value as ApplicationSort)}
+          >
+            <option value="newest">신청일 최신순</option>
+            <option value="oldest">신청일 오래된순</option>
+          </select>
+        </label>
         {(startDate || endDate) && (
           <button
             type="button"
@@ -511,7 +528,7 @@ export default function ParticipantApplications({
               </tr>
             </thead>
             <tbody>
-              {items.filter(matches).map((item) => (
+              {pending.map((item) => (
                 <tr key={item.id}>
                   {selectable && (
                     <td>

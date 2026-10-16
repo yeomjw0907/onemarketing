@@ -24,6 +24,9 @@ export async function GET(request: Request) {
       .max(200)
       .parse(params.get("search") || "")
       .trim();
+    const order = z
+      .enum(["newest", "oldest"])
+      .parse(params.get("sort") || "newest");
     const range = {
       startDate: params.get("startDate") || "",
       endDate: params.get("endDate") || "",
@@ -49,6 +52,7 @@ export async function GET(request: Request) {
         search,
         selectedIds,
         range,
+        order,
       ),
       {
         headers: {

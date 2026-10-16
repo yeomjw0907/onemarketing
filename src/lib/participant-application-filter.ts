@@ -91,3 +91,17 @@ export function matchesApplication(
         i.data.phone.replace(/\D/g, "").includes(phoneQuery)))
   );
 }
+
+export type ApplicationSort = "newest" | "oldest";
+export function sortApplications(
+  items: ParticipantApplication[],
+  order: ApplicationSort = "newest",
+) {
+  return [...items].sort((a, b) => {
+    const difference = Date.parse(a.created_at) - Date.parse(b.created_at);
+    return (
+      difference * (order === "newest" ? -1 : 1) ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+    );
+  });
+}

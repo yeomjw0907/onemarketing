@@ -9,6 +9,8 @@ import {
   matchesApplication,
   applicationDateRangeError,
   type ApplicationDateRange,
+  sortApplications,
+  type ApplicationSort,
 } from "./participant-application-filter";
 import { accountStatusLabels } from "./participant-account-policy";
 const date = (value?: string | null) =>
@@ -21,6 +23,7 @@ export async function applicationWorkbook(
   search: string,
   selectedIds?: string[],
   range: ApplicationDateRange = {},
+  order: ApplicationSort = "newest",
 ) {
   const error = applicationDateRangeError(range);
   if (error) throw new Error(error);
@@ -68,7 +71,7 @@ export async function applicationWorkbook(
     header,
     width: header.includes("계정") ? 55 : header.includes("ID") ? 38 : 24,
   }));
-  for (const item of rows) {
+  for (const item of sortApplications(rows, order)) {
     const d = item.data;
     sheet.addRow([
       item.id,
