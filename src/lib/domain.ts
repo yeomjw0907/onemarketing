@@ -139,6 +139,24 @@ export async function requireRecord(id: string, kind?: Kind) {
     throw new Error("연결된 항목을 찾을 수 없습니다.");
   return r;
 }
+export async function lockCatalog() {
+  await lock("save:customers");
+  await lock("save:products");
+}
+export async function requireActiveCatalog(
+  id: string,
+  kind: "customers" | "products",
+) {
+  const row = await requireRecord(id, kind);
+  if (row.deletedAt)
+    throw new Error("삭제된 고객·제품은 새 업무에 사용할 수 없습니다.");
+  if (kind === "products") {
+    const parent = await requireRecord(String(row.customerId), "customers");
+    if (parent.deletedAt)
+      throw new Error("삭제된 고객의 제품은 사용할 수 없습니다.");
+  }
+  return row;
+}
 export async function quote(
   lines: { priceId: string; quantity: number }[],
   discount = 0,
@@ -186,9 +204,13 @@ export function save(
   >;
   return transaction(async () => {
     // 같은 종류의 동시 저장을 직렬화해 중복 계정·중복 슬롯 검사가 경쟁 조건에 뚫리지 않게 한다.
+    if (["products", "contracts", "projects"].includes(kind))
+      await lockCatalog();
     await lock("save:" + kind);
     if (id) {
-      await requireRecord(id, kind);
+      const previous = await requireRecord(id, kind);
+      if (["customers", "products"].includes(kind) && previous.deletedAt)
+        throw new Error("삭제된 항목은 수정할 수 없습니다.");
       z.number().int().positive().parse(version);
     }
     if (kind === "participants") {
@@ -229,13 +251,13 @@ export function save(
       }
     }
     if (kind === "products")
-      await requireRecord(String(data.customerId), "customers");
+      await requireActiveCatalog(String(data.customerId), "customers");
     if (kind === "contracts") {
       if (id)
         throw new Error(
           "확정 계약은 직접 변경할 수 없습니다. 새 계약으로 등록하세요.",
         );
-      await requireRecord(String(data.customerId), "customers");
+      await requireActiveCatalog(String(data.customerId), "customers");
       if (
         !(data.packages as unknown[] | undefined)?.length &&
         !(data.lines as unknown[]).length
@@ -283,7 +305,8 @@ export function save(
     if (kind === "projects") {
       if (id) throw new Error("프로젝트 변경은 작업 메뉴에서 처리하세요.");
       const c = await requireRecord(String(data.contractId), "contracts"),
-        p = await requireRecord(String(data.productId), "products");
+        p = await requireActiveCatalog(String(data.productId), "products");
+      await requireActiveCatalog(String(c.customerId), "customers");
       if (c.customerId !== p.customerId)
         throw new Error("계약과 제품의 고객이 다릅니다.");
       if (Number(data.slot) >= Number(c.slotCount))
@@ -507,6 +530,27 @@ export function command(
         processedCount: results.length,
         processedIds: results.map((r) => r.id),
       };
+    }
+    if (action === "customer-delete" || action === "product-delete") {
+      await lockCatalog();
+      const kind = action === "customer-delete" ? "customers" : "products";
+      const row = await requireRecord(String(input.id), kind);
+      z.number().int().positive().parse(input.version);
+      if (row.deletedAt) throw new Error("이미 삭제된 항목입니다.");
+      const patch = { deletedAt: new Date().toISOString(), deletedBy: actor };
+      const result = await update(row.id, patch, Number(input.version));
+      const children =
+        kind === "customers"
+          ? (await list("products")).filter(
+              (p) => p.customerId === row.id && !p.deletedAt,
+            )
+          : [];
+      for (const child of children) await update(child.id, patch);
+      await audit(actor, action, row.id, {
+        name: row.name,
+        productIds: children.map((p) => p.id),
+      });
+      return result;
     }
     const id = String(input.id || "");
     let row = await requireRecord(id);

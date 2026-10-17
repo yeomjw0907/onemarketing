@@ -116,11 +116,13 @@ export default function CustomerDocuments({
             }}
           >
             <option value="">고객 선택</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {String(c.name)}
-              </option>
-            ))}
+            {customers
+              .filter((c) => !c.deletedAt)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {String(c.name)}
+                </option>
+              ))}
           </select>
         </label>
       )}

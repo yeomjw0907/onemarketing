@@ -1836,3 +1836,22 @@ td button {
 @media (max-width: 640px) {
   .participant-portal.portal-entry { margin-top: 32px; }
 }
+
+.catalog-actions button + button {
+  margin-left: 8px;
+}
+@media (max-width: 640px) {
+  .catalog-detail-header {
+    display: block;
+  }
+  .catalog-detail-header > .row {
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .catalog-actions button {
+    display: block;
+  }
+  .catalog-actions button + button {
+    margin: 8px 0 0;
+  }
+}

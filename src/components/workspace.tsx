@@ -1,4 +1,5 @@
 "use client";
+import { useDecisionDialog } from "./ui/workflow-ui";
 import WorkflowConsole from "./workflow-console";
 import { accountAssignable } from "@/lib/participant-account-policy";
 import { shootingTargetOptions } from "@/lib/media-guidance";
@@ -315,6 +316,22 @@ export default function Workspace() {
       setBusy(false);
     }
   }
+  const { confirm: confirmCatalogDelete, dialog: catalogDeleteDialog } =
+    useDecisionDialog();
+  async function deleteCatalog(row: RecordData) {
+    const customer = row.kind === "customers";
+    if (
+      !(await confirmCatalogDelete(
+        `${String(row.name)}을(를) 삭제할까요? ${customer ? "하위 제품도 함께 목록에서 제외됩니다. " : ""}기존 견적·프로젝트·정산 기록은 보존됩니다.`,
+      ))
+    )
+      return;
+    const result = await action(
+      customer ? "customer-delete" : "product-delete",
+      row,
+    );
+    if (result && customer) navigate("customers");
+  }
   async function action(name: string, row: RecordData, extra: Draft = {}) {
     return mutate({
       action: name,
@@ -552,7 +569,7 @@ export default function Workspace() {
         !query || JSON.stringify(r).toLowerCase().includes(query.toLowerCase()),
     );
   const project = find("projects", selected),
-    customer = find("customers", selected);
+    customer = data.customers.find((c) => c.id === selected && !c.deletedAt);
   const tasks = data.tasks
     .filter((t) => t.projectId === selected)
     .sort((a, b) => Number(a.order) - Number(b.order));
@@ -1158,34 +1175,45 @@ export default function Workspace() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered(data.customers).map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <strong>{String(c.name)}</strong>
-                        <small>{String(c.brand)}</small>
-                      </td>
-                      <td>{String(c.contact || "—")}</td>
-                      <td>
-                        {
-                          data.products.filter((p) => p.customerId === c.id)
-                            .length
-                        }
-                        개
-                      </td>
-                      <td>
-                        {button("상세 보기", () => navigate("customers", c.id))}
-                      </td>
-                    </tr>
-                  ))}
+                  {filtered(data.customers.filter((c) => !c.deletedAt)).map(
+                    (c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <strong>{String(c.name)}</strong>
+                          <small>{String(c.brand)}</small>
+                        </td>
+                        <td>{String(c.contact || "—")}</td>
+                        <td>
+                          {
+                            data.products.filter(
+                              (p) => p.customerId === c.id && !p.deletedAt,
+                            ).length
+                          }
+                          개
+                        </td>
+                        <td>
+                          {button("상세 보기", () =>
+                            navigate("customers", c.id),
+                          )}
+                          <button
+                            disabled={busy}
+                            onClick={() => void deleteCatalog(c)}
+                          >
+                            고객 삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
-              {!data.customers.length && <Empty />}
+              {!data.customers.some((c) => !c.deletedAt) && <Empty />}
             </div>
           </>
         )}
         {page === "customers" && customer && (
           <>
-            <div className="pagehead">
+            <div className="pagehead catalog-detail-header">
               <div>
                 <button onClick={() => navigate("customers")}>
                   ← 고객 목록
@@ -1193,9 +1221,17 @@ export default function Workspace() {
                 <h1 style={{ marginTop: 16 }}>{String(customer.name)}</h1>
                 <p>{String(customer.brand || "브랜드 정보 미등록")}</p>
               </div>
-              {button("고객 정보 수정", () =>
-                open("customers", { ...customer }),
-              )}
+              <div className="row">
+                {button("고객 정보 수정", () =>
+                  open("customers", { ...customer }),
+                )}
+                <button
+                  disabled={busy}
+                  onClick={() => void deleteCatalog(customer)}
+                >
+                  고객 삭제
+                </button>
+              </div>
             </div>
             <div className="split">
               <section className="section">
@@ -1275,17 +1311,23 @@ export default function Workspace() {
                 </thead>
                 <tbody>
                   {data.products
-                    .filter((p) => p.customerId === customer.id)
+                    .filter((p) => p.customerId === customer.id && !p.deletedAt)
                     .map((p) => (
                       <tr key={p.id}>
                         <td>
                           <strong>{String(p.name)}</strong>
                         </td>
                         <td>{String(p.facts).slice(0, 80) || "미등록"}</td>
-                        <td>
+                        <td className="catalog-actions">
                           {button("자료·규칙 수정", () =>
                             open("products", { ...p }),
                           )}
+                          <button
+                            disabled={busy}
+                            onClick={() => void deleteCatalog(p)}
+                          >
+                            제품 삭제
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -2069,6 +2111,7 @@ export default function Workspace() {
           </>
         )}
       </main>
+      {catalogDeleteDialog}
       {toast && (
         <div className="toast" role="status">
           {toast}
@@ -2193,7 +2236,9 @@ export default function Workspace() {
                   <Field label="고객">
                     {select(
                       "customerId",
-                      data.customers.map((c) => ({ id: c.id, name: c.name })),
+                      data.customers
+                        .filter((c) => !c.deletedAt)
+                        .map((c) => ({ id: c.id, name: c.name })),
                     )}
                   </Field>
                   <Field label="확인된 제품 정보" full>
@@ -2255,7 +2300,9 @@ export default function Workspace() {
                   <Field label="고객">
                     {select(
                       "customerId",
-                      data.customers.map((c) => ({ id: c.id, name: c.name })),
+                      data.customers
+                        .filter((c) => !c.deletedAt)
+                        .map((c) => ({ id: c.id, name: c.name })),
                     )}
                   </Field>
                   <Field label="입력 방식">
@@ -2482,8 +2529,10 @@ export default function Workspace() {
                       data.products
                         .filter(
                           (p) =>
+                            !p.deletedAt &&
                             p.customerId ===
-                            find("contracts", draft.contractId)?.customerId,
+                              find("contracts", draft.contractId)?.customerId &&
+                            !find("customers", p.customerId)?.deletedAt,
                         )
                         .map((p) => ({ id: p.id, name: p.name })),
                     )}

@@ -1,3 +1,4 @@
+import { lockCatalog, requireActiveCatalog } from "./domain";
 import { z } from "zod";
 import { create, get, list, update, transaction, lock, audit } from "./db";
 import { save, requireRecord } from "./domain";
@@ -50,9 +51,9 @@ export async function prepareQuote(input: unknown) {
   const d = quoteDraftSchema.parse(input);
   if (d.blog + d.clip === 0 || d.blog + d.clip > 100)
     throw new Error("전체 게시 수량은 1~100건입니다.");
-  const customer = await requireRecord(d.customerId, "customers");
+  const customer = await requireActiveCatalog(d.customerId, "customers");
   const product = d.productId
-    ? await requireRecord(d.productId, "products")
+    ? await requireActiveCatalog(d.productId, "products")
     : null;
   if (product && product.customerId !== customer.id)
     throw new Error("고객 하위 제품을 선택하세요.");
@@ -128,7 +129,6 @@ export async function saveQuote(
   id?: string,
   version?: number,
 ) {
-  const data = await prepareQuote(input);
   return transaction(async () => {
     if (id) {
       await lock("quote-confirm:" + id);
@@ -137,6 +137,8 @@ export async function saveQuote(
       if (old.status === "confirmed")
         throw new Error("확정 견적은 변경할 수 없습니다.");
     }
+    await lockCatalog();
+    const data = await prepareQuote(input);
     const row = id
       ? await update(id, { ...data, status: "draft" }, version)
       : await create("quote_drafts", { ...data, status: "draft" });
@@ -152,6 +154,7 @@ export async function confirmQuote(id: string, version: number, actor: string) {
       return { contractId: draft.contractId, projectId: draft.projectId };
     if (draft.version !== version)
       throw new Error("견적이 변경되었습니다. 두 문서를 다시 확인하세요.");
+    await lockCatalog();
     await lock("save:prices");
     const d = await prepareQuote(draft);
     if (

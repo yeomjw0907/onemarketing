@@ -222,11 +222,13 @@ export default function WorkflowConsole({
                 }}
               >
                 <option value="">고객 선택</option>
-                {data.customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {String(c.name)}
-                  </option>
-                ))}
+                {data.customers
+                  .filter((c) => !c.deletedAt)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {String(c.name)}
+                    </option>
+                  ))}
               </select>
             </Field>
             <Field fullWidth>
@@ -237,7 +239,9 @@ export default function WorkflowConsole({
               >
                 <option value="">브랜드·업체 홍보</option>
                 {data.products
-                  .filter((p) => p.customerId === draft.customerId)
+                  .filter(
+                    (p) => p.customerId === draft.customerId && !p.deletedAt,
+                  )
                   .map((p) => (
                     <option key={p.id} value={p.id}>
                       {String(p.name)}
