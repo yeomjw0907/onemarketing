@@ -1,4 +1,5 @@
 "use client";
+import PostingSteps from "./posting-steps";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
@@ -546,20 +547,9 @@ export default function ParticipantPortal() {
                       <span>수정 기한 {date(t.revisionDue)}</span>
                     </Feedback>
                   )}
-                  {t.files.map((f: Row) => (
-                    <div className="ui-file" key={f.id}>
-                      {f.category === "copy" ? (
-                        <details>
-                          <summary>{f.name}</summary>
-                          <pre className="ui-prewrap">{f.text}</pre>
-                        </details>
-                      ) : (
-                        <a href={"/api/participant-portal/files/" + f.id}>
-                          {f.name} 다운로드
-                        </a>
-                      )}
-                    </div>
-                  ))}
+                  {["delivered", "submitted", "verified"].includes(
+                    t.status,
+                  ) && <PostingSteps files={t.files} channel={t.channel} />}
                   {["delivered", "submitted"].includes(t.status) && (
                     <Form
                       onSubmit={(e) => {
@@ -571,6 +561,14 @@ export default function ParticipantPortal() {
                         });
                       }}
                     >
+                      <h3 className="posting-submit-title">
+                        <span>4</span> 게시물 링크 제출
+                      </h3>
+                      <p className="hint">
+                        게시물의 공유 메뉴에서 링크를 복사한 뒤 여기에
+                        붙여넣어주세요. 임시 저장이나 편집 화면 주소는 제출하지
+                        마세요.
+                      </p>
                       <Field help="배정된 계정에 게시한 글 또는 클립의 주소를 입력해주세요.">
                         게시물 링크
                         <input

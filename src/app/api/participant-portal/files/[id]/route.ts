@@ -18,11 +18,23 @@ export async function GET(
       !((t.approvedAssets as string[]) || []).includes(a.id)
     )
       return new Response("접근 불가", { status: 403 });
+    const inline =
+      new URL(_request.url).searchParams.get("preview") === "1" &&
+      [
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "video/mp4",
+      ].includes(String(a.mime));
     return new Response(new Uint8Array(await bytes(a)), {
       headers: {
         "Content-Type": String(a.mime || "application/octet-stream"),
         "Content-Disposition":
-          "attachment; filename*=UTF-8''" + encodeURIComponent(String(a.name)),
+          (inline ? "inline" : "attachment") +
+          "; filename*=UTF-8''" +
+          encodeURIComponent(String(a.name)),
+        "X-Content-Type-Options": "nosniff",
         "Cache-Control": "private, no-store",
       },
     });

@@ -1,5 +1,6 @@
 "use client";
-import { useDecisionDialog } from "./ui/workflow-ui";
+import DeletedCatalog from "./deleted-catalog";
+import { Tabs, useDecisionDialog } from "./ui/workflow-ui";
 import WorkflowConsole from "./workflow-console";
 import { accountAssignable } from "@/lib/participant-account-policy";
 import { shootingTargetOptions } from "@/lib/media-guidance";
@@ -213,6 +214,7 @@ function Field({
   );
 }
 export default function Workspace() {
+  const [catalogTab, setCatalogTab] = useState("active");
   const [briefingRequest, setBriefingRequest] = useState<BriefingRequest>();
   const customerUploads = useRef<{ category: string; file: File }[]>([]);
   const [email, setEmail] = useState<string | null | undefined>(undefined),
@@ -1157,58 +1159,95 @@ export default function Workspace() {
                 고객 등록
               </button>
             </div>
-            <div className="toolbar">
-              <input
-                placeholder="고객명·브랜드 검색"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+            <Tabs
+              label="고객·제품 목록"
+              value={catalogTab}
+              onChange={setCatalogTab}
+              items={[
+                { id: "active", label: "등록된 고객" },
+                {
+                  id: "deleted",
+                  label: "삭제된 목록",
+                  count:
+                    data.customers.filter((c) => c.deletedAt).length +
+                    data.products.filter((p) => p.deletedAt).length,
+                },
+              ]}
+            />
+            {catalogTab === "deleted" ? (
+              <DeletedCatalog
+                data={data}
+                busy={busy}
+                onRestore={async (row) => {
+                  if (
+                    await confirmCatalogDelete(
+                      `${String(row.name)}을(를) 복원할까요? ${row.kind === "customers" ? "이 고객과 함께 삭제된 제품도 복원됩니다. 따로 삭제했던 제품은 그대로 유지됩니다." : "고객의 제품 목록에서 다시 사용할 수 있습니다."}`,
+                    )
+                  )
+                    await action(
+                      row.kind === "customers"
+                        ? "customer-restore"
+                        : "product-restore",
+                      row,
+                    );
+                }}
               />
-            </div>
-            <div className="tablewrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>고객 / 브랜드</th>
-                    <th>연락처</th>
-                    <th>등록 제품</th>
-                    <th>관리</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered(data.customers.filter((c) => !c.deletedAt)).map(
-                    (c) => (
-                      <tr key={c.id}>
-                        <td>
-                          <strong>{String(c.name)}</strong>
-                          <small>{String(c.brand)}</small>
-                        </td>
-                        <td>{String(c.contact || "—")}</td>
-                        <td>
-                          {
-                            data.products.filter(
-                              (p) => p.customerId === c.id && !p.deletedAt,
-                            ).length
-                          }
-                          개
-                        </td>
-                        <td>
-                          {button("상세 보기", () =>
-                            navigate("customers", c.id),
-                          )}
-                          <button
-                            disabled={busy}
-                            onClick={() => void deleteCatalog(c)}
-                          >
-                            고객 삭제
-                          </button>
-                        </td>
+            ) : (
+              <>
+                <div className="toolbar">
+                  <input
+                    placeholder="고객명·브랜드 검색"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <div className="tablewrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>고객 / 브랜드</th>
+                        <th>연락처</th>
+                        <th>등록 제품</th>
+                        <th>관리</th>
                       </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-              {!data.customers.some((c) => !c.deletedAt) && <Empty />}
-            </div>
+                    </thead>
+                    <tbody>
+                      {filtered(data.customers.filter((c) => !c.deletedAt)).map(
+                        (c) => (
+                          <tr key={c.id}>
+                            <td>
+                              <strong>{String(c.name)}</strong>
+                              <small>{String(c.brand)}</small>
+                            </td>
+                            <td>{String(c.contact || "—")}</td>
+                            <td>
+                              {
+                                data.products.filter(
+                                  (p) => p.customerId === c.id && !p.deletedAt,
+                                ).length
+                              }
+                              개
+                            </td>
+                            <td>
+                              {button("상세 보기", () =>
+                                navigate("customers", c.id),
+                              )}
+                              <button
+                                disabled={busy}
+                                onClick={() => void deleteCatalog(c)}
+                              >
+                                고객 삭제
+                              </button>
+                            </td>
+                          </tr>
+                        ),
+                      )}
+                    </tbody>
+                  </table>
+                  {!data.customers.some((c) => !c.deletedAt) && <Empty />}
+                </div>
+              </>
+            )}
           </>
         )}
         {page === "customers" && customer && (

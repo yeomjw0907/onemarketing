@@ -90,3 +90,73 @@ test("individual product deletion leaves customer and sibling usable; versions a
   const deleted = await get(p.id);
   await assert.rejects(remove("product-delete", deleted!), /이미 삭제/);
 });
+
+test("customer restoration restores its cascade only, not independently deleted products", async () => {
+  const { c, p, input } = await fixture();
+  const separate = await save(
+    "products",
+    { name: "개별 삭제 제품", customerId: c.id },
+    actor,
+  );
+  const separateDeleted = await remove("product-delete", separate);
+  const deleted = await remove("customer-delete", c);
+  await assert.rejects(
+    command(
+      "product-restore",
+      { id: separateDeleted.id, version: separateDeleted.version },
+      actor,
+      randomUUID(),
+    ),
+    /삭제/,
+  );
+  const restored = await command(
+    "customer-restore",
+    { id: c.id, version: deleted.version },
+    actor,
+    randomUUID(),
+  );
+  assert.equal(restored.deletedAt, null);
+  assert.ok(restored.restoredAt);
+  assert.equal((await get(p.id))?.deletedAt, null);
+  assert.ok((await get(separate.id))?.deletedAt);
+  assert.ok((await saveQuote(input, actor)).id);
+  await assert.rejects(
+    command(
+      "product-restore",
+      { id: separateDeleted.id, version: separateDeleted.version + 1 },
+      actor,
+      randomUUID(),
+    ),
+    /다른 곳/,
+  );
+  const productRestored = await command(
+    "product-restore",
+    { id: separateDeleted.id, version: separateDeleted.version },
+    actor,
+    randomUUID(),
+  );
+  assert.equal(productRestored.deletedAt, null);
+  await assert.rejects(
+    command(
+      "product-restore",
+      { id: p.id, version: (await get(p.id))!.version },
+      actor,
+      randomUUID(),
+    ),
+    /삭제된 항목/,
+  );
+});
+test("customers deleted before restore feature recover matching historical cascade", async () => {
+  const { c, p } = await fixture();
+  const { update } = await import("../src/lib/db");
+  const patch = { deletedAt: new Date().toISOString(), deletedBy: actor };
+  const deleted = await update(c.id, patch);
+  await update(p.id, patch);
+  await command(
+    "customer-restore",
+    { id: c.id, version: deleted.version },
+    actor,
+    randomUUID(),
+  );
+  assert.equal((await get(p.id))?.deletedAt, null);
+});

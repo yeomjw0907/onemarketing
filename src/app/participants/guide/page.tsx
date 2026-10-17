@@ -1,4 +1,9 @@
+import NaverAppButton from "@/components/naver-app-button";
 import Link from "next/link";
+export const metadata = {
+  title: "원케이션 · 참여 가이드",
+  referrer: "no-referrer" as const,
+};
 export default function Guide() {
   return (
     <main className="participant-portal participant-guide">
@@ -11,6 +16,49 @@ export default function Guide() {
         <li>승인된 원고와 파일을 확인하고 지정 계정에 게시</li>
         <li>참여자 화면에 게시물 링크 제출</li>
         <li>제출 후 3일 뒤 검수, 통과 후 원고료 지급 처리</li>
+      </ol>
+      <h2>휴대폰으로 게시하기</h2>
+      <ol className="posting-steps">
+        <li>
+          <h3>
+            <span>1</span> 자료 저장
+          </h3>
+          <p>
+            나의 작업 → 게시 작업에서 이미지·영상을 저장해주세요. 이미지 순서는
+            작업 화면에 표시돼요. 저장·공유 메뉴 또는 이미지 열기를 이용해
+            휴대폰에 저장할 수 있어요.
+          </p>
+        </li>
+        <li>
+          <h3>
+            <span>2</span> 원고 복사
+          </h3>
+          <p>
+            작업 화면의 ‘원고 전체 복사’를 눌러주세요. 자동 복사가 안 되면 원고
+            확인을 열고 텍스트를 길게 눌러 복사해주세요.
+          </p>
+        </li>
+        <li>
+          <h3>
+            <span>3</span> 네이버에서 게시
+          </h3>
+          <p>
+            배정된 계정으로 로그인한 뒤 원고를 붙여넣고 이미지를 순서대로
+            넣어주세요. 클립은 네이버 앱에서 저장한 영상과 설명 원고를
+            사용해주세요.
+          </p>
+          <NaverAppButton />
+        </li>
+        <li>
+          <h3>
+            <span>4</span> 링크 제출
+          </h3>
+          <p>
+            전체 공개로 게시한 뒤 공유 메뉴에서 링크를 복사해주세요. 이 화면으로
+            돌아와 나의 작업 → 게시 작업에서 링크를 제출하면 됩니다.
+          </p>
+          <Link href="/participants/portal">나의 작업으로 이동</Link>
+        </li>
       </ol>
       <h2>게시 기준</h2>
       <p>

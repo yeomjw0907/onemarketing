@@ -531,6 +531,43 @@ export function command(
         processedIds: results.map((r) => r.id),
       };
     }
+    if (action === "customer-restore" || action === "product-restore") {
+      await lockCatalog();
+      const kind = action === "customer-restore" ? "customers" : "products";
+      const row = await requireRecord(String(input.id), kind);
+      z.number().int().positive().parse(input.version);
+      if (!row.deletedAt) throw new Error("삭제된 항목이 아닙니다.");
+      if (kind === "products")
+        await requireActiveCatalog(String(row.customerId), "customers");
+      const patch = {
+        deletedAt: null,
+        deletedBy: null,
+        deletedWithCustomerId: null,
+        deletedWithCustomerAt: null,
+        restoredAt: new Date().toISOString(),
+        restoredBy: actor,
+      };
+      const result = await update(row.id, patch, Number(input.version));
+      const children =
+        kind === "customers"
+          ? (await list("products")).filter(
+              (p) =>
+                p.customerId === row.id &&
+                p.deletedAt &&
+                ((p.deletedWithCustomerId === row.id &&
+                  p.deletedWithCustomerAt === row.deletedAt) ||
+                  (!p.deletedWithCustomerId &&
+                    p.deletedAt === row.deletedAt &&
+                    p.deletedBy === row.deletedBy)),
+            )
+          : [];
+      for (const child of children) await update(child.id, patch);
+      await audit(actor, action, row.id, {
+        name: row.name,
+        productIds: children.map((p) => p.id),
+      });
+      return result;
+    }
     if (action === "customer-delete" || action === "product-delete") {
       await lockCatalog();
       const kind = action === "customer-delete" ? "customers" : "products";
@@ -545,7 +582,12 @@ export function command(
               (p) => p.customerId === row.id && !p.deletedAt,
             )
           : [];
-      for (const child of children) await update(child.id, patch);
+      for (const child of children)
+        await update(child.id, {
+          ...patch,
+          deletedWithCustomerId: row.id,
+          deletedWithCustomerAt: patch.deletedAt,
+        });
       await audit(actor, action, row.id, {
         name: row.name,
         productIds: children.map((p) => p.id),

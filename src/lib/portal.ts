@@ -1,5 +1,5 @@
 import { portalPaymentHistory } from "./portal-payment-history";
-import { publishableCopy } from "./copy-format";
+import { orderedImages, publishableCopy } from "./copy-format";
 import { randomBytes, createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { create, get, list, update, transaction, lock, audit } from "./db";
@@ -214,13 +214,35 @@ export async function portalView(
           ? assets
               .filter(
                 (a) =>
+                  a.taskId === t.id &&
                   ((t.approvedAssets as string[]) || []).includes(a.id) &&
                   a.current === true,
               )
+              .sort((a, b) => {
+                const images = orderedImages(assets, t.id).map((x) => x.id);
+                const rank = (category: unknown) =>
+                  category === "image"
+                    ? 0
+                    : category === "video"
+                      ? 1
+                      : category === "copy"
+                        ? 3
+                        : 2;
+                if (rank(a.category) !== rank(b.category))
+                  return rank(a.category) - rank(b.category);
+                if (a.category === "image" && b.category === "image")
+                  return images.indexOf(a.id) - images.indexOf(b.id);
+                return (
+                  String(a.createdAt).localeCompare(String(b.createdAt)) ||
+                  a.id.localeCompare(b.id)
+                );
+              })
               .map((a) => ({
                 id: a.id,
                 name: a.name,
                 category: a.category,
+                mime: a.mime,
+                size: a.size,
                 text:
                   a.category === "copy"
                     ? publishableCopy(String(a.text || ""))
