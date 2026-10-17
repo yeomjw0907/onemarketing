@@ -1,3 +1,4 @@
+import { requireClipMaterials } from "./clip-description";
 import { syncReferral } from "./referrals";
 import {
   publicationIdentity,
@@ -886,8 +887,7 @@ export function command(
             Number(row.images))
       )
         throw new Error("원고와 계약 수량의 이미지를 등록하세요.");
-      if (row.channel === "clip" && !assets.some((a) => a.category === "video"))
-        throw new Error("영상을 등록하세요.");
+      if (row.channel === "clip") requireClipMaterials(assets);
       result = await update(
         id,
         {

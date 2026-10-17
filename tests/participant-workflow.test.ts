@@ -99,7 +99,7 @@ test("bundle offer → accept → approved materials → submit → 3-day review
   for (const task of tasks) {
     for (const category of task.channel === "blog"
       ? ["copy", "image"]
-      : ["video"])
+      : ["video", "copy"])
       await create("assets", {
         projectId: project.id,
         taskId: task.id,

@@ -1,3 +1,7 @@
+import {
+  requireClipMaterials,
+  requireClipDescription,
+} from "./clip-description";
 import { z } from "zod";
 import { audit, create, list, lock, transaction, update } from "./db";
 import { requireRecord } from "./domain";
@@ -39,6 +43,7 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
       )
     )
       throw new Error("승인 후 파일이 변경되었습니다. 다시 검수하세요.");
+    if (task.channel === "clip") requireClipMaterials(assets);
     const snapshot = task.participantSnapshot as {
       name?: string;
       operationType?: string;
@@ -60,9 +65,12 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
     for (const asset of assets) {
       if (asset.category === "copy") {
         entries.push({
-          path: folder + "/원고.txt",
+          path:
+            folder + (task.channel === "clip" ? "/클립 설명.txt" : "/원고.txt"),
           buffer: Buffer.from(
-            publishableCopy(String(asset.text || "")),
+            task.channel === "clip"
+              ? requireClipDescription(String(asset.text || ""))
+              : publishableCopy(String(asset.text || "")),
             "utf8",
           ),
         });

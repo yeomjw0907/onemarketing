@@ -529,6 +529,17 @@ test("실제 ffmpeg 슬라이드·혼합형 편집 및 영상 승인", async () 
         a.name === "혼합형-클립.mp4",
     ),
   );
+  await saveAsset(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      category: "copy",
+      name: "클립 설명.txt",
+      text: "[광고] 확인된 제품 정보만 소개합니다.",
+      buffer: Buffer.from("[광고] 확인된 제품 정보만 소개합니다."),
+    },
+    actor,
+  );
   await act("approve-task", t.id);
   assert.equal((await get(t.id))!.status, "approved");
   await update(job.id, { status: "succeeded" });
@@ -881,6 +892,22 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
                     main: ["피자설기"],
                     secondary: ["떡 간식"],
                     reason: "제품 자료 기반",
+                    candidates: [
+                      {
+                        keyword: "피자설기",
+                        intent: "제품 탐색",
+                        reason: "제품 공식 자료",
+                        evidenceUrls: ["https://example.com/product"],
+                      },
+                      {
+                        keyword: "떡 간식",
+                        intent: "간식 비교",
+                        reason: "제품 활용 상황",
+                        evidenceUrls: ["https://example.com/product"],
+                      },
+                    ],
+                    excluded: [],
+                    volumeVerified: false,
                   },
                   tasks: [{ id: t.id, brief: "출처 기반 기획" }],
                 }),
@@ -898,6 +925,22 @@ test("Claude 웹 검색 pause_turn 이어받기·출처·도구 사용량 저장
       main: ["피자설기"],
       secondary: ["떡 간식"],
       reason: "제품 자료 기반",
+      candidates: [
+        {
+          keyword: "피자설기",
+          intent: "제품 탐색",
+          reason: "제품 공식 자료",
+          evidenceUrls: ["https://example.com/product"],
+        },
+        {
+          keyword: "떡 간식",
+          intent: "간식 비교",
+          reason: "제품 활용 상황",
+          evidenceUrls: ["https://example.com/product"],
+        },
+      ],
+      excluded: [],
+      volumeVerified: false,
     });
     const checkpoints = (await get(job.id))!.checkpoints as {
       sources: { url: string; verified: boolean }[];
@@ -1193,5 +1236,50 @@ test("브리핑은 다른 작업에 재사용할 수 없고 자료·기획·모�
   } finally {
     if (oldModel === undefined) delete process.env.FAL_IMAGE_MODEL;
     else process.env.FAL_IMAGE_MODEL = oldModel;
+  }
+});
+
+test("클립 설명 생성은 게시 본문과 제작 메모를 분리하고 해시태그를 보존", async () => {
+  const { p, t } = await setup("clip");
+  await production(p.id, t.id);
+  const job = await enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "copy",
+      estimate: 100,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  const description = "#광고 확인된 제품 정보를 소개합니다. #제품";
+  mockFetch(async (_url, init) => {
+    const body = JSON.parse(String(init?.body));
+    assert.match(JSON.stringify(body.messages), /description/);
+    return Response.json({
+      id: "clip-copy-qa",
+      stop_reason: "end_turn",
+      usage: { input_tokens: 10, output_tokens: 10 },
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            description,
+            productionNotes: "장면1: 제품 클로즈업. 자막 제작 지시",
+          }),
+        },
+      ],
+    });
+  });
+  try {
+    await executeProviderJob(job);
+    const asset = (await list("assets")).find(
+      (a) => a.jobId === job.id && a.category === "copy",
+    )!;
+    assert.equal(asset.text, description);
+    assert.match(String(asset.editorialNotes), /장면1/);
+    assert.equal((await bytes(asset)).toString(), description);
+  } finally {
+    globalThis.fetch = realFetch;
   }
 });

@@ -1,3 +1,4 @@
+import { requireClipMaterials } from "./clip-description";
 import { z } from "zod";
 import { create, get, list, update, lock, transaction, audit } from "./db";
 import { requireRecord } from "./domain";
@@ -282,6 +283,16 @@ export async function releaseMaterials(slotId: string, actor: string) {
       )
     )
       throw new Error("승인본 파일이 없거나 변경되었습니다. 다시 승인하세요.");
+    for (const task of tasks)
+      if (task.channel === "clip")
+        requireClipMaterials(
+          assets.filter(
+            (a) =>
+              a.taskId === task.id &&
+              a.current === true &&
+              ((task.approvedAssets as string[]) || []).includes(a.id),
+          ),
+        );
     if (tasks.some((t) => t.status !== "approved"))
       throw new Error("모든 콘텐츠를 내부 승인한 뒤 전달하세요.");
     const policy = {

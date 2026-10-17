@@ -1,4 +1,6 @@
 "use client";
+import KeywordEvidence from "./keyword-evidence";
+import { clipDescription } from "@/lib/clip-description";
 import DeletedCatalog from "./deleted-catalog";
 import { Tabs, useDecisionDialog } from "./ui/workflow-ui";
 import WorkflowConsole from "./workflow-console";
@@ -417,6 +419,14 @@ export default function Workspace() {
       return;
     }
     if (modal === "content") {
+      if (find("tasks", draft.taskId)?.channel === "clip") {
+        const check = clipDescription(String(values.text || ""));
+        if (!check.valid) {
+          setError(check.errors.join(" "));
+          return;
+        }
+        values.text = check.text;
+      }
       setBusy(true);
       try {
         await api("/api/assets", {
@@ -708,12 +718,24 @@ export default function Workspace() {
               <video controls src={"/api/assets/" + a.id} />
             ) : a.category === "copy" ? (
               <div className="content-preview">
-                {publishableCopy(String(a.text || ""))}
+                {find("tasks", a.taskId)?.channel === "clip"
+                  ? clipDescription(String(a.text || "")).text
+                  : publishableCopy(String(a.text || ""))}
               </div>
             ) : (
               <FileText />
             )}
             <small>{String(a.name)}</small>
+            {a.category === "copy" &&
+              find("tasks", a.taskId)?.channel === "clip" && (
+                <p className="hint">
+                  설명 {clipDescription(String(a.text || "")).length}/300자 ·
+                  해시태그{" "}
+                  {clipDescription(String(a.text || "")).hashtags.length}/5개 ·{" "}
+                  {clipDescription(String(a.text || "")).errors.join(" ") ||
+                    "기준 충족"}
+                </p>
+              )}
             {a.category === "image" && a.current === true && (
               <span className="badge blue">
                 이미지{" "}
@@ -728,7 +750,9 @@ export default function Workspace() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(
-                        publishableCopy(String(a.text || "")),
+                        find("tasks", a.taskId)?.channel === "clip"
+                          ? clipDescription(String(a.text || "")).text
+                          : publishableCopy(String(a.text || "")),
                       );
                       setToast("원고를 복사했어요");
                     } catch {
@@ -829,13 +853,15 @@ export default function Workspace() {
               <div className="row">
                 {button("편집", () => open("task", { ...t }))}
                 {review &&
-                  button("원고 입력", () =>
-                    open("content", {
-                      projectId: t.projectId,
-                      taskId: t.id,
-                      text: "",
-                      category: "copy",
-                    }),
+                  button(
+                    t.channel === "clip" ? "설명 원고 입력" : "원고 입력",
+                    () =>
+                      open("content", {
+                        projectId: t.projectId,
+                        taskId: t.id,
+                        text: "",
+                        category: "copy",
+                      }),
                   )}
                 {review &&
                   button("이미지 등록", () =>
@@ -1792,6 +1818,9 @@ export default function Workspace() {
                         (project.recommendedKeywords as Draft).reason || "",
                       )}
                     </p>
+                    <KeywordEvidence
+                      plan={project.recommendedKeywords as Draft}
+                    />
                   </div>
                 ) : null}
                 {project.research ? (
@@ -2920,8 +2949,29 @@ export default function Workspace() {
                 </Field>
               )}
               {modal === "content" && (
-                <Field label="원고" full>
+                <Field
+                  label={
+                    find("tasks", draft.taskId)?.channel === "clip"
+                      ? "클립 설명"
+                      : "원고"
+                  }
+                  full
+                >
                   {area("text")}
+                  {find("tasks", draft.taskId)?.channel === "clip" && (
+                    <p className="hint" role="status">
+                      {clipDescription(String(draft.text || "")).length}/300자 ·
+                      해시태그{" "}
+                      {
+                        clipDescription(String(draft.text || "")).hashtags
+                          .length
+                      }
+                      /5개 ·{" "}
+                      {clipDescription(String(draft.text || "")).errors.join(
+                        " ",
+                      ) || "설명 기준 충족"}
+                    </p>
+                  )}
                 </Field>
               )}
               {modal === "delivery" && (

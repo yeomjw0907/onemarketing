@@ -95,6 +95,15 @@ async function fixture() {
       name: channel,
       text: "광고 표시 원고",
     });
+    if (channel === "clip")
+      await create("assets", {
+        projectId: project.id,
+        taskId: task.id,
+        current: true,
+        category: "copy",
+        name: "클립 설명.txt",
+        text: "[광고] 확인된 제품 정보를 소개합니다.",
+      });
   }
   await update(slot.id, { taskIds: tasks.map((t) => t.id) });
   async function offer(worker = workers[0], slotId = slot.id) {

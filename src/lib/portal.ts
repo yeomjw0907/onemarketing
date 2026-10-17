@@ -1,3 +1,4 @@
+import { clipDescription } from "./clip-description";
 import { portalPaymentHistory } from "./portal-payment-history";
 import { orderedImages, publishableCopy } from "./copy-format";
 import { randomBytes, createHash } from "node:crypto";
@@ -245,7 +246,9 @@ export async function portalView(
                 size: a.size,
                 text:
                   a.category === "copy"
-                    ? publishableCopy(String(a.text || ""))
+                    ? t.channel === "clip"
+                      ? clipDescription(String(a.text || "")).text
+                      : publishableCopy(String(a.text || ""))
                     : undefined,
               }))
           : [],

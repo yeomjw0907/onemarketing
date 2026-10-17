@@ -1,3 +1,4 @@
+import { requireClipDescription } from "./clip-description";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -135,6 +136,10 @@ export async function saveAsset(
           "제작 중 기획이 변경되었습니다. 비용을 확인하고 승인한 기획으로 다시 제작하세요.",
         );
     }
+    if (task.channel === "clip" && input.category === "copy") {
+      const text = requireClipDescription(String(input.text || ""));
+      input = { ...input, text, buffer: Buffer.from(text, "utf8") };
+    }
     if (task.projectId !== project.id)
       throw new Error("다른 프로젝트의 작업입니다.");
     if (["delivered", "submitted", "verified"].includes(String(task.status)))
@@ -171,7 +176,28 @@ export async function saveAsset(
     );
   try {
     return await transaction(async () => {
+      await lock("project-operations:" + project.id);
       await lock("assets:" + project.id);
+      const latestProject = await requireRecord(project.id, "projects");
+      if (
+        latestProject.settled ||
+        latestProject.hold ||
+        ["completed", "cancelled"].includes(String(latestProject.status))
+      )
+        throw new Error("마감·보류한 프로젝트에는 자료를 추가할 수 없습니다.");
+      if (input.taskId) {
+        const latestTask = await requireRecord(input.taskId, "tasks");
+        if (
+          ["delivered", "submitted", "verified"].includes(
+            String(latestTask.status),
+          )
+        )
+          throw new Error(
+            "이미 전달된 작업입니다. 새 프로젝트로 변경 내용을 관리하세요.",
+          );
+        if (latestTask.channel === "clip" && input.category === "copy")
+          requireClipDescription(String(input.text || ""));
+      }
       const slot =
         input.slot ||
         (input.category === "copy" || input.category === "video"

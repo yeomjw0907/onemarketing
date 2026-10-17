@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Feedback } from "./ui/workflow-ui";
 import ClipPostingNotes from "./clip-posting-notes";
+import { clipDescription } from "@/lib/clip-description";
 import NaverAppButton from "./naver-app-button";
 
 type PostingFile = {
@@ -133,10 +134,17 @@ function SaveFile({ file, index }: { file: PostingFile; index: number }) {
   );
 }
 
-function CopyFile({ file }: { file: PostingFile }) {
+function CopyFile({
+  file,
+  clip = false,
+}: {
+  file: PostingFile;
+  clip?: boolean;
+}) {
   const [message, setMessage] = useState("");
   const text = useRef<HTMLTextAreaElement>(null);
   const details = useRef<HTMLDetailsElement>(null);
+  const checked = clip ? clipDescription(file.text || "") : null;
   async function copy() {
     try {
       await navigator.clipboard.writeText(file.text || "");
@@ -153,12 +161,22 @@ function CopyFile({ file }: { file: PostingFile }) {
     <div className="posting-copy">
       <strong>{file.name}</strong>
       <Button
-        disabled={!file.text}
+        disabled={!file.text || (!!checked && !checked.valid)}
         variant="primary"
         onClick={() => void copy()}
       >
-        원고 전체 복사
+        {clip ? "클립 설명 복사" : "원고 전체 복사"}
       </Button>
+      {checked && (
+        <p className="hint">
+          {checked.length}/300자 · 해시태그 {checked.hashtags.length}/5개
+        </p>
+      )}
+      {checked && !checked.valid && (
+        <Feedback>
+          {checked.errors.join(" ")} 담당자에게 수정 원고를 요청해주세요.
+        </Feedback>
+      )}
       <details ref={details}>
         <summary>원고 확인 · 직접 복사</summary>
         <textarea
@@ -192,7 +210,9 @@ export default function PostingSteps({
       <li>
         <h3>자료를 저장해주세요</h3>
         <p className="hint">
-          자료를 아래 순서대로 저장해주세요. 블로그에는 같은 순서로 넣어주세요.
+          {channel === "clip"
+            ? "게시할 영상을 휴대폰에 저장해주세요."
+            : "자료를 아래 순서대로 저장해주세요. 블로그에는 같은 순서로 넣어주세요."}
         </p>
         {!media.length && (
           <Feedback>
@@ -237,7 +257,7 @@ export default function PostingSteps({
           </Feedback>
         )}
         {copies.map((f) => (
-          <CopyFile key={f.id} file={f} />
+          <CopyFile key={f.id} file={f} clip={channel === "clip"} />
         ))}
       </li>
       <li>

@@ -1,3 +1,9 @@
+import {
+  keywordPlanSchema,
+  validateKeywordEvidence,
+  keywordResearchInstructions,
+} from "./keyword-research";
+import { clipCopyOutput } from "./clip-description";
 import { mediaBriefSchema } from "./media-plans";
 import { mediaGuidance } from "./media-guidance";
 import { z } from "zod";
@@ -271,7 +277,7 @@ async function searchClaude(job: RecordData) {
   const messages = saved?.messages || [
     {
       role: "user",
-      content: `웹 검색을 반드시 사용해 다음 제품의 시장·경쟁제품·구매 질문·키워드 후보를 조사하세요. 출처를 인용하고 확인된 사실과 불확실한 주장을 구분하세요. 검색량은 추정하지 마세요. 기준일: ${new Date().toISOString().slice(0, 10)}.\n${await context(job)}`,
+      content: `웹 검색을 반드시 사용해 다음 제품의 시장·경쟁제품·구매 질문·키워드 후보를 조사하세요. 출처를 인용하고 확인된 사실과 불확실한 주장을 구분하세요. ${keywordResearchInstructions} 기준일: ${new Date().toISOString().slice(0, 10)}.\n${await context(job)}`,
     },
   ];
   const blocks: SearchBlock[] = saved?.blocks || [];
@@ -389,7 +395,7 @@ async function research(job: RecordData) {
     await jobLog("analysis", "Claude 조사 결과 분석 중");
     const analysis = await claude(
       job,
-      `자료에서 확인된 소구점·고객 질문·불확실한 주장을 구분하고 기획에 쓸 요점을 정리하세요.\n${await context(job)}\n검색 결과:\n${checkpoints.search}\n출처:\n${JSON.stringify(checkpoints.sources)}`,
+      `자료에서 확인된 소구점·고객 질문·불확실한 주장을 구분하고 기획에 쓸 요점을 정리하세요. ${keywordResearchInstructions} 후보 비교표에는 키워드/검색 의도/관찰한 근거/제품 적합성/채널별 활용/선정 여부/검증되지 않은 항목을 포함하세요.\n${await context(job)}\n검색 결과:\n${checkpoints.search}\n출처:\n${JSON.stringify(checkpoints.sources)}`,
     );
     checkpoints = { ...checkpoints, analysis };
     await jobResult(job.id, { checkpoints });
@@ -400,7 +406,7 @@ async function research(job: RecordData) {
     await jobLog("planning", "Claude 게시물별 기획 작성 중");
     const plan = await claude(
       job,
-      `아래 작업 각각에 서로 다른 콘셉트·소구점·키워드·원고 구성·이미지 장면·영상 대본 방향을 지정하세요. 같은 글 안 이미지 무드를 통일하고 다른 글과 차별화하세요. 반드시 JSON만 반환: {"keywords":{"main":["핵심 키워드"],"secondary":["보조 키워드"],"reason":"자료에 근거한 선정 이유"},"tasks":[{"id":"원래 작업 id","brief":"기획 내용"}]}. 작업: ${JSON.stringify(tasks.map((t) => ({ id: t.id, name: t.name, channel: t.channel, images: t.images, duration: t.duration })))}\n제품 자료: ${await context(job)}\n조사 분석: ${checkpoints.analysis}`,
+      `아래 작업 각각에 서로 다른 콘셉트·소구점·키워드·원고 구성·이미지 장면·영상 대본 방향을 지정하세요. 같은 글 안 이미지 무드를 통일하고 다른 글과 차별화하세요. 반드시 JSON만 반환: {"keywords":{"main":["핵심 키워드"],"secondary":["보조 키워드"],"reason":"자료에 근거한 선정 이유","candidates":[{"keyword":"핵심/보조 키워드 각각","intent":"검색 의도","reason":"선정 근거와 채널별 활용","evidenceUrls":["실제 검색 결과 출처 URL"]}],"excluded":[{"keyword":"제외 키워드","reason":"제외 이유"}],"volumeVerified":false},"tasks":[{"id":"원래 작업 id","brief":"기획 내용"}]}. 작업: ${JSON.stringify(tasks.map((t) => ({ id: t.id, name: t.name, channel: t.channel, images: t.images, duration: t.duration })))}\n제품 자료: ${await context(job)}\n조사 분석: ${checkpoints.analysis}\n인용 가능한 수집 출처: ${JSON.stringify(checkpoints.sources)}`,
     );
     const cleaned = plan
       .trim()
@@ -408,18 +414,16 @@ async function research(job: RecordData) {
       .replace(/\s*```$/, "");
     const parsed = z
       .object({
-        keywords: z
-          .object({
-            main: z.array(z.string().max(100)).max(5),
-            secondary: z.array(z.string().max(100)).max(10),
-            reason: z.string().max(1000),
-          })
-          .optional(),
+        keywords: keywordPlanSchema,
         tasks: z.array(
           z.object({ id: z.string(), brief: z.string().min(1).max(10000) }),
         ),
       })
       .parse(JSON.parse(cleaned));
+    parsed.keywords = validateKeywordEvidence(
+      parsed.keywords,
+      checkpoints.sources as { url: string }[],
+    );
     if (
       parsed.tasks.length !== tasks.length ||
       new Set(parsed.tasks.map((t) => t.id)).size !== tasks.length ||
@@ -457,19 +461,19 @@ async function copy(job: RecordData) {
       ? checkpoint
       : await claude(
           job,
-          `${blog ? `바로 복사·붙여넣기할 수 있는 블로그 원고를 작성하세요. JSON만 반환: {"title":"제목","body":"본문","editorialNotes":"운영자 확인 사항"}. 제목·본문에는 제작 메모, 대안 제목, 작성 지시, 확인 필요 표시, 이미지 생성 프롬프트, 검수표를 절대 넣지 마세요. 마크다운 기호 없이 자연스러운 문단과 소제목으로 작성하세요. 본문의 적절한 위치에 [이미지 1]부터 [이미지 ${Number(jobInput(job).task?.images || 0)}]까지 수량대로 각 1회씩 순서대로 넣으세요. 이미지가 0장이면 표시를 넣지 마세요. 알 수 없는 가격·원재료·효능 등은 본문에서 생략하고 editorialNotes에만 남기세요. 필요한 광고·협찬 표시와 가상 브랜드 예시라는 사실은 유지하세요.` : "클립 게시용 문구와 영상 자막·장면표를 작성하세요. 제작 메모나 검수표는 넣지 마세요."} 희망/추천 키워드는 사실에 맞게 자연스럽게 반영하세요. 프로젝트 내 다른 글과 다른 콘셉트를 유지하세요.\n${await context(job)}`,
+          `${blog ? `바로 복사·붙여넣기할 수 있는 블로그 원고를 작성하세요. JSON만 반환: {"title":"제목","body":"본문","editorialNotes":"운영자 확인 사항"}. 제목·본문에는 제작 메모, 대안 제목, 작성 지시, 확인 필요 표시, 이미지 생성 프롬프트, 검수표를 절대 넣지 마세요. 마크다운 기호 없이 자연스러운 문단과 소제목으로 작성하세요. 본문의 적절한 위치에 [이미지 1]부터 [이미지 ${Number(jobInput(job).task?.images || 0)}]까지 수량대로 각 1회씩 순서대로 넣으세요. 이미지가 0장이면 표시를 넣지 마세요. 알 수 없는 가격·원재료·효능 등은 본문에서 생략하고 editorialNotes에만 남기세요. 필요한 광고·협찬 표시와 가상 브랜드 예시라는 사실은 유지하세요.` : `클립에 바로 붙여넣을 설명 본문을 작성하세요. JSON만 반환: {"description":"게시할 설명 본문","productionNotes":"영상 자막·장면별 제작 지시와 운영자 확인 사항"}. description은 공백과 줄바꿈 및 해시태그를 포함해 10~300자, 해시태그는 최대 5개입니다. 별도 제목·제작 메모·자막 장면표·마크다운은 description에 넣지 말고 productionNotes에만 작성하세요. 필요한 광고 표시·확인된 제품 정보·캠페인 필수 문구를 유지하고 확인되지 않은 효능·가격은 본문에서 생략하세요. 핵심 키워드는 설명에 자연스럽게 1개 중심으로 사용하고, 영상과 관련 없는 인기 해시태그는 제외하세요. 길이를 채우기 위해 광고 표시를 삭제하지 마세요.`} 희망/추천 키워드는 사실에 맞게 자연스럽게 반영하세요. 프로젝트 내 다른 글과 다른 콘셉트를 유지하세요.\n${await context(job)}`,
         );
   await jobResult(job.id, { outputText: raw });
   const output = blog
     ? blogCopyOutput(raw, Number(jobInput(job).task?.images || 0))
-    : { text: raw, notes: "" };
+    : clipCopyOutput(raw);
   const text = output.text;
   await saveAsset(
     {
       projectId: String(job.projectId),
       taskId: String(job.taskId),
       category: "copy",
-      name: "원고.md",
+      name: blog ? "원고.md" : "클립 설명.txt",
       text,
       editorialNotes: output.notes,
       buffer: Buffer.from(text),
@@ -628,6 +632,7 @@ async function mediaContext(job: RecordData) {
       id: a.id,
       version: a.version,
       text: a.text,
+      productionNotes: a.editorialNotes || "",
     })),
   });
 }

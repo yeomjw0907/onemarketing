@@ -1,3 +1,4 @@
+import { clipDescription } from "@/lib/clip-description";
 import { requireActor } from "@/lib/auth";
 import { requireRecord } from "@/lib/domain";
 import { bytes } from "@/lib/assets";
@@ -14,8 +15,15 @@ export async function GET(
     if (
       a.category === "copy" &&
       new URL(request.url).searchParams.get("publishable") === "1"
-    )
-      return new Response(publishableCopy(String(a.text || "")), {
+    ) {
+      const task = a.taskId
+        ? await requireRecord(String(a.taskId), "tasks")
+        : null;
+      const text =
+        task?.channel === "clip"
+          ? clipDescription(String(a.text || "")).text
+          : publishableCopy(String(a.text || ""));
+      return new Response(text, {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent("원고.txt")}`,
@@ -23,6 +31,7 @@ export async function GET(
           "X-Content-Type-Options": "nosniff",
         },
       });
+    }
     const inline =
       String(a.mime).startsWith("image/") || a.mime === "video/mp4";
     return new Response(new Uint8Array(await bytes(a)), {
