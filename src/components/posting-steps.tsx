@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Button, Feedback } from "./ui/workflow-ui";
+import ClipPostingNotes from "./clip-posting-notes";
 import NaverAppButton from "./naver-app-button";
 
 type PostingFile = {
@@ -189,9 +190,7 @@ export default function PostingSteps({
   return (
     <ol className="posting-steps" aria-label="게시 준비 순서">
       <li>
-        <h3>
-          <span>1</span> 이미지·영상 저장
-        </h3>
+        <h3>자료를 저장해주세요</h3>
         <p className="hint">
           자료를 아래 순서대로 저장해주세요. 블로그에는 같은 순서로 넣어주세요.
         </p>
@@ -221,29 +220,35 @@ export default function PostingSteps({
       </li>
       <li>
         <h3>
-          <span>2</span> 원고 복사
+          {channel === "clip"
+            ? "클립 설명을 복사해주세요"
+            : "원고를 복사해주세요"}
         </h3>
         <p className="hint">
-          광고 표시와 필수 문구를 포함해 전체 원고를 복사해주세요. 이미지 위치
-          표시가 있다면 해당 위치에 이미지를 넣어주세요.
+          {channel === "clip"
+            ? "설명 본문은 10~300자로 준비해주세요. 광고 표시와 필수 문구를 유지하고 해시태그는 최대 5개까지 넣을 수 있어요."
+            : "광고 표시와 필수 문구를 포함해 전체 원고를 복사해주세요. 이미지 위치 표시가 있다면 해당 위치에 이미지를 넣어주세요."}
         </p>
         {!copies.length && (
-          <Feedback>전달된 원고가 없어요. 담당자에게 확인해주세요.</Feedback>
+          <Feedback>
+            {channel === "clip"
+              ? "클립 설명 원고가 아직 전달되지 않았어요. 담당자에게 요청해주세요."
+              : "전달된 원고가 없어요. 담당자에게 확인해주세요."}
+          </Feedback>
         )}
         {copies.map((f) => (
           <CopyFile key={f.id} file={f} />
         ))}
       </li>
       <li>
-        <h3>
-          <span>3</span> 네이버에서 게시
-        </h3>
+        <h3>네이버에서 게시해주세요</h3>
         <p className="hint">
           {channel === "clip"
             ? "네이버 앱의 클립에서 저장한 영상을 선택하고 설명 원고를 붙여넣어주세요."
             : "블로그 글쓰기를 열고 원고를 붙여넣은 뒤 저장한 이미지를 순서대로 넣어주세요."}{" "}
           캠페인 가이드를 확인하고 전체 공개로 게시해주세요.
         </p>
+        {channel === "clip" && <ClipPostingNotes />}
         <NaverAppButton channel={channel} />
       </li>
     </ol>

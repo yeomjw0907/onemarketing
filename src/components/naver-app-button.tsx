@@ -13,10 +13,18 @@ export default function NaverAppButton({
   return (
     <div className="posting-app-actions">
       <a className="posting-main-link" href={links.app}>
+        <img
+          src="/brands/naver.ico"
+          width={24}
+          height={24}
+          alt=""
+          aria-hidden="true"
+        />
         {links.mobile ? "네이버 앱 열기" : "네이버 웹 열기"}
       </a>
       {links.mobile && (
-        <>
+        <details className="posting-app-fallback">
+          <summary>앱이 열리지 않나요?</summary>
           <p className="hint">
             앱이 열리지 않으면 웹으로 열거나 네이버 앱을 설치해주세요. 카카오톡
             안에서 열리지 않을 때는 외부 브라우저에서 다시 시도해주세요.
@@ -29,11 +37,10 @@ export default function NaverAppButton({
               네이버 앱 설치
             </a>
           </div>
-        </>
+        </details>
       )}
       <p className="hint">
-        게시할 계정이 배정된 계정과 같은지 확인하고, 게시 후 이 화면으로
-        돌아와주세요.
+        배정된 계정으로 게시한 뒤 이 화면으로 돌아와주세요.
       </p>
     </div>
   );

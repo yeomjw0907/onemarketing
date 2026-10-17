@@ -1886,25 +1886,21 @@ td button {
 }
 .posting-steps h3,
 .posting-submit-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 12px;
-  font-size: 16px;
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
   line-height: 1.5;
 }
-.posting-steps h3 > span,
-.posting-submit-title > span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--blue);
-  color: white;
-  font-size: 14px;
+.participant-guide .posting-steps {
+  padding-left: 0;
+}
+.participant-guide .posting-steps > li {
+  margin: 0;
+}
+.posting-steps > li:first-child {
+  padding-top: 8px;
+  border-top: 0;
 }
 .posting-steps p {
   line-height: 1.7;
@@ -1962,15 +1958,36 @@ td button {
 }
 .posting-main-link {
   display: inline-flex;
-  padding: 12px 18px;
-  min-height: 44px;
+  gap: 10px;
+  padding: 13px 18px;
+  min-height: 48px;
   box-sizing: border-box;
   align-items: center;
+  justify-content: center;
   border-radius: var(--radius-control, 12px);
-  background: var(--blue);
-  color: white;
+  background: #03c75a;
+  color: #062c18;
+  font-size: 15px;
   font-weight: 600;
   text-decoration: none;
+}
+.posting-main-link img {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.posting-main-link:hover {
+  background: #03b753;
+}
+.posting-main-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.posting-app-fallback summary {
+  font-size: 13px;
+  color: var(--muted);
+}
+.posting-app-actions > .hint {
+  margin-top: 12px;
 }
 @media (max-width: 640px) {
   .posting-files {
@@ -1980,6 +1997,12 @@ td button {
     align-items: flex-start;
   }
   .posting-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .posting-main-link {
     width: 100%;
   }
 }

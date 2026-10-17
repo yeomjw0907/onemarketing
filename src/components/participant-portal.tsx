@@ -562,7 +562,7 @@ export default function ParticipantPortal() {
                       }}
                     >
                       <h3 className="posting-submit-title">
-                        <span>4</span> 게시물 링크 제출
+                        게시물 링크를 제출해주세요
                       </h3>
                       <p className="hint">
                         게시물의 공유 메뉴에서 링크를 복사한 뒤 여기에
