@@ -1,5 +1,8 @@
 "use client";
 import KeywordEvidence from "./keyword-evidence";
+import ProductUnderstandingReview, {
+  KeywordConfirmation,
+} from "./product-understanding";
 import { clipDescription } from "@/lib/clip-description";
 import DeletedCatalog from "./deleted-catalog";
 import { Tabs, useDecisionDialog } from "./ui/workflow-ui";
@@ -642,7 +645,7 @@ export default function Workspace() {
       category === "video"
         ? ".mp4"
         : category === "source"
-          ? ".xlsx,.csv,.jpg,.jpeg,.png,.webp"
+          ? ".pdf,.xlsx,.csv,.txt,.md,.jpg,.jpeg,.png,.webp"
           : ".jpg,.jpeg,.png,.webp";
     element.onchange = async () => {
       const file = element.files?.[0];
@@ -802,12 +805,29 @@ export default function Workspace() {
                   a.id,
                 ),
               )}
+            {a.category === "source" && (
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void action("product-source-toggle", a, {
+                    excluded: a.analysisExcluded !== true,
+                  })
+                }
+              >
+                {a.analysisExcluded === true
+                  ? "제품 분석에 포함"
+                  : "제품 분석에서 제외"}
+              </button>
+            )}
+            {a.analysisExcluded === true && (
+              <span className="badge">제품 분석 제외</span>
+            )}
             {a.category === "source" &&
               String(a.mime).startsWith("image/") &&
               button("공통 이미지로 배정", () => action("assign-common", a))}
             {a.extracted ? (
               <details>
-                <summary>엑셀 내용 미리보기</summary>
+                <summary>자료 내용 미리보기</summary>
                 <pre className="content-preview">{String(a.extracted)}</pre>
                 {button("자료 메모에 반영", () =>
                   open("notes", {
@@ -1730,12 +1750,14 @@ export default function Workspace() {
                     <h2>고객 제공 자료</h2>
                     <button onClick={() => upload(project.id)} disabled={busy}>
                       <Upload size={16} />
-                      엑셀·사진 등록
+                      소개서·엑셀·사진 등록
                     </button>
                   </div>
                   <p className="hint">
-                    원본을 보존해요. 사진은 이미지 생성 시 제품 기준으로
-                    사용됩니다.
+                    회사소개서·제품소개서는 PDF로, 고객 작성본은 엑셀로 등록할
+                    수 있어요. 원본을 보존하고 자료 정리 후 제품별 사실을
+                    확인해요. 고객 자료실의 참고자료도 이 프로젝트로
+                    가져와주세요.
                   </p>
                   <Assets
                     rows={data.assets.filter(
@@ -1746,7 +1768,7 @@ export default function Workspace() {
                   {!data.assets.some(
                     (a) =>
                       a.projectId === project.id && a.category === "source",
-                  ) && <Empty title="엑셀과 제품 사진을 등록하세요" />}
+                  ) && <Empty title="소개서·엑셀·제품 사진을 등록하세요" />}
                   <details>
                     <summary>이 제품의 이전 자료 가져오기</summary>
                     {data.assets
@@ -1775,21 +1797,30 @@ export default function Workspace() {
                       ))}
                   </details>
                 </section>
+                <ProductUnderstandingReview
+                  key={project.id + ":" + project.version}
+                  project={project}
+                  busy={busy}
+                  onAction={(name, extra) => action(name, project, extra)}
+                  onGenerate={() => void generate("product-review", project)}
+                />
               </>
             )}
             {tab === 2 && (
               <section className="section">
                 <div className="section-title">
                   <h2>게시물별 기획</h2>
-                  {button(
-                    "조사·기획 생성",
-                    () => generate("research", project),
-                    true,
-                  )}
+                  <button
+                    className="primary"
+                    disabled={busy || !project.productUnderstandingCurrent}
+                    onClick={() => void generate("research", project)}
+                  >
+                    키워드 분석·기획 생성
+                  </button>
                 </div>
                 <p className="hint">
-                  자료에 근거한 소구점과 서로 다른 콘셉트를 확인한 뒤 개요에서
-                  기획을 승인하세요.
+                  먼저 자료 탭에서 제품 정보를 정리하고 확정해주세요. 분석
+                  결과는 내부 초안이며 고객 공유 확정 전에는 공개되지 않아요.
                 </p>
                 {project.preferredKeywords ? (
                   <p className="hint">
@@ -1820,6 +1851,14 @@ export default function Workspace() {
                     </p>
                     <KeywordEvidence
                       plan={project.recommendedKeywords as Draft}
+                    />
+                    <KeywordConfirmation
+                      key={project.id + ":" + project.version}
+                      project={project}
+                      busy={busy}
+                      onConfirm={(extra) =>
+                        action("keyword-analysis-confirm", project, extra)
+                      }
                     />
                   </div>
                 ) : null}

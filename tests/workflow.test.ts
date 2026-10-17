@@ -74,6 +74,30 @@ async function enqueue(
   actor: string,
 ) {
   const body = input as Record<string, unknown>;
+  if (body.type === "research") {
+    const { productBasis } = await import("../src/lib/product-understanding");
+    const p = (await get(String(body.projectId)))!;
+    await update(p.id, {
+      productUnderstanding: {
+        profile: {
+          name: "피자설기",
+          category: "떡 간식",
+          features: "간편 조리",
+          target: "",
+          salesScope: "전국 온라인 배송",
+          goal: "제품 인지도",
+          forbidden: "",
+        },
+        evidence: [],
+        questions: [],
+        notes: "",
+        sourceHash: (await productBasis(p)).hash,
+        approvedAt: new Date().toISOString(),
+        approvedBy: actor,
+      },
+    });
+  }
+
   if (["image", "video"].includes(String(body.type)) && !body.mediaPlanId) {
     const plan = await fixturePlan(
       String(body.projectId),

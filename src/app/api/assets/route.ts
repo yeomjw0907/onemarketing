@@ -38,9 +38,11 @@ export async function POST(request: Request) {
     const max =
       category === "video"
         ? 100
-        : category === "source" && /\.(xlsx|csv)$/i.test(file.name)
-          ? 10
-          : 20;
+        : category === "source" && /\.pdf$/i.test(file.name)
+          ? 4
+          : category === "source" && /\.(xlsx|csv)$/i.test(file.name)
+            ? 10
+            : 20;
     if (file.size > max * 1024 * 1024)
       throw new Error(`파일당 최대 ${max}MB까지 지원합니다.`);
     const buffer = Buffer.from(await file.arrayBuffer());

@@ -1,4 +1,14 @@
 import { requireClipMaterials } from "./clip-description";
+import {
+  productBasis,
+  productDraftSchema,
+  productProfileSchema,
+  missingProductFields,
+  requireConfirmedProduct,
+  productLinksSchema,
+  type ProductUnderstanding,
+} from "./product-understanding";
+import { keywordPlanSchema } from "./keyword-research";
 import { syncReferral } from "./referrals";
 import {
   publicationIdentity,
@@ -625,7 +635,120 @@ export function command(
       throw new Error(
         "합산 지급 내역입니다. 담당자 정산 화면에서 합산 지급을 취소하세요.",
       );
-    if (action === "participant-delete" || action === "participant-restore") {
+    if (action === "product-source-toggle") {
+      if (
+        row.kind !== "assets" ||
+        row.category !== "source" ||
+        !parent ||
+        parent.hold ||
+        ["completed", "cancelled"].includes(String(parent.status))
+      )
+        throw new Error("진행 중 프로젝트의 참고자료를 선택하세요.");
+      result = await update(
+        id,
+        { analysisExcluded: z.boolean().parse(input.excluded) },
+        Number(input.version),
+      );
+    } else if (
+      [
+        "product-links",
+        "product-understanding-confirm",
+        "keyword-analysis-confirm",
+      ].includes(action)
+    ) {
+      if (
+        row.kind !== "projects" ||
+        row.hold ||
+        ["completed", "cancelled"].includes(String(row.status))
+      )
+        throw new Error("진행 중 프로젝트를 선택하세요.");
+      if (row.version !== Number(input.version))
+        throw new Error("새로고침 후 다시 확인하세요.");
+      if (action === "product-links") {
+        result = await update(
+          id,
+          {
+            productLinks: productLinksSchema.parse(input.links),
+            productUnderstanding: null,
+            confirmedKeywordAnalysis: null,
+          },
+          row.version,
+        );
+      } else if (action === "product-understanding-confirm") {
+        const old = row.productUnderstanding as
+          ProductUnderstanding | undefined;
+        if (!old || old.sourceHash !== (await productBasis(row)).hash)
+          throw new Error(
+            "자료가 변경되었습니다. 제품 정보를 다시 정리하세요.",
+          );
+        const draft = productDraftSchema.parse(old),
+          profile = productProfileSchema.parse(input.profile);
+        const missing = missingProductFields(profile);
+        if (missing.length)
+          throw new Error(
+            "제품명·제품 종류·확인된 특징·판매 방식과 지역·캠페인 목표를 확인해주세요.",
+          );
+        result = await update(
+          id,
+          {
+            productUnderstanding: {
+              ...draft,
+              profile,
+              sourceHash: old.sourceHash,
+              questions: [],
+              approvedAt: new Date().toISOString(),
+              approvedBy: actor,
+            },
+            recommendedKeywords: null,
+            research: null,
+            researchProductApproval: null,
+            confirmedKeywordAnalysis: null,
+          },
+          row.version,
+        );
+      } else {
+        const understanding = await requireConfirmedProduct(row);
+        if (row.researchProductApproval !== understanding.approvedAt)
+          throw new Error("확정한 제품 정보로 키워드를 다시 분석하세요.");
+        const keywords = keywordPlanSchema.parse(row.recommendedKeywords);
+        const main = z
+          .array(z.string().trim().min(1).max(100))
+          .min(1)
+          .max(5)
+          .parse(input.main);
+        const secondary = z
+          .array(z.string().trim().min(1).max(100))
+          .max(10)
+          .parse(input.secondary);
+        if (
+          [...main, ...secondary].some(
+            (k) => !keywords.candidates.some((c) => c.keyword === k),
+          )
+        )
+          throw new Error("분석 근거가 있는 후보 중 키워드를 선택하세요.");
+        const reason = z.string().trim().min(1).max(2000).parse(input.reason);
+        result = await update(
+          id,
+          {
+            confirmedKeywordAnalysis: {
+              main,
+              secondary,
+              reason,
+              productName: understanding.profile.name,
+              sourceHash: understanding.sourceHash,
+              productApprovedAt: understanding.approvedAt,
+              approvedAt: new Date().toISOString(),
+              approvedBy: actor,
+              volumeVerified: false,
+            },
+          },
+          row.version,
+        );
+      }
+    } else if (
+      action === "participant-delete" ||
+      action === "participant-restore"
+    ) {
       result = await participantLifecycle(
         action,
         id,
@@ -761,7 +884,9 @@ export function command(
         !(
           (await list("assets")).some(
             (a) => a.projectId === id && a.category === "source",
-          ) || String(row.materialNotes || "").trim()
+          ) ||
+          String(row.materialNotes || "").trim() ||
+          (Array.isArray(row.productLinks) && row.productLinks.length > 0)
         )
       )
         throw new Error("고객 자료 또는 확인한 자료 메모를 먼저 등록하세요.");

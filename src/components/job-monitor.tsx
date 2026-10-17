@@ -4,6 +4,7 @@ import { stageLabels, type RecordData } from "@/lib/types";
 const labels: Record<string, string> = {
   "media-plan": "생성 브리핑",
   research: "조사·기획",
+  "product-review": "제품 정보 정리",
   copy: "원고",
   image: "이미지",
   video: "영상",

@@ -79,6 +79,29 @@ export default async function ReportPage({
             <StatusBadge value={p.status} label={reportStatus(p.status)} />
           </div>
           <p className="muted">마감일 {p.due || "협의 중"}</p>
+          {p.keywords && (
+            <div className="report-keywords">
+              <h3>캠페인 키워드</h3>
+              <p>대상 제품 · {p.keywords.productName}</p>
+              <p>
+                <strong>핵심</strong> {p.keywords.main.join(", ")}
+              </p>
+              {!!p.keywords.secondary.length && (
+                <p>
+                  <strong>보조</strong> {p.keywords.secondary.join(", ")}
+                </p>
+              )}
+              <p>{p.keywords.reason}</p>
+              <p className="muted">
+                확정일{" "}
+                {new Date(p.keywords.approvedAt).toLocaleDateString("ko-KR", {
+                  timeZone: "Asia/Seoul",
+                })}{" "}
+                · 제품 관련성과 조사 근거를 바탕으로 선정했어요. 검색량·문서
+                수를 측정한 결과는 포함하지 않아요.
+              </p>
+            </div>
+          )}
           <div className="tablewrap">
             <table className="report-table">
               <caption className="sr-only">{p.name} 콘텐츠 진행 현황</caption>

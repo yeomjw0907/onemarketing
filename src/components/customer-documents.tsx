@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { RecordData } from "@/lib/types";
 const labels: Record<string, string> = {
   business_registration: "사업자등록증",
-  reference: "참고자료",
+  reference: "회사·제품 소개서 등 참고자료",
   intake: "고객 작성 Excel",
 };
 export default function CustomerDocuments({
@@ -101,8 +101,9 @@ export default function CustomerDocuments({
         </a>
       </div>
       <p className="hint">
-        양식을 고객에게 전달하고 작성본을 업로드하세요. 사업자등록증은 AI 제작
-        자료에 자동으로 포함되지 않습니다.
+        고객 작성 Excel과 회사·제품 소개서 PDF를 보관할 수 있어요. PPT·한글·워드
+        자료는 PDF로 변환해주세요. 프로젝트로 복사한 자료를 제품 정보 정리에
+        사용하며, 사업자등록증은 AI 제작 자료에 자동으로 포함되지 않아요.
       </p>
       {!customerId && (
         <label>

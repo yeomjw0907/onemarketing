@@ -8,6 +8,9 @@ export async function GET() {
         fal: !!process.env.FAL_KEY,
         defaultEstimates: {
           research: Number(process.env.ESTIMATE_RESEARCH_KRW || 3000),
+          "product-review": Number(
+            process.env.ESTIMATE_PRODUCT_REVIEW_KRW || 1000,
+          ),
           copy: Number(process.env.ESTIMATE_COPY_KRW || 500),
           image: Number(process.env.ESTIMATE_IMAGE_KRW || 2000),
           video: Number(process.env.ESTIMATE_VIDEO_KRW || 15000),

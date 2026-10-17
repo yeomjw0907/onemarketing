@@ -3,6 +3,26 @@ import ExcelJS from "exceljs";
 import { z } from "zod";
 import { audit, create, get, lock, query, transaction, update } from "./db";
 import { stageLabels, type RecordData } from "./types";
+import { requireConfirmedProduct } from "./product-understanding";
+const sharedKeywordsSchema = z.object({
+  main: z.array(z.string()),
+  secondary: z.array(z.string()),
+  reason: z.string(),
+  productName: z.string(),
+  approvedAt: z.string(),
+  productApprovedAt: z.string(),
+  sourceHash: z.string(),
+  volumeVerified: z.literal(false),
+});
+type PublicKeywords = Pick<
+  z.infer<typeof sharedKeywordsSchema>,
+  | "main"
+  | "secondary"
+  | "reason"
+  | "productName"
+  | "approvedAt"
+  | "volumeVerified"
+>;
 
 const hash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
@@ -57,6 +77,7 @@ export type CustomerReport = {
     status: string;
     due: string;
     updatedAt: string;
+    keywords?: PublicKeywords | null;
     tasks: {
       label: string;
       channel: string;
@@ -108,42 +129,66 @@ export async function customerReport(
     customerName: String(customer.brand || customer.name),
     generatedAt: new Date().toISOString(),
     updatedAt: dates.at(-1)!,
-    projects: projects.map((p) => {
-      const ts = tasks
-        .filter((t) => t.projectId === p.id)
-        .sort((a, b) => Number(a.order) - Number(b.order));
-      const people = [
-        ...new Set(
-          ts.filter((t) => t.participantId).map((t) => String(t.participantId)),
-        ),
-      ];
-      return {
-        name: String(p.name),
-        status: String(p.status),
-        due: String(p.due || ""),
-        updatedAt: p.updatedAt,
-        tasks: ts.map((t) => {
-          let url = "";
-          if (["submitted", "verified"].includes(String(t.status))) {
-            try {
-              const u = new URL(String(t.link));
-              if (["https:", "http:"].includes(u.protocol)) url = u.href;
-            } catch {}
-          }
-          return {
-            label: String(t.name),
-            channel: t.channel === "blog" ? "블로그" : "클립",
-            participant: t.participantId
-              ? `참여자 ${people.indexOf(String(t.participantId)) + 1}`
-              : "배정 대기",
-            status: String(t.status),
-            link: url,
-            verifiedAt:
-              t.status === "verified" ? String(t.verifiedAt || "") : "",
-          };
-        }),
-      };
-    }),
+    projects: await Promise.all(
+      projects.map(async (p) => {
+        let keywords: PublicKeywords | null = null;
+        if (p.confirmedKeywordAnalysis) {
+          try {
+            const u = await requireConfirmedProduct(p),
+              shared = sharedKeywordsSchema.parse(p.confirmedKeywordAnalysis);
+            if (
+              shared.sourceHash === u.sourceHash &&
+              shared.productApprovedAt === u.approvedAt
+            )
+              keywords = {
+                main: shared.main,
+                secondary: shared.secondary,
+                reason: shared.reason,
+                productName: shared.productName,
+                approvedAt: shared.approvedAt,
+                volumeVerified: shared.volumeVerified,
+              };
+          } catch {}
+        }
+        const ts = tasks
+          .filter((t) => t.projectId === p.id)
+          .sort((a, b) => Number(a.order) - Number(b.order));
+        const people = [
+          ...new Set(
+            ts
+              .filter((t) => t.participantId)
+              .map((t) => String(t.participantId)),
+          ),
+        ];
+        return {
+          name: String(p.name),
+          status: String(p.status),
+          due: String(p.due || ""),
+          updatedAt: p.updatedAt,
+          keywords,
+          tasks: ts.map((t) => {
+            let url = "";
+            if (["submitted", "verified"].includes(String(t.status))) {
+              try {
+                const u = new URL(String(t.link));
+                if (["https:", "http:"].includes(u.protocol)) url = u.href;
+              } catch {}
+            }
+            return {
+              label: String(t.name),
+              channel: t.channel === "blog" ? "블로그" : "클립",
+              participant: t.participantId
+                ? `참여자 ${people.indexOf(String(t.participantId)) + 1}`
+                : "배정 대기",
+              status: String(t.status),
+              link: url,
+              verifiedAt:
+                t.status === "verified" ? String(t.verifiedAt || "") : "",
+            };
+          }),
+        };
+      }),
+    ),
   };
 }
 export const reportStatus = (value: string) =>
@@ -229,6 +274,28 @@ export async function reportWorkbook(report: CustomerReport) {
       }
     sheet.autoFilter = "A1:F1";
   }
+  const keywords = book.addWorksheet("확정 키워드");
+  keywords.addRow([
+    "프로젝트",
+    "제품",
+    "핵심 키워드",
+    "보조 키워드",
+    "선정 이유",
+    "내부 확정일",
+  ]);
+  for (const p of report.projects)
+    if (p.keywords)
+      keywords.addRow([
+        p.name,
+        p.keywords.productName,
+        p.keywords.main.join(", "),
+        p.keywords.secondary.join(", "),
+        p.keywords.reason,
+        p.keywords.approvedAt,
+      ]);
+  keywords.columns.forEach((c) => {
+    c.width = 28;
+  });
   for (const s of book.worksheets) {
     s.columns.forEach((c, i) => (c.width = i === 3 ? 70 : 30));
     s.eachRow((r) => (r.alignment = { vertical: "top", wrapText: true }));

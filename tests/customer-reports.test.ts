@@ -105,7 +105,7 @@ test("보고 엑셀은 요약·채널별 게시 링크·확인일을 포함하�
   );
   assert.deepEqual(
     book.worksheets.map((s) => s.name),
-    ["1_보고요약", "2_블로그게시", "3_클립게시"],
+    ["1_보고요약", "2_블로그게시", "3_클립게시", "확정 키워드"],
   );
   assert.equal(book.worksheets[0].getCell("D6").value, "1 / 1");
   assert.equal(

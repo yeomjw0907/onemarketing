@@ -814,6 +814,39 @@ td button {
   border-radius: 50%;
   animation: job-spin 0.8s linear infinite;
 }
+.product-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 24px;
+}
+.product-understanding details {
+  margin: 20px 0;
+}
+.product-understanding details p {
+  overflow-wrap: anywhere;
+}
+.keyword-confirmation {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.report-keywords {
+  margin: 24px 0;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.report-keywords h3 {
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (max-width: 640px) {
+  .product-profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
 .ui-field {
   margin: 0 0 20px;
   min-width: 0;
@@ -826,6 +859,10 @@ td button {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.product-understanding .ui-field input:not([type="checkbox"]),
+.product-understanding .ui-field textarea,
+.keyword-confirmation .ui-field input:not([type="checkbox"]),
+.keyword-confirmation .ui-field textarea,
 .workflow-console .ui-field input:not([type="checkbox"]),
 .workflow-console .ui-field select,
 .workflow-console .ui-field textarea,
@@ -849,6 +886,8 @@ td button {
   background: var(--surface);
   color: var(--ink);
 }
+.product-understanding .ui-field textarea,
+.keyword-confirmation .ui-field textarea,
 .workflow-console .ui-field textarea,
 .participant-portal .ui-field textarea,
 .ui-dialog .ui-field textarea {

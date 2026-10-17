@@ -5,6 +5,7 @@ export const aiTypeLabels: Record<string, string> = {
   video: "영상",
   copy: "원고",
   research: "조사·기획",
+  "product-review": "제품 정보 정리",
   "media-plan": "생성 브리핑",
   slideshow: "슬라이드",
   other: "기타 AI",

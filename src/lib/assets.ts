@@ -71,6 +71,7 @@ export function detectMime(buffer: Buffer, extension: string) {
   );
 }
 export async function extractSheet(buffer: Buffer, ext: string) {
+  if(["txt","md"].includes(ext))return buffer.toString("utf8").slice(0,50000);
   if (!["xlsx", "csv"].includes(ext)) return null;
   if (ext === "csv")
     return buffer.toString("utf8").replace(/^﻿/, "").slice(0, 50000);

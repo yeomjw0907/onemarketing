@@ -1,4 +1,5 @@
 import { anthropicCost } from "./anthropic-cost";
+import { productBasis, requireConfirmedProduct } from "./product-understanding";
 import { briefingPrompt } from "./media-guidance";
 import { mediaBriefSchema } from "./media-plans";
 import { mediaBinding, validateMediaPlan } from "./media-plans";
@@ -23,6 +24,7 @@ export const jobSchema = z.object({
   taskId: z.string().optional(),
   replaceAssetId: z.string().optional(),
   type: z.enum([
+    "product-review",
     "research",
     "copy",
     "image",
@@ -51,9 +53,18 @@ export function enqueue(input: unknown, actor: string) {
     )
       throw new Error("마감·보류한 프로젝트입니다.");
     const assets = await list("assets");
-    if (body.type === "research") {
-      if (!["planning", "brief_review"].includes(String(p.status)))
+    if (["research", "product-review"].includes(body.type)) {
+      if (
+        !(
+          body.type === "product-review"
+            ? ["materials", "planning", "brief_review"]
+            : ["planning", "brief_review"]
+        ).includes(String(p.status))
+      )
         throw new Error("기획 단계에서 조사할 수 있습니다.");
+      if (body.taskId)
+        throw new Error("제품 정리·조사는 프로젝트 단위로 실행하세요.");
+      if (body.type === "research") await requireConfirmedProduct(p);
       for (const key of ["ANTHROPIC_API_KEY"])
         if (!process.env[key]) throw new Error(`${key} 설정이 필요합니다.`);
     } else {
@@ -179,12 +190,22 @@ export function enqueue(input: unknown, actor: string) {
       );
     }
     const snapshot = {
+      productSourceHash: ["product-review", "research"].includes(body.type)
+        ? (await productBasis(p)).hash
+        : null,
       mediaPlan,
       mediaBinding: mediaBindingSnapshot,
       project: p,
       task: body.taskId ? await requireRecord(body.taskId) : null,
       sourceAssets: assets
-        .filter((a) => a.projectId === p.id && a.category === "source")
+        .filter(
+          (a) =>
+            a.projectId === p.id &&
+            a.category === "source" &&
+            (!["product-review", "research"].includes(body.type) ||
+              a.analysisExcluded !== true) &&
+            a.current !== false,
+        )
         .map((a) => a.id),
     };
     const row = await create("jobs", {
@@ -269,24 +290,35 @@ export function claimJob(owner: string, jobId?: string) {
     for (const pending of jobs.filter((j) => j.status === "pending")) {
       const p = await get(String(pending.projectId)),
         t = pending.taskId ? await get(String(pending.taskId)) : null;
-      const snapshot = pending.snapshot as { task: RecordData | null };
+      const snapshot = pending.snapshot as {
+        task: RecordData | null;
+        project: RecordData;
+        productSourceHash?: string;
+      };
       const valid =
         p &&
         !p.settled &&
         !p.hold &&
-        (pending.type === "research"
-          ? ["planning", "brief_review"].includes(String(p.status))
-          : ["producing", "review"].includes(String(p.status)) &&
-            t &&
-            ![
-              "approved",
-              "delivered",
-              "submitted",
-              "verified",
-              "cancelled",
-            ].includes(String(t.status)) &&
-            t.brief === snapshot.task?.brief &&
-            t.briefApprovedAt === snapshot.task?.briefApprovedAt);
+        (!["product-review", "research"].includes(String(pending.type)) ||
+          (snapshot.productSourceHash === (await productBasis(p)).hash &&
+            (pending.type !== "research" ||
+              JSON.stringify(snapshot.project.productUnderstanding) ===
+                JSON.stringify(p.productUnderstanding)))) &&
+        (pending.type === "product-review"
+          ? ["materials", "planning", "brief_review"].includes(String(p.status))
+          : pending.type === "research"
+            ? ["planning", "brief_review"].includes(String(p.status))
+            : ["producing", "review"].includes(String(p.status)) &&
+              t &&
+              ![
+                "approved",
+                "delivered",
+                "submitted",
+                "verified",
+                "cancelled",
+              ].includes(String(t.status)) &&
+              t.brief === snapshot.task?.brief &&
+              t.briefApprovedAt === snapshot.task?.briefApprovedAt);
       if (!valid) {
         await update(pending.id, {
           status: "cancelled",
