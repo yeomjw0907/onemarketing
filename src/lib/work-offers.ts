@@ -266,7 +266,14 @@ export async function releaseMaterials(slotId: string, actor: string) {
     await lock("project-operations:" + slot.projectId);
     slot = await requireRecord(slot.id, "work_slots");
     const p = await requireRecord(String(slot.projectId), "projects");
-    if (!slot.participantId || p.hold || p.settled)
+    if (
+      !slot.participantId ||
+      slot.status === "cancelled" ||
+      !((slot.taskIds as string[]) || []).length ||
+      p.hold ||
+      p.settled ||
+      ["completed", "cancelled"].includes(String(p.status))
+    )
       throw new Error("배정과 프로젝트 상태를 확인하세요.");
     const tasks: RecordData[] = [];
     for (const id of slot.taskIds as string[])
