@@ -26,9 +26,13 @@ export function recruitmentSendTime(now = new Date()) {
 export function recruitmentContent(offer: Record<string, unknown>) {
   const deadline = new Date(String(offer.expiresAt)).toLocaleString("ko-KR", {
     timeZone: "Asia/Seoul",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   });
-  return `(광고) 원케이션\n새로운 캠페인 참여 제안이 도착했어요.\n${String(offer.name).slice(0, 300)}\n원고료: ${Number(offer.amount || 0).toLocaleString("ko-KR")}원\n수락 기한: ${deadline}\n나의 작업에서 조건을 확인하고 참여 여부를 선택해주세요.\n수신거부: 원케이션 채널 차단 또는 참여자 화면에서 모집 알림 해제`;
+  return `(광고) 원케이션\n\n새로운 참여 제안이 도착했어요\n${String(offer.name).slice(0, 300)}\n\n원고료  ${Number(offer.amount || 0).toLocaleString("ko-KR")}원\n수락 기한  ${deadline}\n\n제안 내용을 확인하고 참여 여부를 선택해주세요.\n\n수신거부: 채널 차단 또는 나의 작업 > 참여 설정`;
 }
 
 // Called in the same transaction as proposal creation. No historical offers are backfilled.
@@ -146,7 +150,7 @@ export async function sendRecruitment(id: string) {
             buttons: [
               {
                 type: "WL",
-                name: "나의 작업 확인",
+                name: "제안 확인하기",
                 linkMobile: url,
                 linkPc: url,
               },

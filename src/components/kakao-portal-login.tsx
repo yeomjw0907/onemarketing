@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Field, Form, Feedback } from "./ui/workflow-ui";
 type Pending = {
@@ -22,6 +22,7 @@ export default function KakaoPortalLogin({
     [error, setError] = useState(""),
     [name, setName] = useState(""),
     [phone, setPhone] = useState("");
+  const autoAttempted = useRef(false);
   async function refresh() {
     const r = await fetch("/api/auth/kakao/account");
     if (!r.ok) throw new Error("로그인 상태를 확인하지 못했어요.");
@@ -29,6 +30,31 @@ export default function KakaoPortalLogin({
     setPending(d.pending);
     setEnabled(d.enabled);
     setReady(true);
+    const params = new URL(location.href).searchParams;
+    if (
+      d.enabled &&
+      !d.pending &&
+      !autoAttempted.current &&
+      /KAKAOTALK/i.test(navigator.userAgent) &&
+      !params.has("loginError") &&
+      params.get("autoLogin") !== "skipped" &&
+      sessionStorage.getItem("om_kakao_auto_skip") !== "1"
+    ) {
+      autoAttempted.current = true;
+      setBusy(true);
+      try {
+        const response = await fetch("/api/auth/kakao/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ silent: true, access: access || undefined }),
+        });
+        const result = await response.json();
+        if (response.ok) location.assign(result.url);
+        else setBusy(false);
+      } catch {
+        setBusy(false);
+      }
+    }
   }
   useEffect(() => {
     void refresh().catch((e) => {
@@ -59,6 +85,7 @@ export default function KakaoPortalLogin({
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       if (type === "login") {
+        sessionStorage.removeItem("om_kakao_auto_skip");
         sessionStorage.removeItem("om_portal_access");
         location.assign(d.url);
       } else if (type === "continue") await onAuthenticated();

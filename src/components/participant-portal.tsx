@@ -137,6 +137,7 @@ export default function ParticipantPortal() {
           variant="text"
           busy={busy}
           onClick={async () => {
+            sessionStorage.setItem("om_kakao_auto_skip", "1");
             setBusy(true);
             setError("");
             try {

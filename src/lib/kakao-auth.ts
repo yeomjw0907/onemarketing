@@ -24,7 +24,11 @@ export function kakaoConfigured() {
 export function kakaoCallback() {
   return new URL("/api/auth/kakao/callback", process.env.APP_URL!).toString();
 }
-export async function beginKakao(access?: string, reselect = false) {
+export async function beginKakao(
+  access?: string,
+  reselect = false,
+  silent = false,
+) {
   if (!kakaoConfigured()) throw new Error("카카오 로그인을 준비 중이에요.");
   const participantId = access
     ? await portalLinkParticipant(access)
@@ -44,6 +48,7 @@ export async function beginKakao(access?: string, reselect = false) {
     state,
   }).toString();
   if (reselect) url.searchParams.set("prompt", "login");
+  else if (silent) url.searchParams.set("prompt", "none");
   return { state, url: url.toString() };
 }
 async function kakaoRequest(url: string, init: RequestInit) {

@@ -55,6 +55,16 @@ async function login(id: number, access?: string) {
   const { state } = await beginKakao(access);
   return completeKakao(state, state, "code");
 }
+test("silent login uses prompt none; explicit account reselection takes priority", async () => {
+  const normal = await beginKakao();
+  const silent = await beginKakao(undefined, false, true);
+  const reselect = await beginKakao(undefined, true, true);
+  assert.equal(new URL(normal.url).searchParams.get("prompt"), null);
+  assert.equal(new URL(silent.url).searchParams.get("prompt"), "none");
+  assert.equal(new URL(reselect.url).searchParams.get("prompt"), "login");
+  assert.notEqual(normal.state, silent.state);
+});
+
 test("OAuth state mismatch, expiry and replay are rejected before provider requests", async () => {
   const { state } = await beginKakao();
   const before = calls;

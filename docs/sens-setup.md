@@ -52,6 +52,14 @@ Vercel에서는 기존 `/api/jobs/run` Cron이 알림 큐도 처리한다. 별�
 - 공식 발송 API: https://api.ncloud-docs.com/docs/sens-brandmessage-send
 - 공식 결과 API: https://api.ncloud-docs.com/docs/sens-brandmessage-get
 
+### 가입 동의·메시지 가독성·자동 로그인 개선 (2026-10-19)
+- 가입 신청에서 모집 광고 수신 선택 동의를 강조하고 원케이션 채널 추가 버튼을 분리한다. 전체 동의는 `선택 항목 포함`을 명시하며 기본 미선택이다. 선택 동의 해제는 필수 개인정보 동의를 해제하지 않으며, 신청을 막지 않는다. 채널 추가 버튼 클릭만으로 앱의 광고 수신 동의를 설정하지 않는다.
+- 모집 메시지는 캠페인명, 원고료, 수락 기한을 빈 줄로 구분하고 `제안 확인하기` 버튼을 제공한다. 카카오 메시지의 글꼴·색상은 서비스 UI에서 결정되므로 HTML/CSS를 전송하지 않는다.
+- 카카오톡 인앱브라우저에서 미로그인 상태이면 `prompt=none`으로 한 번 자동 로그인을 시도한다. 기존 카카오 계정 연결과 서버 OAuth state 검증을 그대로 거친다. 일반 브라우저·명시적 로그아웃·연결/신청 대기 상태는 자동 시작하지 않는다. 최초 동의/추가 인증 등으로 실패하면 `autoLogin=skipped`로 일반 로그인 화면에 머물며 자동 반복하지 않는다.
+- 서버는 User-Agent의 KAKAOTALK 여부를 재확인해 silent 요청을 허용한다. 알림 버튼의 개인 링크나 전화번호 자체를 인증 수단으로 사용하지 않는다.
+- 실제 카카오톡 앱의 자동 로그인 최종 동작은 승인된 연결 계정과 모바일 기기에서 별도 확인해야 한다. 브라우저 시나리오 검사는 자동 시도·실패 후 복귀·루프 방지·로그아웃 억제를 확인한다.
+- 공식 자동 로그인 안내: https://developers.kakao.com/docs/ko/kakaologin/utilize#login-auto-login
+
 ## 공식 문서
 - 채널 등록: https://guide.ncloud-docs.com/docs/sens-ktchannel
 - 알림톡 템플릿: https://guide.ncloud-docs.com/docs/sens-attemplate

@@ -158,6 +158,20 @@
   width: 16px;
   height: 16px;
 }
+.consent .allConsent {
+  padding: 16px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: var(--blue-soft, #eff6ff);
+  font-size: 15px;
+  font-weight: 600;
+}
+.allConsent small {
+  margin-left: 6px;
+  color: #6b7684;
+  font-size: 12px;
+  font-weight: 400;
+}
 .trap {
   position: absolute;
   width: 1px;

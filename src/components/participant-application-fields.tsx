@@ -47,26 +47,41 @@ export default function ApplicationFields({
       {draft.referralCode && (
         <p className={styles.fieldHelp}>추천 링크가 적용되었어요.</p>
       )}
-      <h3>모집 알림</h3>
-      <label className={styles.marketingConsent}>
-        <input
-          type="checkbox"
-          checked={draft.kakaoMarketingConsent === true}
-          onChange={(e) =>
-            onChange({ ...draft, kakaoMarketingConsent: e.target.checked })
-          }
-        />
-        <span>
-          <span className={styles.consentTitle}>
-            카카오톡 모집 알림 받기{" "}
-            <span className={styles.consentOptional}>(선택)</span>
+      <h3>새로운 참여 기회를 받아보세요</h3>
+      <div className={styles.recruitmentNotice}>
+        <label className={styles.marketingConsent}>
+          <input
+            type="checkbox"
+            checked={draft.kakaoMarketingConsent === true}
+            onChange={(e) =>
+              onChange({ ...draft, kakaoMarketingConsent: e.target.checked })
+            }
+          />
+          <span>
+            <span className={styles.consentTitle}>
+              나에게 맞는 캠페인, 카카오톡으로 받기{" "}
+              <span className={styles.consentOptional}>(선택)</span>
+            </span>
+            <span className={styles.consentDescription}>
+              새 제안의 원고료와 수락 기한을 놓치지 않도록 알려드려요. 카카오톡
+              광고성 모집 알림 수신 동의이며, 언제든 철회할 수 있어요.
+            </span>
           </span>
-          <span className={styles.consentDescription}>
-            원케이션 채널 친구에게 신규 캠페인 모집 광고를 보내드려요. 동의하지
-            않아도 가입할 수 있고, 참여자 화면에서 언제든 철회할 수 있어요.
+        </label>
+        <div className={styles.channelInvitation}>
+          <p>알림을 받으려면 원케이션 채널도 추가해주세요.</p>
+          <a
+            href="https://pf.kakao.com/_iaDxeG/friend"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            원케이션 채널 추가
+          </a>
+          <span>
+            동의와 채널 추가는 선택이며, 신청·작업 참여에 영향을 주지 않아요.
           </span>
-        </span>
-      </label>
+        </div>
+      </div>
       <h3>계정 운영 형태</h3>
       <div
         className={styles.paymentOptions}

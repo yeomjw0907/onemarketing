@@ -32,9 +32,12 @@ export async function GET(request: Request) {
       });
     }
   } catch {
-    destination.searchParams.set("loginError", "1");
+    if (store.get("om_kakao_silent")?.value === "1")
+      destination.searchParams.set("autoLogin", "skipped");
+    else destination.searchParams.set("loginError", "1");
   }
   store.delete("om_kakao_state");
+  store.delete("om_kakao_silent");
   return new Response(null, {
     status: 303,
     headers: {

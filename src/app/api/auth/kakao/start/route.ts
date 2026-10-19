@@ -5,11 +5,23 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const body = await request.json();
+    const silent =
+      body.silent === true &&
+      body.reselect !== true &&
+      /KAKAOTALK/i.test(request.headers.get("user-agent") || "");
     const result = await beginKakao(
       typeof body.access === "string" ? body.access : undefined,
       body.reselect === true,
+      silent,
     );
     (await cookies()).set("om_kakao_state", result.state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 600,
+    });
+    (await cookies()).set("om_kakao_silent", silent ? "1" : "0", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

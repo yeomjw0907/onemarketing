@@ -1,15 +1,57 @@
 .email {
   position: relative;
 }
+.recruitmentNotice {
+  margin-bottom: 28px;
+  border: 1px solid var(--line, #e5e8eb);
+  border-radius: 16px;
+  overflow: hidden;
+}
 .marketingConsent {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  margin: 0 0 28px;
-  border-radius: 12px;
-  background: #f2f4f6;
+  margin: 0;
+  background: var(--blue-soft, #eff6ff);
   cursor: pointer;
+}
+.marketingConsent:has(input:checked) {
+  box-shadow: inset 3px 0 var(--blue, #2563eb);
+}
+.channelInvitation {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.channelInvitation p {
+  margin: 0;
+  color: var(--text, #333d4b);
+  font-size: 14px;
+  line-height: 22px;
+}
+.channelInvitation a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #fee500;
+  color: #191919;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.channelInvitation a:focus-visible {
+  outline: 2px solid var(--blue, #2563eb);
+  outline-offset: 3px;
+}
+.channelInvitation span {
+  color: var(--muted, #6b7684);
+  font-size: 12px;
+  line-height: 19px;
+  word-break: keep-all;
 }
 .marketingConsent input[type="checkbox"] {
   flex: 0 0 22px;

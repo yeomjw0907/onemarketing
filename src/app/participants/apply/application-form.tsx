@@ -340,6 +340,27 @@ export default function ApplicationForm({
                 </label>
               </div>
               <div className={styles.consent}>
+                <label className={styles.allConsent}>
+                  <input
+                    type="checkbox"
+                    disabled={busy}
+                    checked={consent && draft.kakaoMarketingConsent === true}
+                    onChange={(e) => {
+                      setConsent(e.target.checked);
+                      setDraft({
+                        ...draft,
+                        kakaoMarketingConsent: e.target.checked,
+                      });
+                    }}
+                  />
+                  <span>
+                    전체 동의 <small>선택 항목 포함</small>
+                  </span>
+                </label>
+                <p>
+                  개인정보 수집·이용과 카카오톡 모집 광고 수신에 함께 동의해요.
+                  선택 동의를 해제해도 신청할 수 있어요.
+                </p>
                 <strong>개인정보 수집·이용 안내</strong>
                 <p>
                   원마케팅은 참여 신청 검토, 협업 연락 및 보수 정산을 위해 이름,
