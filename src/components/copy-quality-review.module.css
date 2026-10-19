@@ -1,0 +1,70 @@
+.review {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line, #e9edf2);
+}
+.header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+.hint {
+  margin: 0;
+  color: var(--muted, #6b7684);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.review summary {
+  padding: 10px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+.comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.comparison > div {
+  min-width: 0;
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--bg, #f7f8fa);
+}
+.review h4 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted, #6b7684);
+}
+.review pre {
+  max-height: 420px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.change {
+  padding: 12px 0;
+  border-top: 1px solid var(--line, #e9edf2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.change p {
+  margin: 4px 0;
+}
+.change small {
+  color: var(--muted, #6b7684);
+}
+@media (max-width: 680px) {
+  .comparison {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}

@@ -1,11 +1,17 @@
 import { requireClipDescription } from "./clip-description";
+import {
+  withDisclosure,
+  projectCopyBrand,
+  copyBasis,
+  type CopyQualityReport,
+} from "./copy-quality";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import ExcelJS from "exceljs";
 import sharp from "sharp";
-import { audit, create, list, update, transaction, lock } from "./db";
+import { audit, create, get, list, update, transaction, lock } from "./db";
 import { getObject, putObject, removeObjects } from "./storage";
 import { requireRecord } from "./domain";
 import type { RecordData } from "./types";
@@ -71,7 +77,8 @@ export function detectMime(buffer: Buffer, extension: string) {
   );
 }
 export async function extractSheet(buffer: Buffer, ext: string) {
-  if(["txt","md"].includes(ext))return buffer.toString("utf8").slice(0,50000);
+  if (["txt", "md"].includes(ext))
+    return buffer.toString("utf8").slice(0, 50000);
   if (!["xlsx", "csv"].includes(ext)) return null;
   if (ext === "csv")
     return buffer.toString("utf8").replace(/^﻿/, "").slice(0, 50000);
@@ -110,6 +117,7 @@ export async function saveAsset(
     buffer: Buffer;
     text?: string;
     editorialNotes?: string;
+    copyQuality?: CopyQualityReport;
     extracted?: string | null;
     slot?: string;
     jobId?: string;
@@ -118,6 +126,19 @@ export async function saveAsset(
   actor: string,
 ) {
   const project = await requireRecord(input.projectId, "projects");
+  if (input.category === "copy") {
+    const originalTask = input.taskId ? await get(input.taskId) : undefined;
+    if (originalTask?.channel === "clip" && !input.copyQuality)
+      requireClipDescription(String(input.text || ""));
+    const brand = projectCopyBrand(
+      project,
+      project.customerId ? await get(String(project.customerId)) : undefined,
+    );
+    const text = withDisclosure(String(input.text || ""), brand);
+    if (input.copyQuality && input.copyQuality.reviewedText !== text)
+      throw new Error("검증한 원고와 저장할 원고가 다릅니다.");
+    input = { ...input, text, buffer: Buffer.from(text, "utf8") };
+  }
   if (
     project.settled ||
     ["completed", "cancelled"].includes(String(project.status))
@@ -137,7 +158,11 @@ export async function saveAsset(
           "제작 중 기획이 변경되었습니다. 비용을 확인하고 승인한 기획으로 다시 제작하세요.",
         );
     }
-    if (task.channel === "clip" && input.category === "copy") {
+    if (
+      task.channel === "clip" &&
+      input.category === "copy" &&
+      input.copyQuality?.status !== "blocked"
+    ) {
       const text = requireClipDescription(String(input.text || ""));
       input = { ...input, text, buffer: Buffer.from(text, "utf8") };
     }
@@ -188,6 +213,35 @@ export async function saveAsset(
         throw new Error("마감·보류한 프로젝트에는 자료를 추가할 수 없습니다.");
       if (input.taskId) {
         const latestTask = await requireRecord(input.taskId, "tasks");
+        if (input.category === "copy" && input.jobId) {
+          const job = await requireRecord(input.jobId, "jobs");
+          const snapshot = job.snapshot as {
+            copyBasis?: string;
+            copyPrevious?: RecordData | null;
+            task: RecordData;
+          };
+          const current = (await list("assets")).find(
+            (a) =>
+              a.taskId === input.taskId &&
+              a.category === "copy" &&
+              a.current === true,
+          );
+          if (
+            snapshot.copyBasis !== undefined &&
+            (snapshot.copyBasis !== copyBasis(latestProject) ||
+              (snapshot.copyPrevious?.id || null) !== (current?.id || null) ||
+              (snapshot.copyPrevious &&
+                snapshot.copyPrevious.version !== current?.version))
+          )
+            throw new Error(
+              "제품 정보나 기존 원고가 변경되었습니다. 최신 내용으로 다시 교정·검증하세요.",
+            );
+          if (
+            snapshot.task.brief !== latestTask.brief ||
+            snapshot.task.briefApprovedAt !== latestTask.briefApprovedAt
+          )
+            throw new Error("검증 중 기획이 변경되었습니다. 다시 제작하세요.");
+        }
         if (
           ["delivered", "submitted", "verified"].includes(
             String(latestTask.status),
@@ -196,7 +250,11 @@ export async function saveAsset(
           throw new Error(
             "이미 전달된 작업입니다. 새 프로젝트로 변경 내용을 관리하세요.",
           );
-        if (latestTask.channel === "clip" && input.category === "copy")
+        if (
+          latestTask.channel === "clip" &&
+          input.category === "copy" &&
+          input.copyQuality?.status !== "blocked"
+        )
           requireClipDescription(String(input.text || ""));
       }
       const slot =
@@ -205,6 +263,37 @@ export async function saveAsset(
           ? input.category
           : randomUUID());
       const assets = await list("assets");
+      // A manual edit must not erase an existing failed or successful verification.
+      if (input.category === "copy" && !input.copyQuality && input.taskId) {
+        const previous = assets.find(
+          (a) =>
+            a.taskId === input.taskId &&
+            a.category === "copy" &&
+            a.current === true &&
+            a.copyQuality,
+        );
+        if (previous)
+          input = {
+            ...input,
+            copyQuality: {
+              ...(previous.copyQuality as CopyQualityReport),
+              status: "blocked",
+              reviewedText: String(input.text || ""),
+              previousText: String(previous.text || ""),
+              checkedAt: new Date().toISOString(),
+              issues: [
+                {
+                  severity: "blocker",
+                  category: "required",
+                  quote: "",
+                  reason: "수동 수정 후 별도 검증이 필요해요.",
+                  evidence: "이전 검증 이후 원고가 변경됨",
+                  suggestedFix: "이 원고 교정·검증을 실행하세요.",
+                },
+              ],
+            },
+          };
+      }
       if (input.taskId && input.category !== "source") {
         for (const a of assets.filter(
           (a) =>
@@ -246,6 +335,8 @@ export async function saveAsset(
         slot,
         text: input.text || null,
         editorialNotes: input.editorialNotes || null,
+        copyQuality: input.copyQuality || null,
+        copyQualityBasis: input.copyQuality ? copyBasis(latestProject) : null,
         extracted: input.extracted || null,
         jobId: input.jobId || null,
       });

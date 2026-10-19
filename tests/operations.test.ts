@@ -231,6 +231,17 @@ test("참여자 ZIP: 해당 두 작업 승인본·게시 지침만 포함, 미�
     actor,
   );
   await act("approve-task", blog);
+  await saveAsset(
+    {
+      projectId: p.id,
+      taskId: clip.id,
+      category: "copy",
+      name: "클립 설명.txt",
+      text: "확인된 제품 정보를 소개합니다.",
+      buffer: Buffer.from("확인된 제품 정보를 소개합니다."),
+    },
+    actor,
+  );
   await act("approve-task", clip);
   const bundle = await participantBundle(p.id, set.id);
   assert.equal(bundle.tasks.length, 2);

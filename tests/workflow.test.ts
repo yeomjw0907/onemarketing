@@ -123,6 +123,16 @@ function mockFetch(handler: typeof fetch) {
     return handler(url, init);
   }) as typeof fetch;
 }
+function mockCopyReply(prompt: string) {
+  return /별도 호출되는 광고 원고 검증자/.test(prompt)
+    ? JSON.stringify({ issues: [] })
+    : JSON.stringify({
+        title: "제품 소개",
+        body: "확인된 제품 정보입니다.\n[이미지 1]",
+        editorialNotes: "",
+        changes: [],
+      });
+}
 async function setup(channel = "blog", images = 1) {
   const c = await save("customers", { name: "테스트" }, actor),
     product = await save(
@@ -243,7 +253,12 @@ test("Claude 원고 요청에 실제 참고 사진을 첨부하고 프롬프트 
     return Response.json({
       id: "vision-test",
       stop_reason: "end_turn",
-      content: [{ type: "text", text: "사진을 참고한 외형 소개" }],
+      content: [
+        {
+          type: "text",
+          text: mockCopyReply(body.messages[0].content.at(-1).text),
+        },
+      ],
       usage: { input_tokens: 10, output_tokens: 10 },
     });
   });
@@ -476,12 +491,19 @@ test("영속 큐 예산·승인·중복 실행 방지와 원고 adapter", async 
   assert.equal(await claimJob("other-worker"), null);
   const original = globalThis.fetch;
   mockFetch(
-    async () =>
+    async (_url, init) =>
       new Response(
         JSON.stringify({
           id: "mock-message",
           stop_reason: "end_turn",
-          content: [{ type: "text", text: "검증된 제품 소개 원고" }],
+          content: [
+            {
+              type: "text",
+              text: mockCopyReply(
+                JSON.stringify(JSON.parse(String(init?.body)).messages),
+              ),
+            },
+          ],
           usage: { input_tokens: 100, output_tokens: 100 },
         }),
         { status: 200 },
@@ -1277,9 +1299,11 @@ test("클립 설명 생성은 게시 본문과 제작 메모를 분리하고 해
     actor,
   );
   const description = "#광고 확인된 제품 정보를 소개합니다. #제품";
+  let copyCalls = 0;
   mockFetch(async (_url, init) => {
     const body = JSON.parse(String(init?.body));
-    assert.match(JSON.stringify(body.messages), /description/);
+    copyCalls++;
+    assert.match(JSON.stringify(body.messages), /클립 설명|description/);
     return Response.json({
       id: "clip-copy-qa",
       stop_reason: "end_turn",
@@ -1287,10 +1311,15 @@ test("클립 설명 생성은 게시 본문과 제작 메모를 분리하고 해
       content: [
         {
           type: "text",
-          text: JSON.stringify({
-            description,
-            productionNotes: "장면1: 제품 클로즈업. 자막 제작 지시",
-          }),
+          text: /별도 호출되는 광고 원고 검증자/.test(
+            JSON.stringify(body.messages),
+          )
+            ? JSON.stringify({ issues: [] })
+            : JSON.stringify({
+                description,
+                productionNotes: "장면1: 제품 클로즈업. 자막 제작 지시",
+                changes: [],
+              }),
         },
       ],
     });
@@ -1300,9 +1329,14 @@ test("클립 설명 생성은 게시 본문과 제작 메모를 분리하고 해
     const asset = (await list("assets")).find(
       (a) => a.jobId === job.id && a.category === "copy",
     )!;
-    assert.equal(asset.text, description);
+    const { withDisclosure } = await import("../src/lib/copy-quality");
+    const expected = withDisclosure(description, "테스트");
+    assert.equal(asset.text, expected);
+    assert.equal(copyCalls, 3);
+    assert.equal((asset.copyQuality as { status: string }).status, "passed");
     assert.match(String(asset.editorialNotes), /장면1/);
-    assert.equal((await bytes(asset)).toString(), description);
+    assert.equal((await bytes(asset)).toString(), expected);
+    assert.equal(((await get(job.id))!.calls as unknown[]).length, 3);
   } finally {
     globalThis.fetch = realFetch;
   }

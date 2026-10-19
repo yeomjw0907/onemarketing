@@ -3,6 +3,7 @@ import {
   requireClipDescription,
 } from "./clip-description";
 import { z } from "zod";
+import { requireCopyApproval } from "./copy-quality";
 import { audit, create, list, lock, transaction, update } from "./db";
 import { requireRecord } from "./domain";
 import { bytes } from "./assets";
@@ -44,6 +45,7 @@ export async function approvedBundle(projectId: string, taskIds?: string[]) {
     )
       throw new Error("승인 후 파일이 변경되었습니다. 다시 검수하세요.");
     if (task.channel === "clip") requireClipMaterials(assets);
+    requireCopyApproval(assets, p);
     const snapshot = task.participantSnapshot as {
       name?: string;
       operationType?: string;

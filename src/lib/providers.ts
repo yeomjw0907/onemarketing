@@ -3,7 +3,6 @@ import {
   validateKeywordEvidence,
   keywordResearchInstructions,
 } from "./keyword-research";
-import { clipCopyOutput } from "./clip-description";
 import {
   productBasis,
   productDraftSchema,
@@ -26,7 +25,13 @@ import { ensureTime, remainingMs, Yield } from "./worker";
 import type { RecordData } from "./types";
 import { hybrid } from "./video";
 import { jobLog } from "./job-logs";
-import { blogCopyOutput, orderedImages } from "./copy-format";
+import { orderedImages } from "./copy-format";
+import {
+  runCopyQuality,
+  projectCopyBrand,
+  copyBasis,
+  type CopyCheckpoint,
+} from "./copy-quality";
 export class ProviderError extends Error {
   constructor(
     message: string,
@@ -183,6 +188,8 @@ async function context(job: RecordData) {
           preserve: knowledge.product.preserve,
         },
     instructions: project.instructions,
+    guide: project.guide,
+    requiredCopyPhrases: project.requiredCopyPhrases || [],
     shootingTarget: project.shootingTarget || "auto",
     mediaDirection: mediaGuidance(project, task?.channel === "clip"),
     preferredKeywords: project.preferredKeywords || "",
@@ -652,35 +659,99 @@ async function research(job: RecordData) {
   });
 }
 async function copy(job: RecordData) {
-  await jobLog("copy", "Claude 원고 작성 · 저장한 응답이 있으면 재사용합니다.");
-  const checkpoint = (await requireRecord(job.id)).outputText;
-  const blog = jobInput(job).task?.channel === "blog";
-  const raw =
-    typeof checkpoint === "string"
-      ? checkpoint
-      : await claude(
-          job,
-          `${blog ? `바로 복사·붙여넣기할 수 있는 블로그 원고를 작성하세요. JSON만 반환: {"title":"제목","body":"본문","editorialNotes":"운영자 확인 사항"}. 제목·본문에는 제작 메모, 대안 제목, 작성 지시, 확인 필요 표시, 이미지 생성 프롬프트, 검수표를 절대 넣지 마세요. 마크다운 기호 없이 자연스러운 문단과 소제목으로 작성하세요. 본문의 적절한 위치에 [이미지 1]부터 [이미지 ${Number(jobInput(job).task?.images || 0)}]까지 수량대로 각 1회씩 순서대로 넣으세요. 이미지가 0장이면 표시를 넣지 마세요. 알 수 없는 가격·원재료·효능 등은 본문에서 생략하고 editorialNotes에만 남기세요. 필요한 광고·협찬 표시와 가상 브랜드 예시라는 사실은 유지하세요.` : `클립에 바로 붙여넣을 설명 본문을 작성하세요. JSON만 반환: {"description":"게시할 설명 본문","productionNotes":"영상 자막·장면별 제작 지시와 운영자 확인 사항"}. description은 공백과 줄바꿈 및 해시태그를 포함해 10~300자, 해시태그는 최대 5개입니다. 별도 제목·제작 메모·자막 장면표·마크다운은 description에 넣지 말고 productionNotes에만 작성하세요. 필요한 광고 표시·확인된 제품 정보·캠페인 필수 문구를 유지하고 확인되지 않은 효능·가격은 본문에서 생략하세요. 핵심 키워드는 설명에 자연스럽게 1개 중심으로 사용하고, 영상과 관련 없는 인기 해시태그는 제외하세요. 길이를 채우기 위해 광고 표시를 삭제하지 마세요.`} 희망/추천 키워드는 사실에 맞게 자연스럽게 반영하세요. 프로젝트 내 다른 글과 다른 콘셉트를 유지하세요.\n${await context(job)}`,
-        );
-  await jobResult(job.id, { outputText: raw });
-  const output = blog
-    ? blogCopyOutput(raw, Number(jobInput(job).task?.images || 0))
-    : clipCopyOutput(raw);
-  const text = output.text;
+  const saved = await requireRecord(job.id, "jobs");
+  const input = jobInput(job);
+  const channel = input.task?.channel === "blog" ? "blog" : "clip";
+  const requireCurrent = async () => {
+    const project = await requireRecord(input.project.id, "projects");
+    const task = await requireRecord(input.task!.id, "tasks");
+    const current = (await list("assets")).find(
+      (a) =>
+        a.taskId === task.id && a.category === "copy" && a.current === true,
+    );
+    if (
+      project.hold ||
+      project.settled ||
+      !["producing", "review"].includes(String(project.status)) ||
+      ["approved", "delivered", "submitted", "verified"].includes(
+        String(task.status),
+      ) ||
+      task.brief !== input.task?.brief ||
+      task.briefApprovedAt !== input.task?.briefApprovedAt ||
+      (input.copyBasis !== undefined &&
+        input.copyBasis !== copyBasis(project)) ||
+      (input.copyPrevious?.id || null) !== (current?.id || null) ||
+      (input.copyPrevious && input.copyPrevious.version !== current?.version)
+    )
+      throw new Error(
+        "제품 정보·기획 또는 기존 원고가 변경되었습니다. 최신 내용으로 다시 교정·검증하세요.",
+      );
+  };
+  await requireCurrent();
+  const checkpoint = (saved.copyCheckpoint ||
+    (typeof saved.outputText === "string"
+      ? { draft: saved.outputText }
+      : {})) as CopyCheckpoint;
+  const result = await runCopyQuality(
+    {
+      channel,
+      images: Number(input.task?.images || 0),
+      brand: projectCopyBrand(
+        input.project,
+        input.project.customerId
+          ? await get(String(input.project.customerId))
+          : undefined,
+      ),
+      context: await context(job),
+      sourceText: input.copySource
+        ? String(input.copySource.text || "")
+        : undefined,
+      previousText: input.copyPrevious
+        ? String(input.copyPrevious.text || "")
+        : "",
+    },
+    checkpoint,
+    async (stage, prompt) => {
+      await requireCurrent();
+      await jobLog(
+        "copy_" + stage,
+        {
+          draft: "원고 초안 작성",
+          edit: "한국어 문체 교정",
+          verify: "원자료 대조 · 별도 검증",
+          repair: "보류 항목 1회 수정",
+          reverify: "수정본 별도 재검증",
+        }[stage],
+      );
+      return claude(job, prompt);
+    },
+    async (copyCheckpoint) => {
+      await jobResult(job.id, { copyCheckpoint });
+    },
+  );
+  await jobResult(job.id, { copyQualityStatus: result.report.status });
   await saveAsset(
     {
       projectId: String(job.projectId),
       taskId: String(job.taskId),
       category: "copy",
-      name: blog ? "원고.md" : "클립 설명.txt",
-      text,
-      editorialNotes: output.notes,
-      buffer: Buffer.from(text),
+      name: channel === "blog" ? "원고.md" : "클립 설명.txt",
+      text: result.text,
+      editorialNotes: result.notes,
+      copyQuality: result.report,
+      buffer: Buffer.from(result.text),
       jobId: job.id,
     },
     String(job.actor),
   );
+  await jobLog(
+    "copy_review",
+    result.report.status === "blocked"
+      ? "원고 저장 · 보류 항목 수정·재검증 필요"
+      : "원고 교정·검증 완료 · 운영자 최종 승인 대기",
+  );
 }
+
 async function mediaPlan(job: RecordData) {
   if ((await list("media_plans")).some((p) => p.jobId === job.id)) return;
   const s = jobInput(job);

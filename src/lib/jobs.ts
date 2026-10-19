@@ -1,4 +1,5 @@
 import { anthropicCost } from "./anthropic-cost";
+import { copyBasis } from "./copy-quality";
 import { productBasis, requireConfirmedProduct } from "./product-understanding";
 import { briefingPrompt } from "./media-guidance";
 import { mediaBriefSchema } from "./media-plans";
@@ -22,6 +23,7 @@ import type { RecordData } from "./types";
 export const jobSchema = z.object({
   projectId: z.string().min(1),
   taskId: z.string().optional(),
+  copySourceAssetId: z.string().uuid().optional(),
   replaceAssetId: z.string().optional(),
   type: z.enum([
     "product-review",
@@ -53,6 +55,19 @@ export function enqueue(input: unknown, actor: string) {
     )
       throw new Error("마감·보류한 프로젝트입니다.");
     const assets = await list("assets");
+    const copySource = body.copySourceAssetId
+      ? assets.find(
+          (a) =>
+            a.id === body.copySourceAssetId &&
+            a.kind === "assets" &&
+            a.category === "copy" &&
+            a.current === true &&
+            a.projectId === p.id &&
+            a.taskId === body.taskId,
+        )
+      : undefined;
+    if (body.copySourceAssetId && (body.type !== "copy" || !copySource))
+      throw new Error("교정할 최신 원고를 선택하세요.");
     if (["research", "product-review"].includes(body.type)) {
       if (
         !(
@@ -190,6 +205,17 @@ export function enqueue(input: unknown, actor: string) {
       );
     }
     const snapshot = {
+      copySource: copySource || null,
+      copyPrevious:
+        body.type === "copy"
+          ? assets.find(
+              (a) =>
+                a.taskId === body.taskId &&
+                a.category === "copy" &&
+                a.current === true,
+            ) || null
+          : null,
+      copyBasis: body.type === "copy" ? copyBasis(p) : null,
       productSourceHash: ["product-review", "research"].includes(body.type)
         ? (await productBasis(p)).hash
         : null,
@@ -243,6 +269,7 @@ export function resumable(job: RecordData) {
     state?.request_id ||
     job.searchState ||
     typeof job.outputText === "string" ||
+    Object.keys((job.copyCheckpoint as object) || {}).length ||
     Object.keys((job.checkpoints as object) || {}).length,
   );
 }
@@ -394,6 +421,9 @@ export function jobResult(jobId: string, patch: Record<string, unknown>) {
 }
 export function jobInput(job: RecordData) {
   const s = job.snapshot as {
+    copyBasis?: string;
+    copySource?: RecordData | null;
+    copyPrevious?: RecordData | null;
     mediaPlan?: RecordData | null;
     mediaBinding?: Awaited<ReturnType<typeof mediaBinding>> | null;
     project: RecordData;

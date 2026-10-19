@@ -1,4 +1,5 @@
 import { requireClipMaterials } from "./clip-description";
+import { requireCopyApproval } from "./copy-quality";
 import {
   productBasis,
   productDraftSchema,
@@ -1027,6 +1028,7 @@ export function command(
       )
         throw new Error("원고와 계약 수량의 이미지를 등록하세요.");
       if (row.channel === "clip") requireClipMaterials(assets);
+      requireCopyApproval(assets, p);
       result = await update(
         id,
         {
@@ -1320,6 +1322,7 @@ export function command(
           state?.request_id ||
           row.searchState ||
           typeof row.outputText === "string" ||
+          Object.keys((row.copyCheckpoint as object) || {}).length ||
           Object.keys((row.checkpoints as object) || {}).length
         )
       )

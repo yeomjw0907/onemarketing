@@ -614,6 +614,12 @@ td button {
   border-radius: 8px;
   min-width: 0;
 }
+.asset-copy {
+  grid-column: 1 / -1;
+  padding: 20px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line);
+}
 .asset img,
 .asset video {
   width: 100%;
@@ -734,6 +740,12 @@ td button {
   }
   .assets {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .asset-copy {
+    padding: 12px;
+  }
+  .asset-copy .content-preview {
+    padding: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

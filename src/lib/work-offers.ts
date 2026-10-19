@@ -1,4 +1,5 @@
 import { requireClipMaterials } from "./clip-description";
+import { requireCopyApproval } from "./copy-quality";
 import { z } from "zod";
 import { create, get, list, update, lock, transaction, audit } from "./db";
 import { requireRecord } from "./domain";
@@ -217,7 +218,7 @@ export async function splitSlot(slotId: string, actor: string) {
       )
     )
       throw new Error("미배정·미제안 묶음만 분리할 수 있습니다.");
-    const tasks = [];
+    const tasks: RecordData[] = [];
     for (const id of slot.taskIds as string[])
       tasks.push(await requireRecord(id, "tasks"));
     if (
@@ -267,7 +268,7 @@ export async function releaseMaterials(slotId: string, actor: string) {
     const p = await requireRecord(String(slot.projectId), "projects");
     if (!slot.participantId || p.hold || p.settled)
       throw new Error("배정과 프로젝트 상태를 확인하세요.");
-    const tasks = [];
+    const tasks: RecordData[] = [];
     for (const id of slot.taskIds as string[])
       tasks.push(await requireRecord(id, "tasks"));
     const assets = await list("assets");
@@ -294,6 +295,12 @@ export async function releaseMaterials(slotId: string, actor: string) {
               ((task.approvedAssets as string[]) || []).includes(a.id),
           ),
         );
+    requireCopyApproval(
+      assets.filter(
+        (a) => tasks.some((t) => t.id === a.taskId) && a.current === true,
+      ),
+      p,
+    );
     if (tasks.some((t) => t.status !== "approved"))
       throw new Error("모든 콘텐츠를 내부 승인한 뒤 전달하세요.");
     const policy = {

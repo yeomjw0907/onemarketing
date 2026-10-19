@@ -106,7 +106,8 @@ test("bundle offer → accept → approved materials → submit → 3-day review
         current: true,
         category,
         name: "승인 " + category,
-        text: category === "copy" ? "광고 표시를 유지하는 원고" : undefined,
+        text:
+          category === "copy" ? "[광고] 광고 표시를 유지하는 원고" : undefined,
       });
     await act("approve-task", task.id);
   }

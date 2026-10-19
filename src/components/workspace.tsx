@@ -6,6 +6,8 @@ import ProductUnderstandingReview, {
   KeywordConfirmation,
 } from "./product-understanding";
 import { clipDescription } from "@/lib/clip-description";
+import CopyQualityReview from "./copy-quality-review";
+import { requireCopyApproval } from "@/lib/copy-quality";
 import DeletedCatalog from "./deleted-catalog";
 import { Tabs, useDecisionDialog } from "./ui/workflow-ui";
 import WorkflowConsole from "./workflow-console";
@@ -616,10 +618,15 @@ export default function Workspace() {
       forecast: Number(p.sale) - payout - incurred - remaining,
     };
   };
-  const button = (text: string, fn: () => void, primary = false) => (
+  const button = (
+    text: string,
+    fn: () => void,
+    primary = false,
+    disabled = false,
+  ) => (
     <button
       type="button"
-      disabled={busy}
+      disabled={busy || disabled}
       className={primary ? "primary" : ""}
       onClick={fn}
     >
@@ -676,6 +683,7 @@ export default function Workspace() {
     p: RecordData,
     task?: RecordData,
     replaceAssetId?: string,
+    copySourceAssetId?: string,
   ) {
     if ((type === "image" || type === "video") && task) {
       navigate("projects", p.id);
@@ -698,9 +706,12 @@ export default function Workspace() {
           projectId: p.id,
           taskId: task?.id,
           replaceAssetId,
+          copySourceAssetId,
           type,
           key: crypto.randomUUID(),
-          estimate: config.defaultEstimates?.[type] || 1000,
+          estimate:
+            (config.defaultEstimates?.[type] || 1000) *
+            (type === "copy" ? (copySourceAssetId ? 4 : 5) : 1),
         }),
       });
       setData(await api("/api/data"));
@@ -734,7 +745,10 @@ export default function Workspace() {
     return (
       <div className="assets">
         {rows.map((a) => (
-          <div className="asset" key={a.id}>
+          <div
+            className={"asset" + (a.category === "copy" ? " asset-copy" : "")}
+            key={a.id}
+          >
             {["image", "source"].includes(String(a.category)) &&
             String(a.mime).startsWith("image/") ? (
               <img src={"/api/assets/" + a.id} alt={String(a.name)} />
@@ -770,6 +784,42 @@ export default function Workspace() {
             )}
             {a.category === "copy" && (
               <>
+                <CopyQualityReview
+                  asset={a}
+                  busy={busy}
+                  previous={
+                    data.assets
+                      .filter(
+                        (old) =>
+                          old.id !== a.id &&
+                          old.taskId === a.taskId &&
+                          old.category === "copy" &&
+                          old.createdAt <= a.createdAt,
+                      )
+                      .sort((left, right) =>
+                        right.createdAt.localeCompare(left.createdAt),
+                      )[0]
+                  }
+                  onReview={
+                    a.current === true &&
+                    find("tasks", a.taskId) &&
+                    ![
+                      "approved",
+                      "delivered",
+                      "submitted",
+                      "verified",
+                    ].includes(String(find("tasks", a.taskId)?.status))
+                      ? () =>
+                          void generate(
+                            "copy",
+                            find("projects", a.projectId)!,
+                            find("tasks", a.taskId),
+                            undefined,
+                            a.id,
+                          )
+                      : undefined
+                  }
+                />
                 <button
                   onClick={async () => {
                     try {
@@ -954,7 +1004,24 @@ export default function Workspace() {
                 {button("수정 요청", () =>
                   open("feedback", { id: t.id, feedback: "" }),
                 )}
-                {button("결과물 승인", () => action("approve-task", t), true)}
+                {button(
+                  "결과물 승인",
+                  () => action("approve-task", t),
+                  true,
+                  (() => {
+                    try {
+                      requireCopyApproval(
+                        data.assets.filter(
+                          (a) => a.taskId === t.id && a.current === true,
+                        ),
+                        find("projects", t.projectId),
+                      );
+                      return false;
+                    } catch {
+                      return true;
+                    }
+                  })(),
+                )}
               </div>
             )}
           </div>
@@ -2109,6 +2176,7 @@ export default function Workspace() {
                               (j.providerState as Draft)?.response ||
                               j.searchState ||
                               j.outputText ||
+                              Object.keys(j.copyCheckpoint || {}).length ||
                               Object.keys(j.checkpoints || {}).length,
                             ) &&
                             button("기존 요청 재조회", () =>

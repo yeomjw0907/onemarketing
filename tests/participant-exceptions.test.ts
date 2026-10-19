@@ -93,7 +93,7 @@ async function fixture() {
       current: true,
       category: channel === "blog" ? "copy" : "video",
       name: channel,
-      text: "광고 표시 원고",
+      text: "[광고] 광고 표시 원고",
     });
     if (channel === "clip")
       await create("assets", {
