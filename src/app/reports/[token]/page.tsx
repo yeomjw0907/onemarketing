@@ -1,3 +1,5 @@
+import { PublicProgress } from "@/components/public-progress";
+import styles from "@/components/public-experience.module.css";
 import ReportDownload from "@/components/report-download";
 import guidanceStyles from "@/components/workflow-guidance.module.css";
 import type { Metadata } from "next";
@@ -26,7 +28,7 @@ export default async function ReportPage({
     .flatMap((p) => p.tasks)
     .filter((t) => t.status !== "cancelled");
   return (
-    <main className="customer-report">
+    <main className={`customer-report ${styles.reportRoot}`}>
       <header className="report-header">
         <div>
           <span className="ui-eyebrow">원케이션 · 고객 보고</span>
@@ -45,28 +47,53 @@ export default async function ReportPage({
         })}{" "}
         · 한국 시간
       </p>
-      <div className="stats">
-        {["블로그", "클립"].map((channel) => (
-          <div className="stat" key={channel}>
-            <span>{channel} 게시 확인</span>
+      <section
+        className={styles.reportOverview}
+        aria-label="전체 캠페인 진행 요약"
+      >
+        <div>
+          <span className={styles.eyebrow}>전체 콘텐츠 진행</span>
+          <h2>
+            {complete
+              ? "캠페인 진행 결과를 확인하세요"
+              : "캠페인이 어디까지 진행됐나요?"}
+          </h2>
+          <PublicProgress tasks={tasks} />
+        </div>
+        <div className={styles.channelMetrics}>
+          {["블로그", "클립"].map((channel) => {
+            const ts = tasks.filter((t) => t.channel === channel),
+              done = ts.filter((t) => t.status === "verified").length;
+            return (
+              <div key={channel}>
+                <span>{channel} 게시 확인</span>
+                <strong>
+                  {done}
+                  <small> / {ts.length}건</small>
+                </strong>
+                <div
+                  className={styles.channelTrack}
+                  role="img"
+                  aria-label={`${channel} ${ts.length}건 중 ${done}건 게시 확인`}
+                >
+                  <span
+                    style={{
+                      width: ts.length ? `${(done / ts.length) * 100}%` : "0%",
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <div>
+            <span>프로젝트 완료</span>
             <strong>
-              {
-                tasks.filter(
-                  (t) => t.channel === channel && t.status === "verified",
-                ).length
-              }{" "}
-              / {tasks.filter((t) => t.channel === channel).length}건
+              {active.filter((p) => p.status === "completed").length}
+              <small> / {active.length}건</small>
             </strong>
           </div>
-        ))}
-        <div className="stat">
-          <span>프로젝트 완료</span>
-          <strong>
-            {active.filter((p) => p.status === "completed").length} /{" "}
-            {active.length}건
-          </strong>
         </div>
-      </div>
+      </section>
       {!report.projects.length && (
         <EmptyState
           title="캠페인 준비 중이에요"
@@ -80,8 +107,34 @@ export default async function ReportPage({
             <StatusBadge value={p.status} label={reportStatus(p.status)} />
           </div>
           <p className="muted">마감일 {p.due || "협의 중"}</p>
+          {p.status !== "cancelled" && <PublicProgress tasks={p.tasks} />}
           {p.status !== "cancelled" && p.schedule && (
             <div className={guidanceStyles.summary} aria-label="게시 일정 요약">
+              {p.status !== "completed" && p.schedule.planned > 0 && (
+                <div className={styles.weekNumbers}>
+                  <div>
+                    <span>이번 주 마감</span>
+                    <strong>
+                      {p.schedule.planned}
+                      <small>건</small>
+                    </strong>
+                  </div>
+                  <div>
+                    <span>링크 접수</span>
+                    <strong>
+                      {p.schedule.submitted}
+                      <small>건</small>
+                    </strong>
+                  </div>
+                  <div>
+                    <span>게시 확인</span>
+                    <strong>
+                      {p.schedule.verified}
+                      <small>건</small>
+                    </strong>
+                  </div>
+                </div>
+              )}
               <h3>
                 {p.status === "completed"
                   ? "캠페인 완료"
@@ -99,12 +152,6 @@ export default async function ReportPage({
                   </p>
                   {p.schedule.scheduled ? (
                     <>
-                      <p>
-                        이번 주 마감 예정{" "}
-                        <strong>{p.schedule.planned}건</strong> · 링크 접수{" "}
-                        {p.schedule.submitted}건 · 게시 확인{" "}
-                        {p.schedule.verified}건
-                      </p>
                       <p>
                         {p.schedule.remaining
                           ? `이번 주 마감 예정 작업 중 ${p.schedule.remaining}건은 링크 등록 전이에요.`
@@ -136,7 +183,8 @@ export default async function ReportPage({
             </div>
           )}
           {p.keywords && (
-            <div className="report-keywords">
+            <details className={`report-keywords ${styles.keywordDetails}`}>
+              <summary>확정된 캠페인 키워드 보기</summary>
               <h3>캠페인 키워드</h3>
               <p>대상 제품 · {p.keywords.productName}</p>
               <p>
@@ -159,62 +207,67 @@ export default async function ReportPage({
               {p.keywords.metrics && (
                 <KeywordMetrics metrics={p.keywords.metrics} />
               )}
-            </div>
+            </details>
           )}
-          <div className="tablewrap">
-            <table className="report-table">
-              <caption className="sr-only">{p.name} 콘텐츠 진행 현황</caption>
-              <thead>
-                <tr>
-                  {[
-                    "참여자",
-                    "채널",
-                    "콘텐츠명",
-                    "게시 링크",
-                    "게시 확인일",
-                    "상태",
-                  ].map((s) => (
-                    <th key={s}>{s}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {p.tasks.map((t, n) => (
-                  <tr key={n}>
-                    <td data-label="참여자">{t.participant}</td>
-                    <td data-label="채널">{t.channel}</td>
-                    <td data-label="콘텐츠명">{t.label}</td>
-                    <td data-label="게시 링크">
-                      {t.link ? (
-                        <a
-                          href={t.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          게시물 보기 ↗
-                        </a>
-                      ) : (
-                        "등록 대기"
-                      )}
-                    </td>
-                    <td data-label="게시 확인일">
-                      {t.verifiedAt
-                        ? new Date(t.verifiedAt).toLocaleDateString("ko-KR", {
-                            timeZone: "Asia/Seoul",
-                          })
-                        : "—"}
-                    </td>
-                    <td data-label="상태">
-                      <StatusBadge
-                        value={t.status}
-                        label={reportStatus(t.status)}
-                      />
-                    </td>
+          <details className={styles.taskDetails} open={active.length === 1}>
+            <summary>
+              콘텐츠별 진행 내역 <span>{p.tasks.length}건</span>
+            </summary>
+            <div className="tablewrap">
+              <table className="report-table">
+                <caption className="sr-only">{p.name} 콘텐츠 진행 현황</caption>
+                <thead>
+                  <tr>
+                    {[
+                      "참여자",
+                      "채널",
+                      "콘텐츠명",
+                      "게시 링크",
+                      "게시 확인일",
+                      "상태",
+                    ].map((s) => (
+                      <th key={s}>{s}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {p.tasks.map((t, n) => (
+                    <tr key={n}>
+                      <td data-label="참여자">{t.participant}</td>
+                      <td data-label="채널">{t.channel}</td>
+                      <td data-label="콘텐츠명">{t.label}</td>
+                      <td data-label="게시 링크">
+                        {t.link ? (
+                          <a
+                            href={t.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            게시물 보기 ↗
+                          </a>
+                        ) : (
+                          "등록 대기"
+                        )}
+                      </td>
+                      <td data-label="게시 확인일">
+                        {t.verifiedAt
+                          ? new Date(t.verifiedAt).toLocaleDateString("ko-KR", {
+                              timeZone: "Asia/Seoul",
+                            })
+                          : "—"}
+                      </td>
+                      <td data-label="상태">
+                        <StatusBadge
+                          value={t.status}
+                          label={reportStatus(t.status)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
           {!p.tasks.length && (
             <EmptyState
               title="콘텐츠를 준비하고 있어요"

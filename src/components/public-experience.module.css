@@ -1,0 +1,1030 @@
+.reportRoot,
+.portalRoot {
+  --blue: #3182f6;
+  --public-muted: #6b7684;
+  min-width: 0;
+  color: #191f28;
+  line-height: 1.7;
+}
+.reportRoot {
+  max-width: 1160px;
+  padding: 38px 28px 55px;
+  margin: auto;
+}
+.reportRoot :global(.report-header) {
+  align-items: center;
+  gap: 22px;
+}
+.reportRoot :global(.report-header h1) {
+  font-size: 27px;
+  line-height: 1.5;
+  margin: 10px 0 6px;
+  letter-spacing: -0.8px;
+}
+.reportRoot :global(.report-header p) {
+  font-size: 13px;
+  color: #6b7684;
+  margin: 0;
+}
+.reportRoot :global(.report-updated) {
+  font-size: 11px;
+  margin: 18px 0 27px;
+  color: #6b7684;
+}
+.reportRoot :global(.report-download) {
+  font-size: 12px;
+  min-height: 42px;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3182f6;
+  letter-spacing: -0.1px;
+}
+.reportOverview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 40px;
+  padding: 27px 29px;
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 17px;
+  margin-bottom: 28px;
+}
+.reportOverview h2 {
+  font-size: 20px;
+  line-height: 1.6;
+  margin: 9px 0 24px;
+  letter-spacing: -0.6px;
+}
+.channelMetrics {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-left: 1px solid #edf0f4;
+  padding-left: 28px;
+}
+.channelMetrics > div > span {
+  font-size: 11px;
+  color: #6b7684;
+}
+.channelMetrics strong {
+  display: block;
+  font-size: 24px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  letter-spacing: -0.6px;
+}
+.channelMetrics strong small {
+  font-size: 12px;
+  color: #6b7684;
+  font-weight: 500;
+  margin-left: 5px;
+}
+.channelTrack {
+  height: 5px;
+  border-radius: 4px;
+  background: #e7effa;
+  margin-top: 7px;
+  overflow: hidden;
+}
+.channelTrack > span {
+  display: block;
+  background: #3182f6;
+  height: 100%;
+  border-radius: 4px;
+}
+.progress {
+  margin: 20px 0;
+}
+.progressCaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 12px;
+  color: #6b7684;
+  margin-bottom: 12px;
+}
+.progressCaption > strong {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: #191f28;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.progressCaption small {
+  font-size: 12px;
+  color: #6b7684;
+  font-weight: 400;
+}
+.progressCaption b {
+  font-size: 12px;
+  color: #3182f6;
+  margin-left: 12px;
+  font-weight: 600;
+}
+.progressTrack {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #f2f5f9;
+}
+.progressTrack > span {
+  min-width: 0;
+  border-radius: 2px;
+}
+.stage0 {
+  background: #e3e9f1;
+}
+.stage1 {
+  background: #bdd6fc;
+}
+.stage2 {
+  background: #83b2f8;
+}
+.stage3 {
+  background: #508ff0;
+}
+.stage4 {
+  background: #2465d2;
+}
+.progressLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 15px;
+  margin-top: 15px;
+  font-size: 10px;
+  color: #6b7684;
+}
+.progressLegend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.progressLegend i {
+  height: 6px;
+  width: 6px;
+  border-radius: 2px;
+}
+.progressLegend b {
+  font-size: 11px;
+  font-weight: 500;
+  color: #4e5968;
+}
+.reportRoot :global(.report-project) {
+  border: 1px solid #edf0f4;
+  box-shadow: none;
+  border-radius: 16px;
+  padding: 25px;
+  margin: 0 0 23px;
+  background: #fff;
+}
+.reportRoot :global(.report-project > .section-title) {
+  align-items: flex-start;
+  gap: 15px;
+}
+.reportRoot :global(.report-project h2) {
+  font-size: 18px;
+  line-height: 1.65;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+.reportRoot :global(.report-project > .muted) {
+  font-size: 11px;
+  margin: 9px 0 0;
+}
+.reportRoot :global(.section-title .badge) {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.weekNumbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  padding: 0 0 18px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #dce6f5;
+}
+.weekNumbers > div > span {
+  font-size: 11px;
+  color: #6b7684;
+}
+.weekNumbers strong {
+  font-size: 24px;
+  display: block;
+  line-height: 1.6;
+  margin-top: 3px;
+}
+.weekNumbers strong small {
+  font-size: 11px;
+  color: #6b7684;
+  margin-left: 4px;
+  font-weight: 400;
+}
+.reportRoot :global([aria-label="게시 일정 요약"]) {
+  margin: 22px 0;
+  padding: 20px;
+  background: #f3f7fd;
+  border-radius: 12px;
+}
+.reportRoot :global([aria-label="게시 일정 요약"] h3) {
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+.reportRoot :global([aria-label="게시 일정 요약"] p) {
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 5px 0;
+  color: #4e5968;
+}
+.taskDetails {
+  border-top: 1px solid #edf0f4;
+  padding-top: 16px;
+  margin-top: 21px;
+}
+.taskDetails > summary {
+  cursor: pointer;
+  min-height: 36px;
+  line-height: 1.8;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4e5968;
+}
+.taskDetails > summary::marker,
+.keywordDetails > summary::marker {
+  color: #3182f6;
+}
+.taskDetails > summary > span {
+  font-size: 11px;
+  color: #6b7684;
+  margin-left: 6px;
+  font-weight: 400;
+}
+.taskDetails[open] > summary {
+  margin-bottom: 16px;
+}
+.reportRoot :global(.report-table th) {
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 500;
+}
+.reportRoot :global(.report-table td) {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.reportRoot :global(.tablewrap) {
+  border: 1px solid #edf0f4;
+  border-radius: 11px;
+  box-shadow: none;
+}
+.keywordDetails {
+  padding: 17px 0 0 !important;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 0 !important;
+  margin: 20px 0 0 !important;
+  font-size: 12px;
+}
+.keywordDetails > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 35px;
+  color: #4e5968;
+}
+.keywordDetails h3 {
+  font-size: 14px;
+}
+.keywordDetails p {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.reportRoot > footer {
+  font-size: 11px;
+  color: #6b7684;
+  line-height: 1.9;
+  padding-top: 12px;
+}
+.portalRoot {
+  max-width: 1080px;
+  margin: auto;
+  padding: 36px 26px 60px;
+}
+.portalRoot:global(.portal-entry) {
+  max-width: 536px;
+}
+.portalRoot :global(.pagehead) {
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 23px;
+}
+.portalRoot :global(.pagehead h1) {
+  font-size: 27px;
+  letter-spacing: -0.8px;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.portalRoot :global(.pagehead p) {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0;
+  color: #6b7684;
+}
+.portalRoot :global(.pagehead > a) {
+  font-size: 12px;
+  white-space: nowrap;
+  margin-top: 25px;
+}
+.nextAction {
+  padding: 23px 25px;
+  border: 1px solid #e3edfc;
+  background: #f0f6ff;
+  border-radius: 15px;
+  margin: 22px 0;
+}
+.nextAction h2 {
+  font-size: 21px;
+  letter-spacing: -0.6px;
+  line-height: 1.7;
+  margin: 7px 0;
+}
+.nextAction p {
+  font-size: 12px;
+  color: #6b7684;
+  line-height: 1.9;
+  margin: 0;
+}
+.nextAction > button {
+  margin-top: 10px;
+  min-height: 36px;
+  padding: 0;
+  color: #2875df;
+  font-size: 12px;
+}
+.portalRoot :global(.portal-summary) {
+  padding: 21px 0 25px;
+  gap: 0;
+  margin: 0 0 14px;
+}
+.portalRoot :global(.portal-summary > div) {
+  padding: 0 26px;
+  min-width: 0;
+}
+.portalRoot :global(.portal-summary > div:first-child) {
+  padding-left: 0;
+}
+.portalRoot :global(.portal-summary span) {
+  font-size: 12px;
+  color: #6b7684;
+}
+.portalRoot :global(.portal-summary strong) {
+  font-size: 28px;
+  line-height: 1.7;
+  margin-top: 5px;
+}
+.portalRoot :global(.portal-summary small) {
+  font-size: 12px;
+  color: #6b7684;
+  margin-left: 5px;
+}
+.portalRoot :global(.tabs) {
+  gap: 24px;
+  margin-bottom: 25px;
+}
+.portalRoot :global(.tabs button) {
+  font-size: 13px;
+  min-height: 45px;
+  white-space: nowrap;
+}
+.portalRoot :global(.ui-pane) {
+  border: 1px solid #edf0f4;
+  border-radius: 15px;
+  padding: 24px;
+  box-shadow: none;
+  margin-bottom: 22px;
+}
+.portalRoot :global(.ui-pane[aria-label="참여 제안"]),
+.portalRoot :global(.ui-pane[aria-label="게시 작업"]) {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.portalRoot :global(.ui-pane h2) {
+  font-size: 18px;
+  line-height: 1.7;
+  margin: 0 0 10px;
+}
+.portalRoot :global(.section-title) {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.portalRoot :global(.section-title h2) {
+  margin-bottom: 4px;
+}
+.portalRoot :global(.hint) {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #6b7684;
+}
+.portalRoot :global(.ui-work-item) {
+  background: #fff;
+  border: 1px solid #edf0f4;
+  padding: 24px;
+  border-radius: 15px;
+  margin: 18px 0;
+}
+.portalRoot :global(.ui-item-heading) {
+  align-items: flex-start;
+  gap: 16px;
+}
+.portalRoot :global(.ui-item-heading h3) {
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: -0.4px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.portalRoot :global(.ui-item-heading .badge) {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.portalRoot :global(.ui-reward) {
+  font-size: 27px;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+.portalRoot :global(.ui-reward span) {
+  font-size: 13px;
+  color: #6b7684;
+  margin-left: 5px;
+}
+.portalRoot :global(.ui-account-url) {
+  font-size: 11px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  color: #6b7684;
+  margin: 12px 0;
+}
+.portalRoot :global(.ui-details) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px 24px;
+  padding: 18px 0;
+  margin: 16px 0;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+}
+.portalRoot :global(.ui-details > div) {
+  display: block;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.portalRoot :global(.ui-details dt) {
+  font-size: 11px;
+  color: #6b7684;
+  margin-bottom: 5px;
+}
+.portalRoot :global(.ui-details dd) {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0;
+  color: #333d4b;
+  overflow-wrap: anywhere;
+}
+.portalRoot :global(details) {
+  margin: 15px 0;
+}
+.portalRoot :global(summary) {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.9;
+  min-height: 35px;
+  color: #4e5968;
+}
+.portalRoot :global(summary::marker) {
+  color: #3182f6;
+}
+.portalRoot :global(.ui-actions) {
+  gap: 10px;
+  margin-top: 19px;
+  flex-wrap: wrap;
+}
+.portalRoot :global(.ui-actions button) {
+  min-height: 42px;
+  font-size: 12px;
+}
+.portalRoot :global(.ui-prewrap) {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.portalRoot :global([role="note"]) {
+  padding: 17px 0;
+  margin: 16px 0;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+}
+.portalRoot :global([role="note"] strong) {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.portalRoot :global([role="note"] p) {
+  font-size: 12px;
+  line-height: 1.9;
+  margin-top: 7px;
+}
+.taskSteps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 16px 0;
+  margin: 18px 0 4px;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+  gap: 10px;
+}
+.taskSteps > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  color: #9aa3af;
+}
+.taskSteps > li > svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.taskSteps > li > span {
+  font-size: 11px;
+  line-height: 1.8;
+  min-width: 0;
+}
+.taskSteps small {
+  display: block;
+  font-size: 10px;
+  color: #8b95a1;
+  margin-top: 3px;
+}
+.taskSteps .stepDone {
+  color: #3182f6;
+}
+.taskSteps .stepCurrent {
+  color: #333d4b;
+}
+.taskSteps .stepCurrent small {
+  color: #3182f6;
+}
+.taskSteps .stepArrow {
+  margin-left: auto;
+  color: #c0c8d2;
+}
+.taskFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 22px;
+}
+.taskFilters > button {
+  border: 0;
+  background: #edf0f4;
+  color: #6b7684;
+  border-radius: 7px;
+  font-size: 11px;
+  min-height: 36px;
+  padding: 7px 11px;
+  gap: 7px;
+}
+.taskFilters > button[aria-pressed="true"] {
+  background: #e4efff;
+  color: #226bd7;
+  font-weight: 600;
+}
+.taskFilters > button > span {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.portalRoot :global(.posting-steps) {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0;
+}
+.portalRoot :global(.posting-steps > li) {
+  padding: 22px 0;
+  border-top: 1px solid #edf0f4;
+}
+.portalRoot :global(.posting-steps > li:first-child) {
+  border-top: 0;
+  padding-top: 10px;
+}
+.portalRoot :global(.posting-steps h3) {
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 0 0 9px;
+}
+.portalRoot :global(.posting-file) {
+  padding: 16px;
+  border: 1px solid #edf0f4;
+  border-radius: 11px;
+  margin: 13px 0;
+  background: #fafbfd;
+}
+.portalRoot :global(.posting-file > strong) {
+  font-size: 12px;
+  display: block;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  margin: 9px 0;
+}
+.portalRoot :global(.posting-file img) {
+  max-height: 260px;
+  object-fit: contain;
+  background: #f2f4f6;
+  border-radius: 8px;
+}
+.portalRoot :global(.posting-actions) {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.portalRoot :global(.posting-actions a) {
+  font-size: 12px;
+  min-height: 38px;
+}
+.portalRoot :global(.posting-submit-title) {
+  font-size: 16px;
+  margin-top: 19px;
+}
+.portalRoot :global(.ui-settings-form) {
+  max-width: 660px;
+}
+.portalRoot :global(.ui-amounts) {
+  padding: 15px 0 20px;
+}
+.portalRoot :global(.ui-amounts strong) {
+  font-size: 26px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.portalRoot :global(.ui-amounts span) {
+  font-size: 12px;
+  color: #6b7684;
+}
+.portalRoot :global(.ui-list-row) {
+  padding: 18px 0;
+  font-size: 12px;
+}
+.portalRoot :global(.ui-list-row strong) {
+  font-size: 20px;
+}
+.portalRoot :global(.portal-auth h2) {
+  font-size: 20px;
+  line-height: 1.7;
+}
+.portalRoot :global(.portal-auth > p) {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.portalRoot :global(.ui-count) {
+  font-size: 10px;
+}
+.portalRoot :global(input),
+.portalRoot :global(textarea),
+.portalRoot :global(select) {
+  max-width: 100%;
+  min-width: 0;
+}
+.portalRoot :global(.ui-pane[hidden]) {
+  display: none;
+}
+@media (max-width: 850px) {
+  .reportOverview {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 23px;
+  }
+  .channelMetrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-left: 0;
+    border-top: 1px solid #edf0f4;
+    padding: 20px 0 0;
+    gap: 18px;
+  }
+  .channelMetrics strong {
+    font-size: 22px;
+  }
+  .portalRoot :global(.tabs) {
+    gap: 17px;
+  }
+}
+@media (max-width: 640px) {
+  .reportRoot {
+    padding: 27px 18px 40px;
+  }
+  .reportRoot :global(.report-header) {
+    gap: 19px;
+    align-items: flex-start;
+  }
+  .reportRoot :global(.report-header h1) {
+    font-size: 24px;
+  }
+  .reportRoot :global(.report-header p) {
+    font-size: 12px;
+  }
+  .reportRoot :global(.report-header > div) {
+    width: 100%;
+  }
+  .reportRoot :global(.report-updated) {
+    font-size: 10px;
+    line-height: 1.9;
+    margin: 16px 0 23px;
+  }
+  .reportOverview {
+    padding: 21px 18px;
+    border-radius: 14px;
+    gap: 15px;
+  }
+  .reportOverview h2 {
+    font-size: 18px;
+    margin-bottom: 17px;
+  }
+  .progress {
+    margin: 18px 0;
+  }
+  .progressCaption {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+  .progressCaption > strong {
+    font-size: 21px;
+  }
+  .progressCaption small {
+    font-size: 11px;
+  }
+  .progressCaption b {
+    font-size: 11px;
+    margin-left: 5px;
+  }
+  .progressTrack {
+    height: 8px;
+    gap: 2px;
+  }
+  .progressLegend {
+    font-size: 9px;
+    gap: 8px 10px;
+    margin-top: 13px;
+  }
+  .progressLegend b {
+    font-size: 10px;
+  }
+  .channelMetrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 18px;
+    padding-top: 19px;
+  }
+  .channelMetrics > div:last-child {
+    grid-column: 1/-1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #edf0f4;
+    padding-top: 14px;
+  }
+  .channelMetrics strong {
+    font-size: 23px;
+    margin-top: 3px;
+  }
+  .channelMetrics > div > span {
+    font-size: 11px;
+  }
+  .channelMetrics strong small {
+    font-size: 11px;
+  }
+  .reportRoot :global(.report-project) {
+    padding: 21px 17px;
+    border-radius: 14px;
+    margin-bottom: 19px;
+  }
+  .reportRoot :global(.report-project h2) {
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  .reportRoot :global(.report-project > .section-title) {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .reportRoot :global(.report-project > .muted) {
+    font-size: 10px;
+  }
+  .reportRoot :global([aria-label="게시 일정 요약"]) {
+    padding: 17px 15px;
+    margin: 20px 0;
+  }
+  .weekNumbers {
+    gap: 10px;
+    padding-bottom: 15px;
+  }
+  .weekNumbers > div > span {
+    font-size: 10px;
+  }
+  .weekNumbers strong {
+    font-size: 22px;
+  }
+  .reportRoot :global([aria-label="게시 일정 요약"] h3) {
+    font-size: 12px;
+  }
+  .reportRoot :global([aria-label="게시 일정 요약"] p) {
+    font-size: 11px;
+    line-height: 1.9;
+  }
+  .taskDetails > summary,
+  .keywordDetails > summary {
+    font-size: 12px;
+  }
+  .reportRoot :global(.report-table td) {
+    font-size: 12px;
+  }
+  .reportRoot > footer {
+    font-size: 10px;
+  }
+  .portalRoot {
+    padding: 28px 18px 45px;
+  }
+  .portalRoot :global(.pagehead h1) {
+    font-size: 24px;
+  }
+  .portalRoot :global(.pagehead p) {
+    font-size: 12px;
+  }
+  .portalRoot :global(.pagehead > a) {
+    font-size: 11px;
+  }
+  .nextAction {
+    padding: 20px 18px;
+    margin: 20px 0;
+    border-radius: 13px;
+  }
+  .nextAction h2 {
+    font-size: 19px;
+    line-height: 1.75;
+  }
+  .nextAction p {
+    font-size: 11px;
+  }
+  .nextAction > button {
+    font-size: 12px;
+    min-height: 38px;
+  }
+  .portalRoot :global(.portal-summary) {
+    padding: 17px 0 23px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .portalRoot :global(.portal-summary > div) {
+    padding: 0 14px;
+  }
+  .portalRoot :global(.portal-summary > div + div) {
+    border-top: 0;
+    border-left: 1px solid #edf0f4;
+  }
+  .portalRoot :global(.portal-summary span) {
+    font-size: 11px;
+  }
+  .portalRoot :global(.portal-summary strong) {
+    font-size: 26px;
+  }
+  .portalRoot :global(.portal-summary small) {
+    font-size: 11px;
+  }
+  .portalRoot :global(.tabs) {
+    gap: 15px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    margin-bottom: 22px;
+  }
+  .portalRoot :global(.tabs button) {
+    font-size: 11px;
+    min-height: 43px;
+    flex-shrink: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .portalRoot :global(.ui-count) {
+    font-size: 9px;
+    margin-left: 4px;
+  }
+  .portalRoot :global(.ui-pane) {
+    padding: 21px 18px;
+    border-radius: 14px;
+  }
+  .portalRoot :global(.ui-pane h2) {
+    font-size: 17px;
+  }
+  .portalRoot :global(.ui-work-item) {
+    padding: 21px 17px;
+    border-radius: 14px;
+    margin: 16px 0;
+  }
+  .portalRoot :global(.ui-item-heading) {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .portalRoot :global(.ui-item-heading h3) {
+    font-size: 15px;
+  }
+  .portalRoot :global(.ui-item-heading .badge) {
+    font-size: 10px;
+  }
+  .portalRoot :global(.ui-reward) {
+    font-size: 26px;
+    margin: 14px 0;
+  }
+  .portalRoot :global(.ui-details) {
+    gap: 16px 15px;
+    padding: 17px 0;
+  }
+  .portalRoot :global(.ui-details dt) {
+    font-size: 10px;
+  }
+  .portalRoot :global(.ui-details dd) {
+    font-size: 12px;
+  }
+  .portalRoot :global(.ui-account-url) {
+    font-size: 10px;
+  }
+  .portalRoot :global(.hint) {
+    font-size: 11px;
+  }
+  .portalRoot :global(.ui-actions > button) {
+    flex: 1 1 auto;
+    font-size: 12px;
+  }
+  .taskSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px 15px;
+    padding: 18px 0;
+  }
+  .taskSteps .stepArrow {
+    display: none;
+  }
+  .taskSteps > li > span {
+    font-size: 11px;
+  }
+  .taskSteps small {
+    font-size: 9px;
+  }
+  .taskFilters {
+    gap: 6px;
+  }
+  .taskFilters > button {
+    font-size: 10px;
+    min-height: 35px;
+    padding: 7px 9px;
+  }
+  .portalRoot :global(summary) {
+    font-size: 12px;
+    min-height: 38px;
+  }
+  .portalRoot :global([role="note"] strong) {
+    font-size: 13px;
+  }
+  .portalRoot :global([role="note"] p) {
+    font-size: 11px;
+  }
+  .portalRoot :global(.posting-file) {
+    padding: 14px;
+  }
+  .portalRoot :global(.posting-file img) {
+    max-height: 220px;
+  }
+  .portalRoot :global(.posting-file button) {
+    font-size: 11px;
+    max-width: 100%;
+  }
+  .portalRoot :global(.posting-file textarea) {
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .portalRoot :global(.ui-amounts strong) {
+    font-size: 23px;
+  }
+  .portalRoot :global(.portal-referral) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .portalRoot :global(.portal-referral > button) {
+    margin: 0;
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reportRoot *,
+  .portalRoot * {
+    scroll-behavior: auto !important;
+  }
+}

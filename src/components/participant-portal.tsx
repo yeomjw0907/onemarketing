@@ -1,4 +1,8 @@
 "use client";
+import { ArrowRight } from "lucide-react";
+import { ParticipantSteps } from "./public-progress";
+import styles from "./public-experience.module.css";
+import { participantNext, portalTaskMatches } from "@/lib/public-progress";
 import PostingSteps from "./posting-steps";
 import BrandOrb from "./brand-orb";
 import { participantTaskGuide } from "@/lib/workflow-guidance";
@@ -37,6 +41,7 @@ export default function ParticipantPortal() {
     [tab, setTab] = useState("offers"),
     [notice, setNotice] = useState("");
   const [access, setAccess] = useState("");
+  const [taskFilter, setTaskFilter] = useState("all");
   const { ask, dialog } = useDecisionDialog();
   const firstLoad = useRef(true);
   async function load() {
@@ -127,8 +132,25 @@ export default function ParticipantPortal() {
       (o: Row) =>
         o.status === "proposed" && new Date(o.expiresAt).getTime() > Date.now(),
     ) || [];
+  const next = data
+    ? participantNext(data.tasks, availableOffers.length)
+    : null;
+  function openNext() {
+    if (!next) return;
+    setTaskFilter("all");
+    setTab(next.tab);
+    requestAnimationFrame(() =>
+      document
+        .getElementById(
+          next.taskId ? "portal-task-" + next.taskId : "portal-menu",
+        )
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  }
   return (
-    <main className={`participant-portal${!data ? " portal-entry" : ""}`}>
+    <main
+      className={`participant-portal ${styles.portalRoot}${!data ? " portal-entry" : ""}`}
+    >
       <header className="pagehead">
         <div>
           <span className="ui-eyebrow">원케이션</span>
@@ -197,6 +219,17 @@ export default function ParticipantPortal() {
         />
       ) : (
         <>
+          {next && (
+            <section className={styles.nextAction} aria-label="지금 확인할 일">
+              <span className={styles.eyebrow}>지금 확인할 일</span>
+              <h2>{next.title}</h2>
+              <p>{next.description}</p>
+              <Button variant="text" onClick={openNext}>
+                {next.tab === "offers" ? "제안 확인하기" : "작업 확인하기"}
+                <ArrowRight size={15} />
+              </Button>
+            </section>
+          )}
           <div className="portal-summary" aria-label="내 작업 요약">
             <div>
               <span>수락 대기</span>
@@ -220,21 +253,23 @@ export default function ParticipantPortal() {
               </strong>
             </div>
           </div>
-          <Tabs
-            label="나의 작업 메뉴"
-            value={tab}
-            onChange={setTab}
-            items={[
-              {
-                id: "offers",
-                label: "참여 제안",
-                count: availableOffers.length,
-              },
-              { id: "tasks", label: "게시 작업", count: data.tasks.length },
-              { id: "availability", label: "참여 설정" },
-              { id: "payments", label: "정산·추천" },
-            ]}
-          />
+          <div id="portal-menu">
+            <Tabs
+              label="나의 작업 메뉴"
+              value={tab}
+              onChange={setTab}
+              items={[
+                {
+                  id: "offers",
+                  label: "참여 제안",
+                  count: availableOffers.length,
+                },
+                { id: "tasks", label: "게시 작업", count: data.tasks.length },
+                { id: "availability", label: "참여 설정" },
+                { id: "payments", label: "정산·추천" },
+              ]}
+            />
+          </div>
           <section
             className="ui-pane"
             hidden={tab !== "offers"}
@@ -437,189 +472,231 @@ export default function ParticipantPortal() {
                 description="참여 제안을 수락하면 작업이 여기에 표시돼요."
               />
             )}
-            {data.tasks.map((t: Row) => {
-              const p = data.projects.find((p: Row) => p.id === t.projectId);
-              return (
-                <article className="ui-work-item" key={t.id}>
-                  <div className="ui-item-heading">
-                    <div>
-                      <p className="hint">{p?.name}</p>
-                      <h3>{t.name}</h3>
+            <div className={styles.taskFilters} aria-label="게시 작업 필터">
+              {[
+                ["all", "전체"],
+                ["delivered", "게시·수정 필요"],
+                ["submitted", "검수 대기"],
+                ["verified", "게시 확인"],
+                ["recovery", "복구 확인"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  aria-pressed={taskFilter === value}
+                  onClick={() => setTaskFilter(value)}
+                >
+                  {label}
+                  <span>
+                    {
+                      data.tasks.filter((t: Row) => portalTaskMatches(t, value))
+                        .length
+                    }
+                  </span>
+                </button>
+              ))}
+            </div>
+            {data.tasks.length > 0 &&
+              !data.tasks.some((t: Row) =>
+                portalTaskMatches(t, taskFilter),
+              ) && (
+                <EmptyState
+                  title="이 상태의 작업이 없어요"
+                  description="다른 필터에서 전체 진행 상황을 확인할 수 있어요."
+                />
+              )}
+            {data.tasks
+              .filter((t: Row) => portalTaskMatches(t, taskFilter))
+              .map((t: Row) => {
+                const p = data.projects.find((p: Row) => p.id === t.projectId);
+                return (
+                  <article
+                    className="ui-work-item"
+                    key={t.id}
+                    id={"portal-task-" + t.id}
+                  >
+                    <div className="ui-item-heading">
+                      <div>
+                        <p className="hint">{p?.name}</p>
+                        <h3>{t.name}</h3>
+                      </div>
+                      <StatusBadge value={t.status} />
                     </div>
-                    <StatusBadge value={t.status} />
-                  </div>
-                  <div className={guidanceStyles.guide} role="note">
-                    <strong>{participantTaskGuide(t).title}</strong>
-                    <p>{participantTaskGuide(t).description}</p>
-                    {t.status === "delivered" && taskDeadline(t) && (
-                      <p>
-                        {t.revisionNotes ? "수정" : "제출"} 기한{" "}
-                        {date(taskDeadline(t)!)}
-                      </p>
-                    )}
-                  </div>
-                  <p className="ui-account-url">{t.account?.url}</p>
-                  {taskOverdue(t) && (
-                    <Feedback tone="error">
-                      {t.revisionNotes ? "수정 기한" : "제출 기한"}이 지났어요.
-                      완료한 게시물의 링크를 제출하고 담당자에게 진행 상황을
-                      알려주세요.
-                    </Feedback>
-                  )}
-                  <dl className="ui-details">
-                    {t.scheduledFrom && (
-                      <div>
-                        <dt>게시 예정 기간</dt>
-                        <dd>
-                          {t.scheduledFrom} ~ {t.scheduledUntil}
-                        </dd>
-                      </div>
-                    )}
-                    {taskDeadline(t) && (
-                      <div>
-                        <dt>
-                          {t.status === "delivered" && t.revisionNotes
-                            ? "수정 기한"
-                            : "제출 기한"}
-                        </dt>
-                        <dd>{date(taskDeadline(t)!)}</dd>
-                      </div>
-                    )}
-                    <div>
-                      <dt>지급 상태</dt>
-                      <dd>
-                        {t.payoutStatus === "paid" ? "지급 완료" : "지급 전"}
-                      </dd>
-                    </div>
-                    {t.reviewEligibleAt && (
-                      <div>
-                        <dt>검수 가능일</dt>
-                        <dd>{date(t.reviewEligibleAt)}</dd>
-                      </div>
-                    )}
-                    {t.retentionUntil && (
-                      <div>
-                        <dt>게시 유지 종료</dt>
-                        <dd>
-                          {new Date(t.retentionUntil).toLocaleDateString(
-                            "ko-KR",
-                            { timeZone: "Asia/Seoul" },
-                          )}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                  {["needs_recovery", "recovery_submitted"].includes(
-                    t.retentionStatus,
-                  ) && (
-                    <Feedback>
-                      <strong>
-                        {t.retentionStatus === "needs_recovery"
-                          ? "게시물 복구 요청"
-                          : "복구 완료 접수 · 담당자 확인 중"}
-                      </strong>
-                      <p>{t.retentionNote}</p>
-                      {t.retentionRecoveryDue && (
+                    <ParticipantSteps task={t} />
+                    <div className={guidanceStyles.guide} role="note">
+                      <strong>{participantTaskGuide(t).title}</strong>
+                      <p>{participantTaskGuide(t).description}</p>
+                      {t.status === "delivered" && taskDeadline(t) && (
                         <p>
-                          복구 기한 {date(t.retentionRecoveryDue)}
-                          {t.retentionStatus === "needs_recovery" &&
-                          Date.parse(t.retentionRecoveryDue) < Date.now()
-                            ? " · 기한이 지났어요. 복구 후 알려주세요."
-                            : ""}
+                          {t.revisionNotes ? "수정" : "제출"} 기한{" "}
+                          {date(taskDeadline(t)!)}
                         </p>
                       )}
-                      <p>
-                        기존 게시물을 공개 상태로 복구해주세요. 새 링크 제출이
-                        필요한 경우 담당자에게 문의해주세요.
-                      </p>
-                      {t.link && (
-                        <a href={t.link} target="_blank" rel="noreferrer">
-                          기존 게시물 확인
-                        </a>
+                    </div>
+                    <p className="ui-account-url">{t.account?.url}</p>
+                    {taskOverdue(t) && (
+                      <Feedback tone="error">
+                        {t.revisionNotes ? "수정 기한" : "제출 기한"}이
+                        지났어요. 완료한 게시물의 링크를 제출하고 담당자에게
+                        진행 상황을 알려주세요.
+                      </Feedback>
+                    )}
+                    <dl className="ui-details">
+                      {t.scheduledFrom && (
+                        <div>
+                          <dt>게시 예정 기간</dt>
+                          <dd>
+                            {t.scheduledFrom} ~ {t.scheduledUntil}
+                          </dd>
+                        </div>
                       )}
-                      {t.retentionStatus === "needs_recovery" && (
-                        <Button
-                          disabled={busy}
-                          onClick={async () => {
-                            const answer = await ask({
-                              title: "복구 완료 알리기",
-                              description:
-                                "기존 게시물이 공개 상태인지 확인해주세요. 담당자가 다시 확인한 뒤 유지 상태를 갱신합니다.",
-                              confirmLabel: "복구 완료 알리기",
+                      {taskDeadline(t) && (
+                        <div>
+                          <dt>
+                            {t.status === "delivered" && t.revisionNotes
+                              ? "수정 기한"
+                              : "제출 기한"}
+                          </dt>
+                          <dd>{date(taskDeadline(t)!)}</dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt>지급 상태</dt>
+                        <dd>
+                          {t.payoutStatus === "paid" ? "지급 완료" : "지급 전"}
+                        </dd>
+                      </div>
+                      {t.reviewEligibleAt && (
+                        <div>
+                          <dt>검수 가능일</dt>
+                          <dd>{date(t.reviewEligibleAt)}</dd>
+                        </div>
+                      )}
+                      {t.retentionUntil && (
+                        <div>
+                          <dt>게시 유지 종료</dt>
+                          <dd>
+                            {new Date(t.retentionUntil).toLocaleDateString(
+                              "ko-KR",
+                              { timeZone: "Asia/Seoul" },
+                            )}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                    {["needs_recovery", "recovery_submitted"].includes(
+                      t.retentionStatus,
+                    ) && (
+                      <Feedback>
+                        <strong>
+                          {t.retentionStatus === "needs_recovery"
+                            ? "게시물 복구 요청"
+                            : "복구 완료 접수 · 담당자 확인 중"}
+                        </strong>
+                        <p>{t.retentionNote}</p>
+                        {t.retentionRecoveryDue && (
+                          <p>
+                            복구 기한 {date(t.retentionRecoveryDue)}
+                            {t.retentionStatus === "needs_recovery" &&
+                            Date.parse(t.retentionRecoveryDue) < Date.now()
+                              ? " · 기한이 지났어요. 복구 후 알려주세요."
+                              : ""}
+                          </p>
+                        )}
+                        <p>
+                          기존 게시물을 공개 상태로 복구해주세요. 새 링크 제출이
+                          필요한 경우 담당자에게 문의해주세요.
+                        </p>
+                        {t.link && (
+                          <a href={t.link} target="_blank" rel="noreferrer">
+                            기존 게시물 확인
+                          </a>
+                        )}
+                        {t.retentionStatus === "needs_recovery" && (
+                          <Button
+                            disabled={busy}
+                            onClick={async () => {
+                              const answer = await ask({
+                                title: "복구 완료 알리기",
+                                description:
+                                  "기존 게시물이 공개 상태인지 확인해주세요. 담당자가 다시 확인한 뒤 유지 상태를 갱신합니다.",
+                                confirmLabel: "복구 완료 알리기",
+                              });
+                              if (answer)
+                                void act({
+                                  action: "report-recovery",
+                                  id: t.id,
+                                });
+                            }}
+                          >
+                            복구 완료 알리기
+                          </Button>
+                        )}
+                      </Feedback>
+                    )}
+                    <details>
+                      <summary>
+                        캠페인 가이드 · v
+                        {t.guideSnapshot?.version || p?.guideVersion}
+                      </summary>
+                      <p className="ui-prewrap">
+                        {t.guideSnapshot?.text || p?.guide}
+                      </p>
+                    </details>
+                    {t.status === "delivered" ? (
+                      <details open>
+                        <summary>자료 확인하고 게시하기</summary>
+                        <PostingSteps files={t.files} channel={t.channel} />
+                      </details>
+                    ) : ["submitted", "verified"].includes(t.status) ? (
+                      <details>
+                        <summary>전달받은 자료 다시 보기</summary>
+                        <PostingSteps files={t.files} channel={t.channel} />
+                      </details>
+                    ) : null}
+                    {["delivered", "submitted"].includes(t.status) && (
+                      <details open={t.status === "delivered"}>
+                        <summary>
+                          {t.status === "submitted"
+                            ? "제출한 링크 변경"
+                            : "게시물 링크 제출"}
+                        </summary>
+                        <Form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void act({
+                              action: "submit",
+                              id: t.id,
+                              link: new FormData(e.currentTarget).get("link"),
                             });
-                            if (answer)
-                              void act({ action: "report-recovery", id: t.id });
                           }}
                         >
-                          복구 완료 알리기
-                        </Button>
-                      )}
-                    </Feedback>
-                  )}
-                  <details>
-                    <summary>
-                      캠페인 가이드 · v
-                      {t.guideSnapshot?.version || p?.guideVersion}
-                    </summary>
-                    <p className="ui-prewrap">
-                      {t.guideSnapshot?.text || p?.guide}
-                    </p>
-                  </details>
-                  {t.status === "delivered" ? (
-                    <details open>
-                      <summary>자료 확인하고 게시하기</summary>
-                      <PostingSteps files={t.files} channel={t.channel} />
-                    </details>
-                  ) : ["submitted", "verified"].includes(t.status) ? (
-                    <details>
-                      <summary>전달받은 자료 다시 보기</summary>
-                      <PostingSteps files={t.files} channel={t.channel} />
-                    </details>
-                  ) : null}
-                  {["delivered", "submitted"].includes(t.status) && (
-                    <details open={t.status === "delivered"}>
-                      <summary>
-                        {t.status === "submitted"
-                          ? "제출한 링크 변경"
-                          : "게시물 링크 제출"}
-                      </summary>
-                      <Form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          void act({
-                            action: "submit",
-                            id: t.id,
-                            link: new FormData(e.currentTarget).get("link"),
-                          });
-                        }}
-                      >
-                        <h3 className="posting-submit-title">
-                          게시물 링크를 제출해주세요
-                        </h3>
-                        <p className="hint">
-                          게시물의 공유 메뉴에서 링크를 복사한 뒤 여기에
-                          붙여넣어주세요. 임시 저장이나 편집 화면 주소는
-                          제출하지 마세요.
-                        </p>
-                        <Field help="배정된 계정에 게시한 글 또는 클립의 주소를 입력해주세요.">
-                          게시물 링크
-                          <input
-                            required
-                            type="url"
-                            name="link"
-                            defaultValue={t.link}
-                            placeholder="https://"
-                          />
-                        </Field>
-                        <Button variant="primary" busy={busy}>
-                          링크 제출
-                        </Button>
-                      </Form>
-                    </details>
-                  )}
-                </article>
-              );
-            })}
+                          <h3 className="posting-submit-title">
+                            게시물 링크를 제출해주세요
+                          </h3>
+                          <p className="hint">
+                            게시물의 공유 메뉴에서 링크를 복사한 뒤 여기에
+                            붙여넣어주세요. 임시 저장이나 편집 화면 주소는
+                            제출하지 마세요.
+                          </p>
+                          <Field help="배정된 계정에 게시한 글 또는 클립의 주소를 입력해주세요.">
+                            게시물 링크
+                            <input
+                              required
+                              type="url"
+                              name="link"
+                              defaultValue={t.link}
+                              placeholder="https://"
+                            />
+                          </Field>
+                          <Button variant="primary" busy={busy}>
+                            링크 제출
+                          </Button>
+                        </Form>
+                      </details>
+                    )}
+                  </article>
+                );
+              })}
           </section>
           <section
             className="ui-pane"
