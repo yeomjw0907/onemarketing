@@ -297,3 +297,41 @@ test("late submission remains possible and major revision deadline is independen
     Date.parse(String((await get(f.tasks[0].id))!.revisionDue)) > Date.now(),
   );
 });
+
+// Regression: ISSUE-001 — a cancelled campaign could still release approved materials.
+// Found by /qa on 2026-10-19. Report: artifacts/final-workflow-qa.md
+test("cancelled campaigns cannot release materials or queue a delivery notification", async () => {
+  const f = await fixture();
+  const offer = await f.offer();
+  await respondOffer(offer.id, f.workers[0].id, true);
+  for (const task of f.tasks) await act("approve-task", task.id);
+  await act("project-stage", f.project.id, { status: "cancelled" });
+  const before = (await list("notification_outbox")).length;
+  await assert.rejects(releaseMaterials(f.slot.id, actor), /프로젝트 상태/);
+  assert.equal(
+    (await list("deliveries")).filter((d) => d.projectId === f.project.id)
+      .length,
+    0,
+  );
+  assert.equal((await list("notification_outbox")).length, before);
+  assert.equal((await get(f.tasks[0].id))!.status, "approved");
+});
+// Regression: ISSUE-002 — admin link replacement left the previous review date in the portal.
+// Found by /qa on 2026-10-19. Report: artifacts/final-workflow-qa.md
+test("admin link replacement updates the review clock atomically with submission", async () => {
+  const f = await fixture();
+  await f.deliver();
+  const account = (f.workers[0].accounts as { url: string }[])[0];
+  await submitPublication(f.tasks[0].id, f.workers[0].id, account.url + "/111");
+  const old = new Date(Date.now() - 4 * 86400000).toISOString();
+  await update(f.tasks[0].id, { submittedAt: old, reviewEligibleAt: old });
+  await act("publication", f.tasks[0].id, {
+    link: account.url + "/222",
+    verified: false,
+  });
+  const task = (await get(f.tasks[0].id))!;
+  assert.equal(
+    Date.parse(String(task.reviewEligibleAt)),
+    Date.parse(String(task.submittedAt)) + 3 * 86400000,
+  );
+});
