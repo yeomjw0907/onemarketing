@@ -214,6 +214,14 @@ export async function saveAsset(
       if (input.taskId) {
         const latestTask = await requireRecord(input.taskId, "tasks");
         if (input.category === "copy" && input.jobId) {
+          if (
+            ["approved", "delivered", "submitted", "verified"].includes(
+              String(latestTask.status),
+            )
+          )
+            throw new Error(
+              "검증 중 작업이 승인·전달되었습니다. 승인본을 덮어쓸 수 없습니다.",
+            );
           const job = await requireRecord(input.jobId, "jobs");
           const snapshot = job.snapshot as {
             copyBasis?: string;

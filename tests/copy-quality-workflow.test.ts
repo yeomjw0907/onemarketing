@@ -162,3 +162,37 @@ test("changed product facts invalidate a passed verification and blocked reports
     /최신 원고/,
   );
 });
+
+test("a generated result cannot overwrite a task approved during verification", async () => {
+  const { p, t } = await fixture();
+  process.env.ANTHROPIC_API_KEY = "test-not-real";
+  const job = await enqueue(
+    {
+      projectId: p.id,
+      taskId: t.id,
+      type: "copy",
+      estimate: 100,
+      key: crypto.randomUUID(),
+    },
+    actor,
+  );
+  const result = await report();
+  await update(t.id, { status: "approved" });
+  await assert.rejects(
+    saveAsset(
+      {
+        projectId: p.id,
+        taskId: t.id,
+        category: "copy",
+        name: "원고.txt",
+        text: result.text,
+        buffer: Buffer.from(result.text),
+        copyQuality: result.report,
+        jobId: job.id,
+      },
+      actor,
+    ),
+    /덮어쓸/,
+  );
+  assert.equal((await get(t.id))!.status, "approved");
+});
