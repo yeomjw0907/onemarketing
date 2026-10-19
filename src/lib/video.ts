@@ -9,7 +9,7 @@ import { jobInput } from "./jobs";
 import type { RecordData } from "./types";
 import { orderedImages } from "./copy-format";
 import type { MediaBrief } from "./media-plans";
-import { clipTextOverlay, clipHeadingOverlay } from "./clip-template";
+import { clipHeadingOverlay } from "./clip-template";
 import {
   clipTitle,
   CLIP_TEMPLATE,
@@ -152,13 +152,6 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
     const layout = resolveClipLayout(edit);
     const overlays = [
       {
-        text: "유료 광고",
-        role: "disclosure" as const,
-        y: 64,
-        start: 0,
-        end: duration,
-      },
-      {
         text: title,
         role: "title" as const,
         y: CLIP_TEMPLATE.titleY,
@@ -175,12 +168,7 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
     for (let i = 0; i < overlays.length; i++) {
       const o = overlays[i],
         file = path.join(folder, `${i}.png`);
-      writeFileSync(
-        file,
-        o.role === "title"
-          ? await clipHeadingOverlay(edit, title, style.id)
-          : await clipTextOverlay(o.text, o.role, style.id),
-      );
+      writeFileSync(file, await clipHeadingOverlay(edit, title, style.id));
       inputs.push("-loop", "1", "-i", file);
       let layer = `${i + 1}:v`;
       if (o.role === "title" && motion === "fade") {

@@ -1,6 +1,6 @@
 import { requireActor } from "@/lib/auth";
 import sharp from "sharp";
-import { clipTextOverlay, clipHeadingOverlay } from "@/lib/clip-template";
+import { clipHeadingOverlay } from "@/lib/clip-template";
 import { resolveTitleStyle, resolveClipLayout } from "@/lib/clip-layout";
 import { z } from "zod";
 export async function GET(request: Request) {
@@ -40,8 +40,6 @@ export async function GET(request: Request) {
       resolveTitleStyle(id, seed).id,
     );
     const meta = await sharp(heading).metadata();
-    const disclosure = await clipTextOverlay("유료 광고", "disclosure");
-    const dm = await sharp(disclosure).metadata();
     const split = resolveClipLayout(edit) === "split";
     const body = await sharp({
       create: { width: 720, height: 900, channels: 4, background: "#e5e8eb" },
@@ -58,7 +56,6 @@ export async function GET(request: Request) {
     })
       .composite([
         ...(split ? [{ input: body, left: 0, top: 340 }] : []),
-        { input: disclosure, left: Math.floor((720 - dm.width!) / 2), top: 64 },
         { input: heading, left: Math.floor((720 - meta.width!) / 2), top: 140 },
       ])
       .png()

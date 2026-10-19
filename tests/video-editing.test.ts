@@ -18,7 +18,7 @@ async function regionStats(
   const crop = await sharp(readFileSync(file)).extract(region).png().toBuffer();
   return sharp(crop).stats();
 }
-test("actual video editor renders Korean advertising disclosure and title styles without internal captions or a generation call", async () => {
+test("actual video editor renders Korean title styles without a top advertising label without internal captions or a generation call", async () => {
   const folder = mkdtempSync(path.join(tmpdir(), "edit-test-"));
   try {
     const input = path.join(folder, "input.mp4"),
@@ -68,7 +68,10 @@ test("actual video editor renders Korean advertising disclosure and title styles
       width: 560,
       height: 55,
     });
-    assert.ok(stats.channels[0].stdev > 10, "광고 표시가 영상 위에 보여야 함");
+    assert.ok(
+      stats.channels[0].stdev < 2,
+      "영상 상단에 광고 문구를 합성하지 않아야 함",
+    );
     const title = await regionStats(frame, {
       left: 60,
       top: 140,
