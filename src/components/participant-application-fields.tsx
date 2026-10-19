@@ -62,8 +62,8 @@ export default function ApplicationFields({
             <span className={styles.consentOptional}>(선택)</span>
           </span>
           <span className={styles.consentDescription}>
-            신규 캠페인 모집 광고를 보내드려요. 동의하지 않아도 가입할 수 있고,
-            참여자 화면에서 언제든 철회할 수 있어요.
+            원케이션 채널 친구에게 신규 캠페인 모집 광고를 보내드려요. 동의하지
+            않아도 가입할 수 있고, 참여자 화면에서 언제든 철회할 수 있어요.
           </span>
         </span>
       </label>

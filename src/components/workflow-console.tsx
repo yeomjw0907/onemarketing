@@ -700,8 +700,10 @@ export default function WorkflowConsole({
             </Button>
           )}
           <p>
-            최초 참여 권유는 알림톡으로 보내지 않습니다. 생성된 제안은 참여자
-            접속 링크를 직접 공유해주세요.
+            제안 생성 시 모집 알림에 동의한 참여자에게 브랜드 메시지를 준비해요.
+            현재 원케이션 채널 친구에게만 발송되며, 한국 시간 08:00~20:50에
+            처리해요. 채널 친구가 아닌 참여자에게는 접속 링크를 직접
+            공유해주세요.
           </p>
           {slots.map((s) => (
             <div key={s.id} className="ui-list-row">
@@ -1204,7 +1206,7 @@ export default function WorkflowConsole({
         hidden={tab !== "notifications"}
         aria-label="알림 이력"
       >
-        <h2>원케이션 알림톡</h2>
+        <h2>원케이션 카카오톡 알림</h2>
         <p>
           {config?.error
             ? "알림 설정을 불러오지 못했습니다."
@@ -1214,6 +1216,24 @@ export default function WorkflowConsole({
           · 발송 {config?.sens?.enabled ? "활성" : "비활성"} · 문자 대체 사용 안
           함
         </p>
+        <p>
+          모집 브랜드 메시지 ·{" "}
+          {config?.recruitment?.enabled ? "활성" : "비활성"} · 수신 동의자 중
+          채널 친구에게 발송 · 야간 발송은 다음 날 대기
+        </p>
+        <Button
+          disabled={busy || !config?.recruitment?.enabled}
+          onClick={async () => {
+            if (
+              await confirm(
+                "등록된 본인 테스트 번호로 모집 브랜드 메시지 1건을 보내요. 원케이션 채널 친구이며 테스트 광고 수신에 동의하시나요?",
+              )
+            )
+              void act({ action: "recruitment-test", consent: true });
+          }}
+        >
+          본인 번호로 모집 알림 테스트
+        </Button>
         <Button
           disabled={busy}
           onClick={() => void act({ action: "notification-tick" })}
@@ -1237,6 +1257,7 @@ export default function WorkflowConsole({
                 reminder: "기한 안내",
                 retention: "유지 확인",
                 retention_admin: "관리자 게시 유지 알림",
+                recruitment: "모집 제안 · 브랜드 메시지",
               }[String(n.type)] || String(n.type)}{" "}
               · {String(n.to || "관리자 번호 설정")} ·{" "}
               <StatusBadge context="notification" value={n.status} />

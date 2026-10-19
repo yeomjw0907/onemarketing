@@ -40,7 +40,7 @@ export function sensConfiguration() {
         !!process.env[v.env],
       ]),
     ),
-    brandEnabled: false,
+    brandEnabled: process.env.SENS_BRAND_ENABLED === "true",
   };
 }
 export function sensSignature(
@@ -117,6 +117,10 @@ export async function sensRequest(
   return r.json();
 }
 export async function sendNotification(id: string) {
+  if ((await get(id))?.type === "recruitment") {
+    const { sendRecruitment } = await import("./recruitment-notifications");
+    return sendRecruitment(id);
+  }
   if (!sensConfiguration().enabled || !sensConfiguration().configured)
     throw new Error("SENS 설정과 발송 활성화가 필요합니다.");
   const claimed = await transaction(async () => {
@@ -245,6 +249,10 @@ export async function sendNotification(id: string) {
   }
 }
 export async function refreshNotification(id: string) {
+  if ((await get(id))?.type === "recruitment") {
+    const { refreshRecruitment } = await import("./recruitment-notifications");
+    return refreshRecruitment(id);
+  }
   const n = await get(id);
   if (n?.kind !== "notification_outbox" || !n.messageId)
     throw new Error("조회할 메시지 ID가 없습니다.");
@@ -304,11 +312,14 @@ export async function notificationTick() {
         );
     }
   });
+  const { recruitmentTick } = await import("./recruitment-notifications");
+  await recruitmentTick();
   if (!sensConfiguration().enabled || !sensConfiguration().configured) return;
   for (const n of (await list("notification_outbox"))
     .filter(
       (n) =>
         n.type !== "retention_admin" &&
+        n.type !== "recruitment" &&
         ["queued", "accepted"].includes(String(n.status)),
     )
     .slice(0, 20)) {

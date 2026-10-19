@@ -6,6 +6,7 @@ import { assignWorkSlot } from "./work-slots";
 import { defaultWorkflowPolicy, addDays } from "./workflow-policy";
 import { rewardDefaults } from "./sales-cart";
 import { queueNotification } from "./sens";
+import { queueRecruitment } from "./recruitment-notifications";
 import { accountAssignable } from "./participant-account-policy";
 import type { RecordData } from "./types";
 export async function expireOffers(projectId: string) {
@@ -133,7 +134,7 @@ export async function proposeWork(input: unknown, actor: string) {
       retentionDays: 90,
       referralRate: slot.type === "bundle" ? 1200 : 500,
     });
-    // Recruitment is deliberately not sent as informational AlimTalk.
+    await queueRecruitment(offer);
     await audit(actor, "work-proposed", offer.id);
     return offer;
   });

@@ -642,7 +642,7 @@ export default function ParticipantPortal() {
             <h2>모집 알림 설정</h2>
             <Field
               className="portal-consent"
-              help="현재 작업의 진행 안내와 별도이며 언제든 철회할 수 있어요."
+              help="원케이션 채널 친구에게 모집 광고를 보내드려요. 작업 진행 안내와 별도이며 언제든 철회할 수 있어요."
             >
               <input
                 disabled={busy}

@@ -1,5 +1,9 @@
 import { retentionMonitorTick } from "@/lib/retention-monitor";
 import {
+  recruitmentConfiguration,
+  testRecruitment,
+} from "@/lib/recruitment-notifications";
+import {
   retentionAdminConfiguration,
   retentionAdminAlertTick,
 } from "@/lib/retention-admin-alert";
@@ -38,6 +42,7 @@ export async function GET() {
     return Response.json(
       {
         sens: sensConfiguration(),
+        recruitment: recruitmentConfiguration(),
         defaults: defaultWorkflowPolicy,
         retention: {
           enabled: process.env.RETENTION_MONITOR_ENABLED === "true",
@@ -171,6 +176,13 @@ export async function POST(request: Request) {
       case "notification-send":
         await sendNotification(b.id);
         result = { ok: true };
+        break;
+      case "recruitment-test":
+        if (b.consent !== true)
+          throw new Error(
+            "본인 번호의 모집 알림 테스트 수신 동의를 확인해주세요.",
+          );
+        result = await testRecruitment(actor);
         break;
       case "notification-refresh":
         result = await refreshNotification(b.id);
