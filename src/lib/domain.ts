@@ -9,6 +9,7 @@ import {
   type ProductUnderstanding,
 } from "./product-understanding";
 import { keywordPlanSchema } from "./keyword-research";
+import { naverKeywordMetricsSchema } from "./naver-keyword-schema";
 import { syncReferral } from "./referrals";
 import {
   publicationIdentity,
@@ -700,6 +701,7 @@ export function command(
               approvedBy: actor,
             },
             recommendedKeywords: null,
+            keywordMetrics: null,
             research: null,
             researchProductApproval: null,
             confirmedKeywordAnalysis: null,
@@ -727,6 +729,17 @@ export function command(
         )
           throw new Error("분석 근거가 있는 후보 중 키워드를 선택하세요.");
         const reason = z.string().trim().min(1).max(2000).parse(input.reason);
+        const metricResult = naverKeywordMetricsSchema.safeParse(
+          row.keywordMetrics,
+        );
+        const metrics = metricResult.success
+          ? {
+              ...metricResult.data,
+              rows: metricResult.data.rows.filter((r) =>
+                [...main, ...secondary].includes(r.keyword),
+              ),
+            }
+          : undefined;
         result = await update(
           id,
           {
@@ -740,6 +753,7 @@ export function command(
               approvedAt: new Date().toISOString(),
               approvedBy: actor,
               volumeVerified: false,
+              ...(metrics?.rows.length ? { metrics } : {}),
             },
           },
           row.version,

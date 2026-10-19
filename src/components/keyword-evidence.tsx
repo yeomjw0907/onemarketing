@@ -10,8 +10,9 @@ export default function KeywordEvidence({
   return (
     <div>
       <p className="hint">
-        검색 문맥을 바탕으로 추천했어요. 검색량·경쟁도 수치는 별도 데이터로
-        검증하지 않았어요.
+        제품 관련성과 검색 문맥을 바탕으로 추천했어요. 아래 네이버 데이터에서
+        검색 관심도와 블로그 글 공급 현황을 함께 확인해주세요. 실제 검색 횟수나
+        공식 노출 난이도를 의미하지 않아요.
       </p>
       {plan.candidates.map((c) => (
         <details key={c.keyword}>

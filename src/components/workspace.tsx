@@ -1,5 +1,7 @@
 "use client";
 import KeywordEvidence from "./keyword-evidence";
+import KeywordMetrics from "./keyword-metrics";
+import type { NaverKeywordMetrics } from "@/lib/naver-keyword-schema";
 import ProductUnderstandingReview, {
   KeywordConfirmation,
 } from "./product-understanding";
@@ -705,6 +707,25 @@ export default function Workspace() {
       setToast("제작 작업을 등록했어요. 작업 서버에서 순서대로 처리합니다.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function refreshNaverMetrics(p: RecordData) {
+    setBusy(true);
+    setError("");
+    try {
+      await api("/api/keyword-metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: p.id, version: p.version }),
+      });
+      setData(await api("/api/data"));
+      setToast(
+        "네이버 데이터를 조회했어요. 확인 후 고객 공유 내용을 다시 확정해주세요.",
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "네이버 조회 실패");
     } finally {
       setBusy(false);
     }
@@ -1807,7 +1828,7 @@ export default function Workspace() {
               </>
             )}
             {tab === 2 && (
-              <section className="section">
+              <section className="section keyword-planning">
                 <div className="section-title">
                   <h2>게시물별 기획</h2>
                   <button
@@ -1828,7 +1849,7 @@ export default function Workspace() {
                   </p>
                 ) : null}
                 {project.recommendedKeywords ? (
-                  <div className="content-preview">
+                  <div className="keyword-analysis">
                     <strong>추천 키워드</strong>
                     <p>
                       핵심:{" "}
@@ -1852,6 +1873,23 @@ export default function Workspace() {
                     <KeywordEvidence
                       plan={project.recommendedKeywords as Draft}
                     />
+                    <button
+                      disabled={busy || !project.productUnderstandingCurrent}
+                      onClick={() => void refreshNaverMetrics(project)}
+                    >
+                      네이버 블로그·트렌드 데이터 조회
+                    </button>
+                    {project.keywordMetrics ? (
+                      <KeywordMetrics
+                        metrics={project.keywordMetrics as NaverKeywordMetrics}
+                      />
+                    ) : (
+                      <p className="hint">
+                        네이버 데이터를 조회하면 블로그 검색 문서 수·확인된 최근
+                        글·검색 관심도 추이를 볼 수 있어요. 검색광고 API는
+                        사용하지 않아요.
+                      </p>
+                    )}
                     <KeywordConfirmation
                       key={project.id + ":" + project.version}
                       project={project}

@@ -13,6 +13,7 @@ import {
   productFields,
 } from "./product-understanding";
 import { PDFDocument } from "pdf-lib";
+import { collectNaverKeywordMetrics } from "./naver-keywords";
 import { mediaBriefSchema } from "./media-plans";
 import { mediaGuidance } from "./media-guidance";
 import { z } from "zod";
@@ -609,6 +610,22 @@ async function research(job: RecordData) {
     checkpoints = { ...checkpoints, plan: parsed };
     await jobResult(job.id, { checkpoints });
   }
+  if (
+    process.env.NAVER_KEYWORD_METRICS_ENABLED === "true" &&
+    !checkpoints.naverMetrics
+  ) {
+    await requireResearchSnapshot(job);
+    ensureTime(60000);
+    const keywords = (
+      checkpoints.plan as { keywords: { main: string[]; secondary: string[] } }
+    ).keywords;
+    const naverMetrics = await collectNaverKeywordMetrics([
+      ...keywords.main,
+      ...keywords.secondary,
+    ]);
+    checkpoints = { ...checkpoints, naverMetrics };
+    await jobResult(job.id, { checkpoints });
+  }
   await transaction(async () => {
     await lock("project-operations:" + project.id);
     await lock("assets:" + project.id);
@@ -626,6 +643,7 @@ async function research(job: RecordData) {
         JSON.stringify(checkpoints.sources, null, 2),
       recommendedKeywords:
         (checkpoints.plan as { keywords?: unknown }).keywords || null,
+      keywordMetrics: checkpoints.naverMetrics || null,
       researchProductApproval: (await requireConfirmedProduct(latest))
         .approvedAt,
       confirmedKeywordAnalysis: null,

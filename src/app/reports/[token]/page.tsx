@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { customerReport, reportStatus } from "@/lib/customer-reports";
 import { EmptyState, StatusBadge } from "@/components/ui/workflow-ui";
+import KeywordMetrics from "@/components/keyword-metrics";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "One Marketing · 고객 캠페인 보고",
@@ -97,9 +98,12 @@ export default async function ReportPage({
                 {new Date(p.keywords.approvedAt).toLocaleDateString("ko-KR", {
                   timeZone: "Asia/Seoul",
                 })}{" "}
-                · 제품 관련성과 조사 근거를 바탕으로 선정했어요. 검색량·문서
-                수를 측정한 결과는 포함하지 않아요.
+                · 제품 관련성과 조사 근거를 바탕으로 선정했어요. 검색 관심도
+                지수는 실제 검색 횟수가 아니에요.
               </p>
+              {p.keywords.metrics && (
+                <KeywordMetrics metrics={p.keywords.metrics} />
+              )}
             </div>
           )}
           <div className="tablewrap">

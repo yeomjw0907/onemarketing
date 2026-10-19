@@ -14,6 +14,7 @@ if (!process.env.DATABASE_URL)
 process.env.DB_SCHEMA = run;
 process.env.SUPABASE_STORAGE_PREFIX = run + "/";
 process.env.JOB_RUNNER = "worker";
+process.env.NAVER_KEYWORD_METRICS_ENABLED = "false";
 delete process.env.CRON_SECRET;
 const { applyMigrations, dropSchema } = await import("../src/lib/migrate");
 const { closeDb } = await import("../src/lib/db");

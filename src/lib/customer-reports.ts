@@ -4,6 +4,7 @@ import { z } from "zod";
 import { audit, create, get, lock, query, transaction, update } from "./db";
 import { stageLabels, type RecordData } from "./types";
 import { requireConfirmedProduct } from "./product-understanding";
+import { naverKeywordMetricsSchema } from "./naver-keyword-schema";
 const sharedKeywordsSchema = z.object({
   main: z.array(z.string()),
   secondary: z.array(z.string()),
@@ -13,6 +14,7 @@ const sharedKeywordsSchema = z.object({
   productApprovedAt: z.string(),
   sourceHash: z.string(),
   volumeVerified: z.literal(false),
+  metrics: naverKeywordMetricsSchema.optional(),
 });
 type PublicKeywords = Pick<
   z.infer<typeof sharedKeywordsSchema>,
@@ -22,6 +24,7 @@ type PublicKeywords = Pick<
   | "productName"
   | "approvedAt"
   | "volumeVerified"
+  | "metrics"
 >;
 
 const hash = (token: string) =>
@@ -147,6 +150,7 @@ export async function customerReport(
                 productName: shared.productName,
                 approvedAt: shared.approvedAt,
                 volumeVerified: shared.volumeVerified,
+                ...(shared.metrics ? { metrics: shared.metrics } : {}),
               };
           } catch {}
         }
@@ -296,6 +300,40 @@ export async function reportWorkbook(report: CustomerReport) {
   keywords.columns.forEach((c) => {
     c.width = 28;
   });
+  if (report.projects.some((p) => p.keywords?.metrics)) {
+    const sheet = book.addWorksheet("네이버 검색 데이터");
+    sheet.addRow([
+      "프로젝트",
+      "키워드",
+      "블로그 검색 문서 수",
+      "기간 내 확인된 글",
+      "조회 제한",
+      "확인 표본",
+      "블로그 시작일",
+      "종료일",
+      "최신 상대 지수 (검색 횟수 아님)",
+      "지수 제공일",
+      "조회 시각",
+    ]);
+    for (const p of report.projects)
+      if (p.keywords?.metrics)
+        for (const row of p.keywords.metrics.rows) {
+          const last = row.trend.at(-1);
+          sheet.addRow([
+            p.name,
+            row.keyword,
+            row.blogTotal ?? "미확인",
+            row.recentObserved ?? "미확인",
+            row.limited ? "검색 범위 제한·최소 확인 건수" : "조회 범위 내 확인",
+            row.sampleSize,
+            p.keywords.metrics.startDate,
+            p.keywords.metrics.endDate,
+            last?.ratio ?? "자료 없음",
+            last?.period || "",
+            p.keywords.metrics.measuredAt,
+          ]);
+        }
+  }
   for (const s of book.worksheets) {
     s.columns.forEach((c, i) => (c.width = i === 3 ? 70 : 30));
     s.eachRow((r) => (r.alignment = { vertical: "top", wrapText: true }));
