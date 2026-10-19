@@ -380,7 +380,7 @@ test("SENS는 중복 요청을 막고 수신 결과·불명확한 통신 오류�
         });
       }
       return Response.json({
-        messageStatus: "COMPLETED",
+        messageStatusName: "success",
         messageStatusCode: "0000",
       });
     };
@@ -390,6 +390,33 @@ test("SENS는 중복 요청을 막고 수신 결과·불명확한 통신 오류�
     assert.equal(count, 1);
     await refreshNotification(n.id);
     assert.equal((await get(n.id))!.status, "succeeded");
+    // Regression: ISSUE-004 — AlimTalk exposes messageStatusName, not the SMS messageStatus field.
+    // Found by /qa on 2026-10-19. Report: artifacts/final-workflow-qa.md
+    for (const [messageStatusName, expected] of [
+      ["processing", "accepted"],
+      ["fail", "failed"],
+      ["success", "succeeded"],
+    ]) {
+      globalThis.fetch = async (_input, init) => {
+        assert.equal(
+          init?.method,
+          "GET",
+          "status refresh must never resend a message",
+        );
+        return Response.json({
+          messageStatusName,
+          ...(messageStatusName === "processing"
+            ? {}
+            : {
+                messageStatusCode:
+                  messageStatusName === "success" ? "0000" : "3020",
+                messageStatusDesc: "수신 결과",
+              }),
+        });
+      };
+      await refreshNotification(n.id);
+      assert.equal((await get(n.id))!.status, expected);
+    }
     const second = await transaction(() =>
       queueNotification(p.id, "payment", source.id + ":other", {
         name: "테스트",

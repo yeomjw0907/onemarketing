@@ -267,11 +267,15 @@ export async function refreshNotification(id: string) {
     await lock("notification-send:" + id);
     return update(id, {
       status:
-        result.messageStatus === "COMPLETED"
-          ? String(result.messageStatusCode) === "0000"
-            ? "succeeded"
-            : "failed"
-          : "accepted",
+        result.messageStatusName === "success"
+          ? "succeeded"
+          : result.messageStatusName === "fail"
+            ? "failed"
+            : "accepted",
+      error:
+        result.messageStatusName === "fail"
+          ? String(result.messageStatusDesc || "수신 실패")
+          : null,
       providerResult: result,
     });
   });
