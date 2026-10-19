@@ -226,7 +226,7 @@ export default function Dashboard({
             {rows.filter((r) => r.dueToday && !r.project.hold).length}개 · 마감
             지연 {rows.filter((r) => r.overdue && !r.project.hold).length}개
           </p>
-          {rows.length > 0 && (
+          {(rows.length > 0 || headline.projectId) && (
             <button
               className="dv-plain dv-headline-action"
               onClick={() => {
