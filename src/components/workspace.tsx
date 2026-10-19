@@ -1249,9 +1249,12 @@ export default function Workspace() {
               onReload={async () => setData(await api("/api/data"))}
               data={data}
               onNew={newProject}
-              onOpen={(id, nextTab) => {
-                navigate("projects", id);
-                setTab(nextTab);
+              onOpen={(id, nextTab, workflow, section) => {
+                if (workflow) navigate("workflow", id, section);
+                else {
+                  navigate("projects", id);
+                  setTab(nextTab);
+                }
               }}
             />
           </>

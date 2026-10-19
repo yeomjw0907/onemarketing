@@ -1,0 +1,1251 @@
+.root {
+  --blue: #3182f6;
+  --dashboard-blue: var(--blue);
+  --dashboard-muted: #6b7684;
+  color: var(--ink);
+  min-width: 0;
+}
+.root :global(.dv-plain) {
+  border: 0;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+.root :global(.dv-heading) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.root :global(.dv-eyebrow) {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.root :global(.dv-heading h1) {
+  font-size: 28px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  letter-spacing: -1px;
+}
+.root :global(.dv-heading h1 span) {
+  width: 6px;
+  height: 6px;
+  background: var(--dashboard-blue);
+  border-radius: 50%;
+  margin-top: 6px;
+}
+.root :global(.dv-subtitle) {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 9px 0 0;
+}
+.root :global(.dv-view-tabs) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.root :global(.dv-view-tabs .tabs) {
+  margin: 0;
+  border: 0;
+  gap: 24px;
+}
+.root :global(.dv-view-tabs .tabs button) {
+  min-height: 45px;
+  font-size: 13px;
+  padding: 8px 1px 12px;
+}
+.root :global(.dv-week) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.root :global(.dv-metrics) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 28px 0 30px;
+}
+.root :global(.dv-metrics > *) {
+  display: block;
+  min-width: 0;
+  text-align: left;
+  padding: 0 22px;
+  border-right: 1px solid #e4e8ef;
+}
+.root :global(.dv-metrics > :first-child) {
+  padding-left: 0;
+}
+.root :global(.dv-metrics > :last-child) {
+  padding-right: 0;
+  border: 0;
+}
+.root :global(.dv-metrics > * > span) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.root :global(.dv-metrics > * > strong) {
+  display: block;
+  font-size: 30px;
+  line-height: 1.5;
+  font-weight: 700;
+  margin-top: 7px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-metrics strong small) {
+  font-size: 14px;
+  color: var(--muted);
+  margin-left: 5px;
+  font-weight: 500;
+}
+.root :global(.dv-metrics > * > small) {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.7;
+}
+.root :global(.dv-metric-hint) {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 9px;
+  line-height: 1.7;
+}
+.root :global(.dv-metric-hint svg) {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.root :global(.dv-mini-dots) {
+  display: flex;
+  gap: 4px;
+  height: 16px;
+  align-items: center;
+  margin-top: 9px;
+}
+.root :global(.dv-mini-dots i) {
+  width: 14px;
+  height: 6px;
+  border-radius: 2px;
+  background: #e6ecf3;
+}
+.root :global(.dv-mini-dots .dv-filled) {
+  background: var(--dashboard-blue);
+}
+.root :global(.dv-grid) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+}
+.root :global(.dv-primary),
+.root :global(.dv-secondary) {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.root :global(.dv-panel) {
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 0;
+  scroll-margin-top: 20px;
+}
+.root :global(.dv-section-heading) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.root :global(.dv-section-heading h2),
+.root :global(.dv-recent h2) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+.root :global(.dv-section-heading h2 span) {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.root :global(.dv-section-heading p) {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 6px 0 0;
+}
+.root :global(.dv-text-button) {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--muted);
+  min-height: 36px;
+  white-space: nowrap;
+}
+.root :global(.dv-filters) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 20px;
+}
+.root :global(.dv-filter) {
+  border-radius: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  min-height: 34px;
+  padding: 7px 10px;
+}
+.root :global(.dv-filter:hover) {
+  background: #f4f7fb;
+}
+.root :global(.dv-filter.dv-selected) {
+  background: #edf5ff;
+  color: #226ddb;
+  font-weight: 600;
+}
+.root :global(.dv-legend) {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px 11px;
+  margin-top: 17px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.root :global(.dv-legend span) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.root :global(.dv-legend i) {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+.root :global(.dv-stage-0) {
+  background: #e3e9f1;
+}
+.root :global(.dv-stage-1) {
+  background: #b3d3ff;
+}
+.root :global(.dv-stage-2) {
+  background: #77afff;
+}
+.root :global(.dv-stage-3) {
+  background: #508ff0;
+}
+.root :global(.dv-stage-4) {
+  background: #2465d2;
+}
+.root :global(.dv-campaign) {
+  padding: 22px 0 17px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.root :global(.dv-campaign:last-child) {
+  padding-bottom: 0;
+  border: 0;
+}
+.root :global(.dv-campaign-main) {
+  display: block;
+  width: 100%;
+}
+.root :global(.dv-campaign-top) {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.root :global(.dv-campaign-icon) {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: #eaf2ff;
+  color: #397ce6;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.root :global(.dv-tone-0) {
+  background: #e8f5ed;
+  color: #49765c;
+}
+.root :global(.dv-tone-2) {
+  background: #fff0e7;
+  color: #a56334;
+}
+.root :global(.dv-tone-3) {
+  background: #f0f2f5;
+  color: #6b7684;
+}
+.root :global(.dv-campaign-name) {
+  flex: 1;
+  min-width: 0;
+}
+.root :global(.dv-campaign-name strong) {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-campaign-main:hover .dv-campaign-name strong) {
+  color: var(--dashboard-blue);
+}
+.root :global(.dv-campaign-name small) {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-date) {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.root :global(.dv-overdue) {
+  color: #b35918;
+}
+.root :global(.dv-progress-caption) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  margin: 15px 0 9px;
+}
+.root :global(.dv-progress-caption b) {
+  color: #4e5968;
+  margin-left: 4px;
+}
+.root :global(.dv-progress-caption small) {
+  font-size: 11px;
+}
+.root :global(.dv-progress-caption > strong) {
+  font-size: 13px;
+  color: #4e5968;
+}
+.root :global(.dv-pipeline) {
+  display: flex;
+  gap: 3px;
+  height: 9px;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f3f5f8;
+}
+.root :global(.dv-pipeline > span) {
+  min-width: 0;
+  border-radius: 2px;
+}
+.root :global(.dv-campaign-meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 9px;
+}
+.root :global(.dv-campaign-meta > span) {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.root :global(.dv-approved) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 13px;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 12px;
+}
+.root :global(.dv-approved b) {
+  color: #4e5968;
+  font-weight: 500;
+  margin-left: 3px;
+}
+.root :global(.dv-channel-counts) {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 7px;
+}
+.root :global(.dv-campaign-next) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: #226ddb;
+  font-size: 11px;
+  min-height: 38px;
+  margin-top: 5px;
+  gap: 8px;
+}
+.root :global(.dv-campaign-next span) {
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-campaign-next svg) {
+  flex-shrink: 0;
+}
+.root :global(.dv-empty) {
+  padding: 23px 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.root :global(.dv-period) {
+  display: flex;
+  border-radius: 7px;
+  padding: 3px;
+  background: #f2f4f6;
+  flex-shrink: 0;
+}
+.root :global(.dv-period button) {
+  font-size: 10px;
+  padding: 0 10px;
+  min-height: 30px;
+  border-radius: 5px;
+  color: var(--muted);
+}
+.root :global(.dv-period .dv-selected) {
+  background: #fff;
+  color: #4e5968;
+  font-weight: 600;
+}
+.root :global(.dv-achievement-body) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 23px;
+  margin-top: 23px;
+}
+.root :global(.dv-chart-total) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.root :global(.dv-chart-total strong) {
+  font-size: 29px;
+  font-variant-numeric: tabular-nums;
+}
+.root :global(.dv-chart-total small) {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-left: 5px;
+}
+.root :global(.dv-chart-total > span) {
+  font-size: 11px;
+  color: #226ddb;
+}
+.root :global(.dv-chart) {
+  height: 145px;
+  position: relative;
+  margin-top: 20px;
+  padding-left: 24px;
+}
+.root :global(.dv-grid-lines) {
+  position: absolute;
+  inset: 0 0 24px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.root :global(.dv-grid-lines span) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.root :global(.dv-grid-lines span:after) {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed #e6ebf2;
+}
+.root :global(.dv-bars) {
+  display: flex;
+  height: 100%;
+  gap: 10px;
+  position: relative;
+  align-items: flex-end;
+}
+.root :global(.dv-bar-group) {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.root :global(.dv-bar-tracks) {
+  flex: 1;
+  width: 100%;
+  max-width: 35px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+.root :global(.dv-bar) {
+  flex: 1;
+  background: var(--dashboard-blue);
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s ease;
+}
+.root :global(.dv-forecast) {
+  background: repeating-linear-gradient(
+    135deg,
+    #d1e3ff 0,
+    #d1e3ff 3px,
+    #eff5ff 3px,
+    #eff5ff 6px
+  );
+}
+.root :global(.dv-bar-group > small) {
+  font-size: 10px;
+  color: var(--muted);
+  padding-top: 10px;
+  min-height: 24px;
+  white-space: nowrap;
+}
+.root :global(.dv-chart-key) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 15px;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 16px;
+}
+.root :global(.dv-chart-key span) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.root :global(.dv-chart-key i) {
+  width: 7px;
+  height: 7px;
+  background: var(--dashboard-blue);
+  border-radius: 2px;
+}
+.root :global(.dv-chart-key i.dv-forecast) {
+  background: #d1e3ff;
+}
+.root :global(.dv-chart-data) {
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.root :global(.dv-chart-data summary) {
+  cursor: pointer;
+  min-height: 30px;
+}
+.root :global(.dv-chart-data table) {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+.root :global(.dv-chart-data th),
+.root :global(.dv-chart-data td) {
+  padding: 8px 4px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-goal) {
+  border-left: 1px solid var(--line);
+  padding-left: 21px;
+  text-align: center;
+}
+.root :global(.dv-ring) {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 5px auto 14px;
+}
+.root :global(.dv-ring svg) {
+  width: 120px;
+  height: 120px;
+  transform: rotate(-90deg);
+}
+.root :global(.dv-ring circle) {
+  fill: none;
+  stroke: #edf3fc;
+  stroke-width: 9;
+}
+.root :global(.dv-ring circle.dv-ring-value) {
+  stroke: var(--dashboard-blue);
+  stroke-linecap: round;
+}
+.root :global(.dv-ring > div) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.root :global(.dv-ring strong) {
+  font-size: 27px;
+}
+.root :global(.dv-ring strong small) {
+  font-size: 12px;
+}
+.root :global(.dv-ring span) {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.root :global(.dv-goal > strong) {
+  font-size: 11px;
+}
+.root :global(.dv-goal > p) {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.7;
+}
+.root :global(.dv-chart-note) {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 17px 0 0;
+}
+.root :global(.dv-muted) {
+  color: var(--muted);
+  font-size: 10px;
+}
+.root :global(.dv-today) {
+  padding-bottom: 6px;
+}
+.root :global(.dv-todo) {
+  display: block;
+  width: 100%;
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+.root :global(.dv-todo:last-child) {
+  border-bottom: 0;
+}
+.root :global(.dv-todo-meta) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 9px;
+}
+.root :global(.dv-todo-meta small) {
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #f2f4f6;
+  white-space: nowrap;
+}
+.root :global(.dv-todo-meta small.dv-urgent) {
+  color: #a85617;
+  background: #fff3e6;
+}
+.root :global(.dv-todo > strong) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-todo > strong svg) {
+  flex-shrink: 0;
+}
+.root :global(.dv-todo > p) {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 7px 0 0;
+  line-height: 1.8;
+}
+.root :global(.dv-todo-count) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 11px;
+  color: #226ddb;
+  margin-top: 13px;
+}
+.root :global(.dv-todo:hover > strong) {
+  color: var(--dashboard-blue);
+}
+.root :global(.dv-more) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  font-size: 11px;
+  color: #226ddb;
+}
+.root :global(.dv-ai) {
+  padding: 23px;
+  background: #edf4ff;
+  border-radius: 16px;
+  min-width: 0;
+}
+.root :global(.dv-ai h2) {
+  font-size: 16px;
+}
+.root :global(.dv-live) {
+  color: #226ddb;
+  font-size: 10px;
+}
+.root :global(.dv-ai-job) {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 11px;
+  padding: 16px 0;
+  border-bottom: 1px solid #dce8fb;
+}
+.root :global(.dv-ai-job > span:not([data-brand-orb])) {
+  flex: 1;
+  min-width: 0;
+}
+.root :global(.dv-ai-job > svg) {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.root :global(.dv-ai-job strong) {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-ai-job small) {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  display: block;
+  line-height: 1.7;
+}
+.root :global(.dv-ai-job [data-brand-orb]) {
+  flex: 0 0 auto;
+}
+.root :global(.dv-ai-note) {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 17px 0 0;
+}
+.root :global(.dv-recent) {
+  padding: 3px 5px;
+}
+.root :global(.dv-recent h2) {
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.root :global(.dv-activity) {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  margin-bottom: 19px;
+}
+.root :global(.dv-check) {
+  background: #e9f2ff;
+  color: #226ddb;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.root :global(.dv-activity strong) {
+  font-size: 11px;
+  font-weight: 500;
+  display: block;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.root :global(.dv-activity small) {
+  color: var(--muted);
+  font-size: 10px;
+  display: block;
+  margin-top: 6px;
+}
+.root :global(.dv-board) {
+  padding-top: 24px;
+}
+.root :global(.dv-board-toolbar) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.root :global(.dv-search) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  width: 300px;
+  max-width: 100%;
+  color: var(--muted);
+}
+.root :global(.dv-search input) {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font-size: 12px;
+}
+.root :global(.dv-board-toolbar > span) {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.root :global(.dv-board-columns) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+  align-items: start;
+}
+.root :global(.dv-board-column) {
+  background: #edf0f5;
+  padding: 17px 13px;
+  border-radius: 14px;
+  min-width: 0;
+}
+.root :global(.dv-board-column > h2) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 4px 16px;
+}
+.root :global(.dv-board-column > h2 span) {
+  margin-left: auto;
+  font-weight: 500;
+}
+.root :global(.dv-board-card),
+.root :global(.dv-board-card:last-child) {
+  border: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 19px 15px;
+  margin-top: 13px;
+}
+.root :global(.dv-board-card .dv-campaign-top) {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.root :global(.dv-board-card .dv-campaign-name) {
+  flex-basis: calc(100% - 50px);
+}
+.root :global(.dv-board-card .dv-campaign-name strong) {
+  font-size: 13px;
+}
+.root :global(.dv-board-card .dv-date) {
+  font-size: 10px;
+  padding-left: 44px;
+}
+.root :global(.dv-board-card .dv-approved) {
+  font-size: 10px;
+  gap: 5px 9px;
+}
+.root :global(.dv-costs) {
+  margin-top: 30px;
+  min-width: 0;
+}
+@media (max-width: 1250px) {
+  .root :global(.dv-grid) {
+    grid-template-columns: minmax(0, 1fr) 275px;
+    gap: 17px;
+  }
+  .root :global(.dv-panel) {
+    padding: 21px;
+  }
+  .root :global(.dv-metrics > *) {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .root :global(.dv-metrics > * > strong) {
+    font-size: 27px;
+  }
+  .root :global(.dv-achievement-body) {
+    grid-template-columns: 1fr;
+  }
+  .root :global(.dv-goal) {
+    display: grid;
+    grid-template-columns: 95px 1fr;
+    grid-template-rows: 1fr 1fr;
+    text-align: left;
+    column-gap: 17px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 18px 0 0;
+    align-items: end;
+  }
+  .root :global(.dv-ring) {
+    grid-row: 1/3;
+    margin: 0;
+  }
+  .root :global(.dv-ring),
+  .root :global(.dv-ring svg) {
+    width: 90px;
+    height: 90px;
+  }
+  .root :global(.dv-ring strong) {
+    font-size: 23px;
+  }
+  .root :global(.dv-ring span) {
+    font-size: 8px;
+  }
+  .root :global(.dv-goal > p) {
+    align-self: start;
+    margin-top: 7px;
+  }
+}
+@media (max-width: 1050px) {
+  .root :global(.dv-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .root :global(.dv-secondary) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .root :global(.dv-today) {
+    grid-row: 1/3;
+  }
+  .root :global(.dv-achievement-body) {
+    grid-template-columns: minmax(0, 1fr) 155px;
+  }
+  .root :global(.dv-goal) {
+    display: block;
+    text-align: center;
+    border-left: 1px solid var(--line);
+    border-top: 0;
+    padding: 0 0 0 15px;
+  }
+  .root :global(.dv-ring) {
+    margin: 0 auto 15px;
+  }
+  .root :global(.dv-ring),
+  .root :global(.dv-ring svg) {
+    width: 115px;
+    height: 115px;
+  }
+}
+@media (max-width: 700px) {
+  .root :global(.dv-heading) {
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 17px;
+  }
+  .root :global(.dv-heading h1) {
+    font-size: 23px;
+    gap: 6px;
+  }
+  .root :global(.dv-eyebrow) {
+    font-size: 11px;
+  }
+  .root :global(.dv-subtitle) {
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .root :global(.dv-heading > button) {
+    font-size: 11px;
+    padding: 9px 10px;
+    min-height: 40px;
+    white-space: nowrap;
+    margin-top: 22px;
+  }
+  .root :global(.dv-heading > button svg) {
+    display: none;
+  }
+  .root :global(.dv-view-tabs) {
+    gap: 7px;
+  }
+  .root :global(.dv-view-tabs .tabs) {
+    gap: 17px;
+  }
+  .root :global(.dv-view-tabs .tabs button) {
+    font-size: 12px;
+  }
+  .root :global(.dv-week) {
+    font-size: 9px;
+    gap: 4px;
+  }
+  .root :global(.dv-week svg) {
+    display: none;
+  }
+  .root :global(.dv-metrics) {
+    grid-template-columns: 1fr 1fr;
+    gap: 23px 0;
+    padding: 25px 0;
+  }
+  .root :global(.dv-metrics > *) {
+    padding: 0 0 0 18px;
+    border: 0;
+  }
+  .root :global(.dv-metrics > :nth-child(odd)) {
+    padding: 0 15px 0 0;
+    border-right: 1px solid #e4e8ef;
+  }
+  .root :global(.dv-metrics > * > span) {
+    font-size: 12px;
+    gap: 3px;
+  }
+  .root :global(.dv-metrics > * > strong) {
+    font-size: 26px;
+    margin-top: 6px;
+  }
+  .root :global(.dv-metrics strong small) {
+    font-size: 12px;
+  }
+  .root :global(.dv-metric-hint),
+  .root :global(.dv-metrics > * > small) {
+    font-size: 10px;
+    line-height: 1.8;
+  }
+  .root :global(.dv-metric-hint svg) {
+    width: 12px;
+  }
+  .root :global(.dv-mini-dots i) {
+    width: 11px;
+    height: 5px;
+  }
+  .root :global(.dv-grid) {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .root :global(.dv-primary),
+  .root :global(.dv-secondary) {
+    display: contents;
+  }
+  .root :global(.dv-panel) {
+    padding: 20px 17px;
+    border-radius: 14px;
+  }
+  .root :global(.dv-today) {
+    order: 0;
+    padding-bottom: 5px;
+  }
+  .root :global(.dv-campaign-panel) {
+    order: 1;
+  }
+  .root :global(.dv-ai) {
+    order: 2;
+  }
+  .root :global(.dv-achievement) {
+    order: 3;
+  }
+  .root :global(.dv-recent) {
+    order: 4;
+  }
+  .root :global(.dv-section-heading h2) {
+    font-size: 15px;
+  }
+  .root :global(.dv-section-heading p) {
+    font-size: 10px;
+  }
+  .root :global(.dv-muted) {
+    font-size: 9px;
+  }
+  .root :global(.dv-todo) {
+    padding: 16px 0;
+  }
+  .root :global(.dv-todo > strong) {
+    font-size: 12px;
+  }
+  .root :global(.dv-todo > p) {
+    font-size: 10px;
+  }
+  .root :global(.dv-todo-count) {
+    font-size: 10px;
+    margin-top: 9px;
+  }
+  .root :global(.dv-todo-meta) {
+    font-size: 10px;
+  }
+  .root :global(.dv-text-button) {
+    font-size: 10px;
+  }
+  .root :global(.dv-filter) {
+    font-size: 10px;
+    padding: 6px 8px;
+    min-height: 34px;
+  }
+  .root :global(.dv-legend) {
+    justify-content: flex-start;
+    gap: 6px 9px;
+    font-size: 9px;
+    margin-top: 16px;
+  }
+  .root :global(.dv-campaign-top) {
+    gap: 9px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .root :global(.dv-campaign-icon) {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+  .root :global(.dv-campaign-name) {
+    flex-basis: calc(100% - 40px);
+  }
+  .root :global(.dv-campaign-name strong) {
+    font-size: 13px;
+  }
+  .root :global(.dv-campaign-name small) {
+    font-size: 10px;
+  }
+  .root :global(.dv-date) {
+    margin-left: 39px;
+    font-size: 10px;
+  }
+  .root :global(.dv-progress-caption) {
+    margin-top: 12px;
+  }
+  .root :global(.dv-pipeline) {
+    height: 8px;
+    gap: 2px;
+  }
+  .root :global(.dv-approved) {
+    font-size: 10px;
+    gap: 5px 9px;
+  }
+  .root :global(.dv-campaign-next) {
+    font-size: 11px;
+    min-height: 42px;
+  }
+  .root :global(.dv-achievement-body) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .root :global(.dv-goal) {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    grid-template-rows: 1fr 1fr;
+    text-align: left;
+    column-gap: 17px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 18px 0 0;
+  }
+  .root :global(.dv-ring) {
+    margin: 0;
+  }
+  .root :global(.dv-ring),
+  .root :global(.dv-ring svg) {
+    width: 85px;
+    height: 85px;
+  }
+  .root :global(.dv-ring strong) {
+    font-size: 22px;
+  }
+  .root :global(.dv-ring span) {
+    font-size: 8px;
+  }
+  .root :global(.dv-goal > strong) {
+    align-self: end;
+  }
+  .root :global(.dv-goal > p) {
+    align-self: start;
+  }
+  .root :global(.dv-chart) {
+    height: 140px;
+    padding-left: 19px;
+  }
+  .root :global(.dv-bars) {
+    gap: 9px;
+  }
+  .root :global(.dv-bar-group > small) {
+    font-size: 9px;
+  }
+  .root :global(.dv-chart-data table) {
+    min-width: 0;
+  }
+  .root :global(.dv-period button) {
+    font-size: 9px;
+    padding: 0 8px;
+  }
+  .root :global(.dv-ai) {
+    padding: 22px;
+    border-radius: 14px;
+  }
+  .root :global(.dv-ai-job strong) {
+    font-size: 12px;
+  }
+  .root :global(.dv-board-toolbar) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .root :global(.dv-search) {
+    width: 100%;
+  }
+  .root :global(.dv-board-toolbar > span) {
+    font-size: 10px;
+  }
+  .root :global(.dv-board-columns) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .root :global(.dv-board-card .dv-date) {
+    padding-left: 0;
+    margin-left: 39px;
+  }
+  .root :global(.dv-board-card .dv-campaign-name) {
+    flex-basis: calc(100% - 40px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root :global(.dv-bar) {
+    transition: none;
+  }
+}
