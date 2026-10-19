@@ -9,8 +9,13 @@ import { jobInput } from "./jobs";
 import type { RecordData } from "./types";
 import { orderedImages } from "./copy-format";
 import type { MediaBrief } from "./media-plans";
-import { clipTextOverlay } from "./clip-template";
-import { clipTitle, CLIP_TEMPLATE, resolveTitleStyle } from "./clip-layout";
+import { clipTextOverlay, clipHeadingOverlay } from "./clip-template";
+import {
+  clipTitle,
+  CLIP_TEMPLATE,
+  resolveTitleStyle,
+  resolveClipLayout,
+} from "./clip-layout";
 export function runFFmpeg(args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn(
@@ -144,6 +149,7 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
       edit?.titleMotion && edit.titleMotion !== "auto"
         ? edit.titleMotion
         : style.motion;
+    const layout = resolveClipLayout(edit);
     const overlays = [
       {
         text: "유료 광고",
@@ -161,11 +167,20 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
       },
     ];
     const inputs: string[] = [],
-      filters: string[] = [`[0:v]${scale}[base]`];
+      filters: string[] = [
+        layout === "split"
+          ? "[0:v]scale=720:900:force_original_aspect_ratio=decrease,pad=720:900:(ow-iw)/2:(oh-ih)/2:black,setsar=1,pad=720:1280:0:340:black[base]"
+          : `[0:v]${scale}[base]`,
+      ];
     for (let i = 0; i < overlays.length; i++) {
       const o = overlays[i],
         file = path.join(folder, `${i}.png`);
-      writeFileSync(file, await clipTextOverlay(o.text, o.role, style.id));
+      writeFileSync(
+        file,
+        o.role === "title"
+          ? await clipHeadingOverlay(edit, title, style.id)
+          : await clipTextOverlay(o.text, o.role, style.id),
+      );
       inputs.push("-loop", "1", "-i", file);
       let layer = `${i + 1}:v`;
       if (o.role === "title" && motion === "fade") {

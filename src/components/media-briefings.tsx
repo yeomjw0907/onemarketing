@@ -252,6 +252,89 @@ function Plan({
                 />
               </label>
             ))}
+            {(["layout", "contentKind", "accentColor"] as const).map((key) => (
+              <label key={key}>
+                {
+                  {
+                    layout: "영상 레이아웃",
+                    contentKind: "콘텐츠 성격 · 자동 추천 기준",
+                    accentColor: "핵심 강조색",
+                  }[key]
+                }
+                <select
+                  value={
+                    brief.edit?.[key] ||
+                    {
+                      layout: "auto",
+                      contentKind: "product",
+                      accentColor: "yellow",
+                    }[key]
+                  }
+                  onChange={(e) =>
+                    setBrief({
+                      ...brief,
+                      edit: {
+                        hook: "",
+                        detail: "",
+                        cta: "",
+                        ...brief.edit,
+                        [key]: e.target.value,
+                      },
+                    })
+                  }
+                >
+                  {(key === "layout"
+                    ? [
+                        ["auto", "콘텐츠에 맞춰 자동"],
+                        ["split", "상단 분리형"],
+                        ["overlay", "전체 화면형"],
+                      ]
+                    : key === "contentKind"
+                      ? [
+                          ["service", "서비스 소개 · 화면 시연"],
+                          ["product", "제품 · 음식 · 공간"],
+                          ["story", "상황극 · 이야기"],
+                        ]
+                      : [
+                          ["yellow", "옐로"],
+                          ["red", "레드"],
+                          ["mint", "민트"],
+                        ]
+                  ).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            {(["titleLead", "titleAccent"] as const).map((key) => (
+              <label key={key}>
+                {key === "titleLead"
+                  ? "도입 문구 · 흰색"
+                  : "핵심 문구 · 강조색"}
+                <input
+                  maxLength={24}
+                  value={brief.edit?.[key] || ""}
+                  onChange={(e) =>
+                    setBrief({
+                      ...brief,
+                      edit: {
+                        hook: "",
+                        detail: "",
+                        cta: "",
+                        ...brief.edit,
+                        [key]: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </label>
+            ))}
+            <p className="hint">
+              두 문구를 입력하면 기존 제목 대신 사용해요. 비워두면 기존 제목을
+              유지해요. 두 부분 제목은 굵은 고딕으로 표시해요.
+            </p>
             <label>
               제목 스타일
               <select
@@ -271,7 +354,7 @@ function Plan({
                   })
                 }
               >
-                <option value="auto">자동 · 작업별로 다르게</option>
+                <option value="auto">자동 · 기존 스타일 유지</option>
                 {TITLE_STYLES.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.label}
@@ -315,21 +398,21 @@ function Plan({
               않으며 광고 표시는 유지해요.
             </p>
             <details>
-              <summary>실제 글꼴·색상 미리보기</summary>
+              <summary>세로 영상 레이아웃 미리보기</summary>
               <img
                 alt="상단 제목 스타일 미리보기"
-                src={`/api/media-plans/title-preview?title=${encodeURIComponent(titleText)}&style=${brief.edit?.titleStyle || "auto"}&seed=${plan.taskId}`}
+                src={`/api/media-plans/title-preview?title=${encodeURIComponent(titleText)}&style=${brief.edit?.titleStyle || "auto"}&seed=${plan.taskId}&lead=${encodeURIComponent(brief.edit?.titleLead || "")}&accent=${encodeURIComponent(brief.edit?.titleAccent || "")}&layout=${brief.edit?.layout || "auto"}&kind=${brief.edit?.contentKind || "product"}&color=${brief.edit?.accentColor || "yellow"}`}
                 style={{
                   width: "100%",
-                  maxWidth: 600,
+                  maxWidth: 300,
                   background: "#f2f4f6",
                   borderRadius: 12,
-                  padding: 16,
+                  padding: 0,
                 }}
               />
               <p className="hint">
-                정지 상태의 글꼴·색상 미리보기예요. 등장 효과는 영상 생성 후
-                확인할 수 있어요.
+                회색 영역은 영상이 들어갈 자리예요. 실제 장면과 등장 효과는 영상
+                생성 후 확인할 수 있어요.
               </p>
             </details>
           </fieldset>

@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 import { decorateVideo, runFFmpeg, videoReviewFrame } from "../src/lib/video";
-import { resolveTitleStyle, TITLE_STYLES } from "../src/lib/clip-layout";
+import {
+  resolveTitleStyle,
+  TITLE_STYLES,
+  resolveClipLayout,
+} from "../src/lib/clip-layout";
 import type { RecordData } from "../src/lib/types";
 async function regionStats(
   file: string,
@@ -85,6 +89,50 @@ test("actual video editor renders Korean advertising disclosure and title styles
       cta.channels[0].stdev < 2,
       "기존 CTA가 있어도 영상 내부에 출력하지 않아야 함",
     );
+    (job.snapshot as any).mediaPlan.brief.edit = {
+      titleLead: "AI랑 무슨 얘기하지?",
+      titleAccent: "전화로 만나는 공감콜",
+      layout: "auto",
+      contentKind: "service",
+      accentColor: "yellow",
+      titleMotion: "none",
+    };
+    const split = await decorateVideo(job, readFileSync(input));
+    writeFileSync(output, split);
+    await runFFmpeg(["-y", "-ss", "2", "-i", output, "-frames:v", "1", frame]);
+    const header = await regionStats(frame, {
+      left: 0,
+      top: 320,
+      width: 720,
+      height: 15,
+    });
+    assert.ok(header.channels[0].mean < 3, "split header is black");
+    const body = await regionStats(frame, {
+      left: 200,
+      top: 500,
+      width: 300,
+      height: 200,
+    });
+    assert.ok(
+      body.channels[0].mean > 250,
+      "source remains visible without cropping",
+    );
+    const pixels = await sharp(frame)
+      .extract({ left: 0, top: 140, width: 720, height: 180 })
+      .raw()
+      .toBuffer();
+    let yellow = 0,
+      white = 0;
+    for (let i = 0; i < pixels.length; i += 3) {
+      if (pixels[i] > 180 && pixels[i + 1] > 150 && pixels[i + 2] < 100)
+        yellow++;
+      if (pixels[i] > 220 && pixels[i + 1] > 220 && pixels[i + 2] > 220)
+        white++;
+    }
+    assert.ok(
+      yellow > 100 && white > 100,
+      "two heading roles retain separate colors",
+    );
     for (const [style, motion] of [
       ["clean", "none"],
       ["impact", "fade"],
@@ -152,4 +200,18 @@ test("automatic style selection is stable per task and varies across tasks", () 
     ).size,
     TITLE_STYLES.length,
   );
+});
+
+test("layout recommendation follows content rather than task randomness", () => {
+  assert.equal(
+    resolveClipLayout({ contentKind: "service", layout: "auto" }),
+    "split",
+  );
+  assert.equal(resolveClipLayout({ contentKind: "product" }), "overlay");
+  assert.equal(resolveClipLayout({ contentKind: "story" }), "overlay");
+  assert.equal(
+    resolveClipLayout({ contentKind: "service", layout: "overlay" }),
+    "overlay",
+  );
+  assert.equal(resolveClipLayout(), "overlay");
 });

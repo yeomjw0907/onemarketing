@@ -71,3 +71,21 @@ export function clipTitle(
     ? hook
     : String(productName || taskName || "서비스 소개").slice(0, 36);
 }
+
+export type ClipLayout = "auto" | "split" | "overlay";
+export type ClipEdit = {
+  titleLead?: string;
+  titleAccent?: string;
+  layout?: ClipLayout;
+  contentKind?: "service" | "product" | "story";
+  accentColor?: "yellow" | "red" | "mint";
+};
+export function resolveClipLayout(edit?: ClipEdit): "split" | "overlay" {
+  if (edit?.layout && edit.layout !== "auto") return edit.layout;
+  return edit?.contentKind === "service" ? "split" : "overlay";
+}
+export const ACCENT_COLORS = {
+  yellow: "#ffe600",
+  red: "#ff5050",
+  mint: "#a0f5df",
+} as const;

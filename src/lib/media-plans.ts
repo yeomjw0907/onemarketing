@@ -27,6 +27,11 @@ export const mediaBriefSchema = z.object({
   edit: z
     .object({
       title: z.string().trim().max(36).optional(),
+      titleLead: z.string().trim().max(24).optional(),
+      titleAccent: z.string().trim().max(24).optional(),
+      layout: z.enum(["auto", "split", "overlay"]).optional(),
+      contentKind: z.enum(["service", "product", "story"]).optional(),
+      accentColor: z.enum(["yellow", "red", "mint"]).optional(),
       titleStyle: z
         .enum(["auto", "clean", "impact", "editorial", "pop"])
         .optional(),
