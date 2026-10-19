@@ -26,9 +26,10 @@ export const mediaBriefSchema = z.object({
   prompt: z.string().trim().min(1).max(16000),
   edit: z
     .object({
+      title: z.string().trim().max(36).optional(),
       hook: z.string().trim().max(60),
       detail: z.string().trim().max(100),
-      cta: z.string().trim().min(1).max(60),
+      cta: z.string().trim().max(60),
     })
     .optional(),
 });

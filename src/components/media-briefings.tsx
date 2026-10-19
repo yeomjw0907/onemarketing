@@ -4,6 +4,7 @@ import type { DatabaseView, RecordData } from "@/lib/types";
 import type { MediaBrief } from "@/lib/media-plans";
 import { briefingPrompt } from "@/lib/media-guidance";
 import CreativeStudio from "./creative-studio";
+import { clipTitle } from "@/lib/clip-layout";
 import { money } from "@/lib/types";
 
 export type BriefingRequest = {
@@ -204,23 +205,38 @@ function Plan({
         {plan.mediaType === "video" && (
           <fieldset disabled={busy || used} style={{ border: 0, padding: 0 }}>
             <legend>후편집 자막 · CTA</legend>
-            {(["hook", "detail", "cta"] as const).map((key) => (
+            {(["title", "detail", "cta"] as const).map((key) => (
               <label key={key}>
                 {
-                  { hook: "도입 문구", detail: "핵심 특징", cta: "마무리 CTA" }[
-                    key
-                  ]
+                  {
+                    title: "상단 고정 제목",
+                    detail: "설명 자막 (선택)",
+                    cta: "마무리 CTA (선택)",
+                  }[key]
                 }
                 <input
-                  maxLength={key === "detail" ? 100 : 60}
-                  value={brief.edit?.[key] || ""}
+                  maxLength={key === "title" ? 36 : key === "detail" ? 100 : 60}
+                  value={
+                    key === "title"
+                      ? clipTitle(
+                          brief.edit,
+                          (
+                            data.projects.find((p) => p.id === plan.projectId)
+                              ?.knowledge as
+                              { product?: { name?: string } } | undefined
+                          )?.product?.name,
+                          data.tasks.find((t) => t.id === plan.taskId)?.name,
+                        )
+                      : brief.edit?.[key] || ""
+                  }
                   onChange={(e) =>
                     setBrief({
                       ...brief,
                       edit: {
+                        ...brief.edit,
                         hook: brief.edit?.hook || "",
                         detail: brief.edit?.detail || "",
-                        cta: brief.edit?.cta || "자세히 알아보기",
+                        cta: brief.edit?.cta ?? "",
                         [key]: e.target.value,
                       },
                     })
@@ -229,8 +245,10 @@ function Plan({
               </label>
             ))}
             <p className="hint">
-              글자는 영상 모델이 그리지 않고 편집으로 넣어요. 광고 표시도 함께
-              합성해요. 문구를 변경하면 저장 후 다시 승인하세요.
+              제목은 상단에 끝까지 고정하고, 설명·CTA는 영상 안 하단에 표시해요.
+              설명·CTA를 비우면 자막 없이 제작해요. 검은 띠 없이 외곽선으로
+              대비를 유지해요. 광고 표시도 함께 합성해요. 문구를 변경하면 저장
+              후 다시 승인하세요.
             </p>
           </fieldset>
         )}

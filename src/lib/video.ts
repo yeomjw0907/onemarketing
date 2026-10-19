@@ -9,7 +9,8 @@ import { jobInput } from "./jobs";
 import type { RecordData } from "./types";
 import { orderedImages } from "./copy-format";
 import type { MediaBrief } from "./media-plans";
-import sharp from "sharp";
+import { clipTextOverlay } from "./clip-template";
+import { clipTitle, CLIP_TEMPLATE } from "./clip-layout";
 export function runFFmpeg(args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn(
@@ -124,64 +125,65 @@ async function taskImages(job: RecordData) {
 export async function decorateVideo(job: RecordData, buffer: Buffer) {
   const s = jobInput(job);
   const edit = (s.mediaPlan?.brief as MediaBrief | undefined)?.edit;
-  if (!edit) return buffer;
+
   const folder = mkdtempSync(path.join(tmpdir(), "om-caption-"));
   const duration = Number(s.task?.duration || 15);
-  const escape = (v: string) =>
-    v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
   try {
     const input = path.join(folder, "input.mp4"),
       output = path.join(folder, "output.mp4");
     writeFileSync(input, buffer);
-    const texts = ["유료 광고", edit.hook, edit.detail, edit.cta];
+    const product = (
+      s.project.knowledge as { product?: { name?: string } } | undefined
+    )?.product?.name;
+    const title = clipTitle(edit, product, s.task?.name);
+    const ctaStart = duration - Math.min(3, duration / 4);
+    const overlays = [
+      {
+        text: "유료 광고",
+        role: "disclosure" as const,
+        y: 64,
+        start: 0,
+        end: duration,
+      },
+      {
+        text: title,
+        role: "title" as const,
+        y: CLIP_TEMPLATE.titleY,
+        start: 0,
+        end: duration,
+      },
+      ...(edit?.detail?.trim()
+        ? [
+            {
+              text: edit.detail,
+              role: "caption" as const,
+              y: CLIP_TEMPLATE.captionY,
+              start: 0,
+              end: edit?.cta?.trim() ? ctaStart : duration,
+            },
+          ]
+        : []),
+      ...(edit?.cta?.trim()
+        ? [
+            {
+              text: edit.cta,
+              role: "caption" as const,
+              y: CLIP_TEMPLATE.captionY,
+              start: ctaStart,
+              end: duration,
+            },
+          ]
+        : []),
+    ];
     const inputs: string[] = [],
-      filters: string[] = [];
-    for (let i = 0; i < texts.length; i++) {
-      const text = await sharp({
-        text: {
-          text: `<span foreground="white">${escape(texts[i] || " ")}</span>`,
-          font: "NanumGothic 30",
-          fontfile: path.resolve("assets/fonts/NanumGothic-Regular.ttf"),
-          width: 560,
-          align: "center",
-          rgba: true,
-        },
-      })
-        .png()
-        .toBuffer();
-      const meta = await sharp(text).metadata();
-      const h = Math.max(80, Number(meta.height) + 32);
-      const file = path.join(folder, `${i}.png`);
-      await sharp({
-        create: {
-          width: 600,
-          height: h,
-          channels: 4,
-          background: { r: 25, g: 31, b: 40, alpha: 0.82 },
-        },
-      })
-        .composite([{ input: text, gravity: "centre" }])
-        .png()
-        .toFile(file);
+      filters: string[] = [`[0:v]${scale}[base]`];
+    for (let i = 0; i < overlays.length; i++) {
+      const o = overlays[i],
+        file = path.join(folder, `${i}.png`);
+      writeFileSync(file, await clipTextOverlay(o.text, o.role));
       inputs.push("-loop", "1", "-i", file);
-      const begin =
-        i === 0
-          ? 0
-          : i === 1
-            ? 0
-            : i === 2
-              ? Math.min(3, duration / 4)
-              : duration - Math.min(3, duration / 4);
-      const end =
-        i === 0
-          ? duration
-          : i === 1
-            ? Math.min(3, duration / 4)
-            : i === 2
-              ? duration - Math.min(3, duration / 4)
-              : duration;
       filters.push(
-        `[${i === 0 ? "0:v" : `v${i - 1}`}][${i + 1}:v]overlay=60:${i === 0 ? 90 : 900}:enable='between(t,${begin},${end})':shortest=1[v${i}]`,
+        `[${i === 0 ? "base" : `v${i - 1}`}][${i + 1}:v]overlay=(W-w)/2:${o.y}:enable='gte(t,${o.start})*lt(t,${o.end})':shortest=1[v${i}]`,
       );
     }
     await runFFmpeg([
@@ -192,7 +194,7 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
       "-filter_complex",
       filters.join(";"),
       "-map",
-      "[v3]",
+      `[v${overlays.length - 1}]`,
       "-t",
       String(duration),
       "-an",
