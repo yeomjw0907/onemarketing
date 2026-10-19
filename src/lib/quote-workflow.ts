@@ -1,3 +1,4 @@
+import { campaignPriceIssue } from "./sales-cart";
 import { lockCatalog, requireActiveCatalog } from "./domain";
 import { z } from "zod";
 import { create, get, list, update, transaction, lock, audit } from "./db";
@@ -64,7 +65,8 @@ export async function prepareQuote(input: unknown) {
   ] as const) {
     if (!quantity) continue;
     const p = await requireRecord(String(id), "prices");
-    if (p.channel !== channel) throw new Error("채널별 단가를 확인하세요.");
+    const issue = campaignPriceIssue(p, channel);
+    if (issue) throw new Error(issue);
     prices.push({
       channel,
       quantity,

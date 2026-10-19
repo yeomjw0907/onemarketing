@@ -17,6 +17,7 @@ import {
   statusLabel,
   useDecisionDialog,
 } from "./ui/workflow-ui";
+import { campaignPriceIssue } from "@/lib/sales-cart";
 import { defaultWorkflowPolicy } from "@/lib/workflow-policy";
 type Row = Record<string, any>;
 export default function WorkflowConsole({
@@ -308,7 +309,7 @@ export default function WorkflowConsole({
                   >
                     <option value="">단가 선택</option>
                     {data.prices
-                      .filter((p) => p.channel === channel)
+                      .filter((p) => !campaignPriceIssue(p, channel))
                       .map((p) => (
                         <option key={p.id} value={p.id}>
                           {String(p.name)} · {money(p.sale)}

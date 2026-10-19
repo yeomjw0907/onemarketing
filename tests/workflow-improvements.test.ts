@@ -451,3 +451,13 @@ test("블로그 단독에서 묶음 전환은 수량을 유지하고 남은 클�
   );
   await assert.rejects(upgradeBundle(blog.id, clip.id, p.id, account.id));
 });
+// Regression: ISSUE-003 — invalid product prices were accepted until final quote confirmation.
+// Found by /qa on 2026-10-19. Report: artifacts/final-workflow-qa.md
+test("quote draft rejects prices that the final campaign order cannot use", async () => {
+  const f = await fixture();
+  await update(f.b.id, { images: 1 });
+  await assert.rejects(saveQuote(f.input, actor), /3장/);
+  await update(f.b.id, { images: 3 });
+  await update(f.cl.id, { duration: 15, mode: "slideshow" });
+  await assert.rejects(saveQuote(f.input, actor), /10초/);
+});

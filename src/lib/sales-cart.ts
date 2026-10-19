@@ -39,10 +39,8 @@ export function cartQuote(
     const getPrice = (id: string | undefined, channel: string) => {
       const p = prices.find((p) => p.id === id && p.channel === channel);
       if (!p) throw new Error("채널에 맞는 판매 단가를 선택하세요.");
-      if (channel === "blog" && Number(p.images) !== 3)
-        throw new Error("체험단 상품은 이미지 3장 단가를 선택하세요.");
-      if (channel === "clip" && (p.duration !== 10 || p.mode !== "generated"))
-        throw new Error("클립 상품은 10초 AI 생성형 단가를 선택하세요.");
+      const issue = campaignPriceIssue(p, channel);
+      if (issue) throw new Error(issue);
       return {
         ...p,
         priceId: p.id,
@@ -87,4 +85,19 @@ export function cartQuote(
     cost,
     margin: total - discount - cost,
   };
+}
+
+export function campaignPriceIssue(
+  price: RecordData,
+  channel: string,
+): string | null {
+  if (price.channel !== channel) return "채널에 맞는 판매 단가를 선택하세요.";
+  if (channel === "blog" && Number(price.images) !== 3)
+    return "체험단 상품은 이미지 3장 단가를 선택하세요.";
+  if (
+    channel === "clip" &&
+    (price.duration !== 10 || price.mode !== "generated")
+  )
+    return "클립 상품은 10초 AI 생성형 단가를 선택하세요.";
+  return null;
 }
