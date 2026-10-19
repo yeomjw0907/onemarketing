@@ -1,5 +1,6 @@
 "use client";
 import PostingSteps from "./posting-steps";
+import BrandOrb from "./brand-orb";
 import { participantTaskGuide } from "@/lib/workflow-guidance";
 import guidanceStyles from "./workflow-guidance.module.css";
 import { useEffect, useState, useRef } from "react";
@@ -176,10 +177,12 @@ export default function ParticipantPortal() {
       {error && <Feedback tone="error">{error}</Feedback>}
       {notice && <Feedback tone="success">{notice}</Feedback>}
       {loading ? (
-        <div className="ui-loading" role="status" aria-label="작업 불러오는 중">
-          <span />
-          <span />
-          <span />
+        <div
+          className="portal-loading"
+          role="status"
+          aria-label="작업 불러오는 중"
+        >
+          <BrandOrb active={loading} state="connecting" />
           <p>내 작업을 불러오고 있어요.</p>
         </div>
       ) : !data ? (

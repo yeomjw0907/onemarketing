@@ -2066,3 +2066,8 @@ td button {
     width: 100%;
   }
 }
+
+.portal-loading {
+  padding: 24px 0;
+  color: var(--muted);
+}

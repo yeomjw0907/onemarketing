@@ -1,0 +1,17 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+.root canvas {
+  display: block;
+  flex-shrink: 0;
+}
+.label {
+  font-size: 14px;
+  color: inherit;
+  overflow-wrap: anywhere;
+}

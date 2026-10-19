@@ -4,6 +4,7 @@ import { Button, Feedback } from "./ui/workflow-ui";
 import ClipPostingNotes from "./clip-posting-notes";
 import { clipDescription } from "@/lib/clip-description";
 import NaverAppButton from "./naver-app-button";
+import BrandOrb from "./brand-orb";
 
 type PostingFile = {
   id: string;
@@ -84,6 +85,9 @@ function SaveFile({ file, index }: { file: PostingFile; index: number }) {
   }
   return (
     <div className="posting-file">
+      {busy && (
+        <BrandOrb active state="connecting" label="파일을 불러오고 있어요." />
+      )}
       {image && (
         <a
           href={url + "?preview=1"}

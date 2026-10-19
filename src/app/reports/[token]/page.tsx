@@ -1,3 +1,4 @@
+import ReportDownload from "@/components/report-download";
 import guidanceStyles from "@/components/workflow-guidance.module.css";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -32,12 +33,10 @@ export default async function ReportPage({
           <h1>{report.customerName}</h1>
           <p>{complete ? "캠페인 완료 보고" : "캠페인 진행 보고"}</p>
         </div>
-        <a
-          className="ui-button primary report-download"
+        <ReportDownload
           href={`/api/reports/${token}/excel`}
-        >
-          {complete ? "완료 보고" : "진행 보고"} 엑셀 다운로드
-        </a>
+          label={`${complete ? "완료 보고" : "진행 보고"} 엑셀 다운로드`}
+        />
       </header>
       <p className="muted report-updated">
         최종 업데이트{" "}

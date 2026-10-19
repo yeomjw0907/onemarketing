@@ -4,6 +4,7 @@ import type { DatabaseView, RecordData } from "@/lib/types";
 import type { MediaBrief } from "@/lib/media-plans";
 import { briefingPrompt } from "@/lib/media-guidance";
 import CreativeStudio from "./creative-studio";
+import BrandOrb from "./brand-orb";
 import guidanceStyles from "./workflow-guidance.module.css";
 import { clipTitle, TITLE_STYLES, resolveTitleStyle } from "@/lib/clip-layout";
 import { money } from "@/lib/types";
@@ -530,7 +531,7 @@ function Plan({
       )}
       {busy && (
         <p role="status">
-          <span className="job-spinner" aria-hidden="true" /> 처리 중
+          <BrandOrb active state="connecting" /> 요청을 처리하고 있어요.
         </p>
       )}
       {error && (
@@ -574,6 +575,10 @@ export default function MediaBriefings({
       j.taskId === taskId &&
       j.type === "media-plan" &&
       ["pending", "running", "uncertain"].includes(String(j.status)),
+  );
+  const running = data.jobs.some(
+    (j) =>
+      j.taskId === taskId && j.type === "media-plan" && j.status === "running",
   );
   const plans = data.media_plans.filter(
     (p) =>
@@ -740,8 +745,15 @@ export default function MediaBriefings({
         </button>
         {(busy || active) && (
           <p role="status">
-            <span className="job-spinner" aria-hidden="true" /> 브리핑 작성 요청
-            처리 중 · 진행 상태는 아래 로그를 확인하세요.
+            <BrandOrb
+              active={busy || running}
+              state={running ? "composing" : "connecting"}
+            />{" "}
+            {running
+              ? "브리핑을 작성하고 있어요."
+              : busy
+                ? "작성 요청을 보내고 있어요."
+                : "실행 대기 또는 상태 확인이 필요해요. 아래 로그를 확인해주세요."}
           </p>
         )}
         {error && (

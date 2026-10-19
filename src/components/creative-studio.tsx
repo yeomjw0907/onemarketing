@@ -1,4 +1,5 @@
 "use client";
+import BrandOrb from "./brand-orb";
 import { useState } from "react";
 import type { DatabaseView, RecordData } from "@/lib/types";
 import { taskFlow, type Scenario } from "@/lib/creative-schema";
@@ -192,7 +193,23 @@ export default function CreativeStudio({
               </Button>
               {active && (
                 <p role="status" className={styles.hint}>
-                  작업 처리 중이에요. 완료되면 목록에 반영돼요.
+                  <BrandOrb
+                    active={data.jobs.some(
+                      (j) =>
+                        j.taskId === id &&
+                        j.type === "scenario" &&
+                        j.status === "running",
+                    )}
+                    state="composing"
+                  />
+                  {data.jobs.some(
+                    (j) =>
+                      j.taskId === id &&
+                      j.type === "scenario" &&
+                      j.status === "running",
+                  )
+                    ? "시나리오를 작성하고 있어요."
+                    : "실행 대기 또는 상태 확인이 필요해요. 로그를 확인해주세요."}
                 </p>
               )}
               {plans.map((plan) => (

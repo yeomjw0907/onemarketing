@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import BrandOrb from "./brand-orb";
 import { Button, Field, Form, Feedback } from "./ui/workflow-ui";
 type Pending = {
   nickname: string;
@@ -107,7 +108,13 @@ export default function KakaoPortalLogin({
             : "카카오로 간편하게 시작하세요"}
       </h2>
       {!ready ? (
-        <p className="muted">로그인 상태를 확인하고 있어요.</p>
+        <p className="muted">
+          <BrandOrb
+            active={!ready && !error}
+            state="connecting"
+            label="로그인 상태를 확인하고 있어요."
+          />
+        </p>
       ) : pending ? (
         <>
           <p className="muted">

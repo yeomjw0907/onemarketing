@@ -1,4 +1,6 @@
 "use client";
+import BrandOrb from "./brand-orb";
+import { runningOrbState } from "@/lib/orb-state";
 import { useEffect, useRef, useState } from "react";
 import { stageLabels, type RecordData } from "@/lib/types";
 const labels: Record<string, string> = {
@@ -110,6 +112,23 @@ export default function JobMonitor({
     if (follow && panel.current)
       panel.current.scrollTop = panel.current.scrollHeight;
   }, [logs, follow]);
+  const orbState = (job?: Job) =>
+    runningOrbState(
+      job,
+      [...logs]
+        .reverse()
+        .find(
+          (l) =>
+            l.jobId === job?.id &&
+            [
+              "copy_draft",
+              "copy_edit",
+              "copy_verify",
+              "copy_repair",
+              "copy_reverify",
+            ].includes(String(l.stage)),
+        )?.stage,
+    );
   const finalNotice =
     updated && !error && jobs.length > 0 && !running && !pending
       ? `\n\n──────── 최종 실행 상태 ────────\n${needsCheck ? "오류 또는 상태 확인이 필요한 작업이 있습니다. 실행 기록을 확인하세요." : briefingReady ? "생성 브리핑 작성이 완료되었습니다. 장면·프롬프트를 검수하고 생성 승인하세요. 이미지·영상 생성은 아직 시작하지 않았습니다." : reviewReady ? "요청한 AI 작업이 모두 끝났습니다. 생성 완료 · 결과물 검수 대기입니다." : "요청한 AI 작업 실행이 끝났습니다. 결과를 확인하세요."}\n※ 프로젝트 운영 완료·게시 완료와는 별도 상태입니다.`
@@ -131,7 +150,12 @@ export default function JobMonitor({
       </div>
       <div className="job-execution-summary" role="status" aria-live="polite">
         {(running > 0 || !updated) && !error && (
-          <span className="job-spinner" aria-hidden="true" />
+          <BrandOrb
+            active
+            state={
+              orbState(jobs.find((j) => j.status === "running")) || "connecting"
+            }
+          />
         )}
         <strong>{summary}</strong>
         {updated && !running && !pending && !error && (
@@ -172,8 +196,8 @@ export default function JobMonitor({
                       : "badge"
                   }
                 >
-                  {j.status === "running" && (
-                    <span className="job-spinner" aria-hidden="true" />
+                  {j.status === "running" && !error && (
+                    <BrandOrb active state={orbState(j) || "working"} />
                   )}
                   {recovered ? "이전 실패" : stageLabels[j.status] || j.status}
                 </span>
