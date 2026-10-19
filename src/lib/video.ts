@@ -10,7 +10,7 @@ import type { RecordData } from "./types";
 import { orderedImages } from "./copy-format";
 import type { MediaBrief } from "./media-plans";
 import { clipTextOverlay } from "./clip-template";
-import { clipTitle, CLIP_TEMPLATE } from "./clip-layout";
+import { clipTitle, CLIP_TEMPLATE, resolveTitleStyle } from "./clip-layout";
 export function runFFmpeg(args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn(
@@ -136,7 +136,14 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
       s.project.knowledge as { product?: { name?: string } } | undefined
     )?.product?.name;
     const title = clipTitle(edit, product, s.task?.name);
-    const ctaStart = duration - Math.min(3, duration / 4);
+    const style = resolveTitleStyle(
+      edit?.titleStyle,
+      String(s.task?.id || job.taskId || s.project.id || ""),
+    );
+    const motion =
+      edit?.titleMotion && edit.titleMotion !== "auto"
+        ? edit.titleMotion
+        : style.motion;
     const overlays = [
       {
         text: "유료 광고",
@@ -152,38 +159,27 @@ export async function decorateVideo(job: RecordData, buffer: Buffer) {
         start: 0,
         end: duration,
       },
-      ...(edit?.detail?.trim()
-        ? [
-            {
-              text: edit.detail,
-              role: "caption" as const,
-              y: CLIP_TEMPLATE.captionY,
-              start: 0,
-              end: edit?.cta?.trim() ? ctaStart : duration,
-            },
-          ]
-        : []),
-      ...(edit?.cta?.trim()
-        ? [
-            {
-              text: edit.cta,
-              role: "caption" as const,
-              y: CLIP_TEMPLATE.captionY,
-              start: ctaStart,
-              end: duration,
-            },
-          ]
-        : []),
     ];
     const inputs: string[] = [],
       filters: string[] = [`[0:v]${scale}[base]`];
     for (let i = 0; i < overlays.length; i++) {
       const o = overlays[i],
         file = path.join(folder, `${i}.png`);
-      writeFileSync(file, await clipTextOverlay(o.text, o.role));
+      writeFileSync(file, await clipTextOverlay(o.text, o.role, style.id));
       inputs.push("-loop", "1", "-i", file);
+      let layer = `${i + 1}:v`;
+      if (o.role === "title" && motion === "fade") {
+        filters.push(
+          `[${layer}]format=rgba,fade=t=in:st=0:d=0.35:alpha=1[titleFade]`,
+        );
+        layer = "titleFade";
+      }
+      const y =
+        o.role === "title" && motion === "slide"
+          ? `${o.y}-16*max(0\\,1-t/0.35)`
+          : String(o.y);
       filters.push(
-        `[${i === 0 ? "base" : `v${i - 1}`}][${i + 1}:v]overlay=(W-w)/2:${o.y}:enable='gte(t,${o.start})*lt(t,${o.end})':shortest=1[v${i}]`,
+        `[${i === 0 ? "base" : `v${i - 1}`}][${layer}]overlay=(W-w)/2:${y}:enable='gte(t,${o.start})*lt(t,${o.end})':shortest=1[v${i}]`,
       );
     }
     await runFFmpeg([

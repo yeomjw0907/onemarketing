@@ -4,7 +4,7 @@ import type { DatabaseView, RecordData } from "@/lib/types";
 import type { MediaBrief } from "@/lib/media-plans";
 import { briefingPrompt } from "@/lib/media-guidance";
 import CreativeStudio from "./creative-studio";
-import { clipTitle } from "@/lib/clip-layout";
+import { clipTitle, TITLE_STYLES, resolveTitleStyle } from "@/lib/clip-layout";
 import { money } from "@/lib/types";
 
 export type BriefingRequest = {
@@ -47,6 +47,14 @@ function Plan({
     data.tasks.find((t) => t.id === plan.taskId)?.mode === "slideshow";
   const estimate = photoVideo ? 1 : estimates[String(plan.mediaType)] || 1000;
   const source = data.assets.find((a) => a.id === plan.sourceAssetId);
+  const titleText = clipTitle(
+    brief.edit,
+    (
+      data.projects.find((p) => p.id === plan.projectId)?.knowledge as
+        { product?: { name?: string } } | undefined
+    )?.product?.name,
+    data.tasks.find((t) => t.id === plan.taskId)?.name,
+  );
   async function act(action: "edit" | "approve" | "generate") {
     setBusy(true);
     setError("");
@@ -204,8 +212,8 @@ function Plan({
         </label>
         {plan.mediaType === "video" && (
           <fieldset disabled={busy || used} style={{ border: 0, padding: 0 }}>
-            <legend>후편집 자막 · CTA</legend>
-            {(["title", "detail", "cta"] as const).map((key) => (
+            <legend>상단 제목 · 스타일</legend>
+            {(["title"] as const).map((key) => (
               <label key={key}>
                 {
                   {
@@ -244,12 +252,86 @@ function Plan({
                 />
               </label>
             ))}
+            <label>
+              제목 스타일
+              <select
+                value={brief.edit?.titleStyle || "auto"}
+                onChange={(e) =>
+                  setBrief({
+                    ...brief,
+                    edit: {
+                      hook: "",
+                      detail: "",
+                      cta: "",
+                      ...brief.edit,
+                      titleStyle: e.target.value as NonNullable<
+                        MediaBrief["edit"]
+                      >["titleStyle"],
+                    },
+                  })
+                }
+              >
+                <option value="auto">자동 · 작업별로 다르게</option>
+                {TITLE_STYLES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              제목 등장 효과
+              <select
+                value={brief.edit?.titleMotion || "auto"}
+                onChange={(e) =>
+                  setBrief({
+                    ...brief,
+                    edit: {
+                      hook: "",
+                      detail: "",
+                      cta: "",
+                      ...brief.edit,
+                      titleMotion: e.target.value as NonNullable<
+                        MediaBrief["edit"]
+                      >["titleMotion"],
+                    },
+                  })
+                }
+              >
+                <option value="auto">스타일에 맞춰 자동</option>
+                <option value="none">고정 · 효과 없음</option>
+                <option value="fade">부드럽게 등장</option>
+                <option value="slide">살짝 올라오며 등장</option>
+              </select>
+            </label>
             <p className="hint">
-              제목은 상단에 끝까지 고정하고, 설명·CTA는 영상 안 하단에 표시해요.
-              설명·CTA를 비우면 자막 없이 제작해요. 검은 띠 없이 외곽선으로
-              대비를 유지해요. 광고 표시도 함께 합성해요. 문구를 변경하면 저장
-              후 다시 승인하세요.
+              자동 선택:{" "}
+              {
+                resolveTitleStyle(brief.edit?.titleStyle, String(plan.taskId))
+                  .label
+              }
+              . 자동 선택은 같은 작업에서 유지돼요. 효과는 시작 0.35초에만
+              적용하고 제목은 끝까지 남아요. 더빙·내부 자막·CTA는 출력하지
+              않으며 광고 표시는 유지해요.
             </p>
+            <details>
+              <summary>실제 글꼴·색상 미리보기</summary>
+              <img
+                alt="상단 제목 스타일 미리보기"
+                src={`/api/media-plans/title-preview?title=${encodeURIComponent(titleText)}&style=${brief.edit?.titleStyle || "auto"}&seed=${plan.taskId}`}
+                style={{
+                  width: "100%",
+                  maxWidth: 600,
+                  background: "#f2f4f6",
+                  borderRadius: 12,
+                  padding: 16,
+                }}
+              />
+              <p className="hint">
+                정지 상태의 글꼴·색상 미리보기예요. 등장 효과는 영상 생성 후
+                확인할 수 있어요.
+              </p>
+            </details>
           </fieldset>
         )}
         <p className="hint">

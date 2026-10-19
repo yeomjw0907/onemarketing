@@ -27,6 +27,10 @@ export const mediaBriefSchema = z.object({
   edit: z
     .object({
       title: z.string().trim().max(36).optional(),
+      titleStyle: z
+        .enum(["auto", "clean", "impact", "editorial", "pop"])
+        .optional(),
+      titleMotion: z.enum(["auto", "none", "fade", "slide"]).optional(),
       hook: z.string().trim().max(60),
       detail: z.string().trim().max(100),
       cta: z.string().trim().max(60),
