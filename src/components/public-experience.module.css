@@ -627,6 +627,29 @@
   line-height: 1.8;
   margin: 0 0 9px;
 }
+.portalRoot :global(.posting-step-label) {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 7px;
+}
+.portalRoot :global(.posting-return) {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #edf0f4;
+}
+.portalRoot :global(.posting-return > strong) {
+  font-size: 14px;
+}
+.portalRoot :global([id^="portal-submit-"]) {
+  scroll-margin-top: 24px;
+}
+.portalRoot :global(.posting-copy button),
+.portalRoot :global(.posting-return button),
+.portalRoot :global(.posting-actions a),
+.portalRoot :global([id^="portal-submit-"] button) {
+  min-height: 44px;
+}
 .portalRoot :global(.posting-file) {
   padding: 16px;
   border: 1px solid #edf0f4;
@@ -653,7 +676,7 @@
 }
 .portalRoot :global(.posting-actions a) {
   font-size: 12px;
-  min-height: 38px;
+  min-height: 44px;
 }
 .portalRoot :global(.posting-submit-title) {
   font-size: 16px;

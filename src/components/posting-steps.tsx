@@ -203,15 +203,18 @@ function CopyFile({
 export default function PostingSteps({
   files,
   channel,
+  submissionId,
 }: {
   files: PostingFile[];
   channel: string;
+  submissionId?: string;
 }) {
   const media = files.filter((f) => f.category !== "copy");
   const copies = files.filter((f) => f.category === "copy");
   return (
     <ol className="posting-steps" aria-label="게시 준비 순서">
       <li>
+        <p className="posting-step-label">자료 저장</p>
         <h3>자료를 저장해주세요</h3>
         <p className="hint">
           {channel === "clip"
@@ -243,6 +246,7 @@ export default function PostingSteps({
         </details>
       </li>
       <li>
+        <p className="posting-step-label">원고 복사</p>
         <h3>
           {channel === "clip"
             ? "클립 설명을 복사해주세요"
@@ -265,6 +269,7 @@ export default function PostingSteps({
         ))}
       </li>
       <li>
+        <p className="posting-step-label">게시 후 링크 제출</p>
         <h3>네이버에서 게시해주세요</h3>
         <p className="hint">
           {channel === "clip"
@@ -274,6 +279,29 @@ export default function PostingSteps({
         </p>
         {channel === "clip" && <ClipPostingNotes />}
         <NaverAppButton channel={channel} />
+        {submissionId && (
+          <div className="posting-return">
+            <strong>게시를 마쳤나요?</strong>
+            <p className="hint">
+              게시물의 공유 메뉴에서 링크를 복사하고 이 화면으로 돌아와주세요.
+            </p>
+            <Button
+              onClick={() => {
+                const section = document.getElementById(
+                  submissionId,
+                ) as HTMLDetailsElement | null;
+                if (!section) return;
+                section.open = true;
+                section.scrollIntoView({ block: "start" });
+                section
+                  .querySelector<HTMLInputElement>('input[name="link"]')
+                  ?.focus({ preventScroll: true });
+              }}
+            >
+              게시했어요 · 링크 제출하기
+            </Button>
+          </div>
+        )}
       </li>
     </ol>
   );

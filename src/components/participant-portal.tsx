@@ -645,7 +645,11 @@ export default function ParticipantPortal() {
                     {t.status === "delivered" ? (
                       <details open>
                         <summary>자료 확인하고 게시하기</summary>
-                        <PostingSteps files={t.files} channel={t.channel} />
+                        <PostingSteps
+                          files={t.files}
+                          channel={t.channel}
+                          submissionId={"portal-submit-" + t.id}
+                        />
                       </details>
                     ) : ["submitted", "verified"].includes(t.status) ? (
                       <details>
@@ -654,7 +658,10 @@ export default function ParticipantPortal() {
                       </details>
                     ) : null}
                     {["delivered", "submitted"].includes(t.status) && (
-                      <details open={t.status === "delivered"}>
+                      <details
+                        id={"portal-submit-" + t.id}
+                        open={t.status === "delivered"}
+                      >
                         <summary>
                           {t.status === "submitted"
                             ? "제출한 링크 변경"
