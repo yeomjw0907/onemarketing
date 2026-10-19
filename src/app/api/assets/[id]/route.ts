@@ -3,6 +3,8 @@ import { requireActor } from "@/lib/auth";
 import { requireRecord } from "@/lib/domain";
 import { bytes } from "@/lib/assets";
 import { publishableCopy } from "@/lib/copy-format";
+import { videoStartFrame } from "@/lib/video-frame";
+import { videoReviewFrame } from "@/lib/video";
 export const dynamic = "force-dynamic";
 // 비공개 버킷의 파일은 관리자 세션을 확인한 서버가 service role로 읽어 전달한다. 클라이언트에 키나 서명 URL을 주지 않는다.
 export async function GET(
@@ -12,6 +14,42 @@ export async function GET(
   try {
     await requireActor();
     const a = await requireRecord((await params).id, "assets");
+    const reviewFrame = new URL(request.url).searchParams.get("reviewFrame");
+    if (
+      a.category === "video" &&
+      ["start", "middle", "end"].includes(reviewFrame || "")
+    ) {
+      const task = await requireRecord(String(a.taskId), "tasks");
+      const duration = Number(task.duration || 15);
+      const time =
+        reviewFrame === "start"
+          ? 0
+          : reviewFrame === "middle"
+            ? duration / 2
+            : Math.max(0, duration - 0.2);
+      return new Response(
+        new Uint8Array(await videoReviewFrame(await bytes(a), time)),
+        {
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "private, no-store",
+          },
+        },
+      );
+    }
+    if (
+      new URL(request.url).searchParams.get("videoFrame") === "1" &&
+      String(a.mime).startsWith("image/")
+    )
+      return new Response(
+        new Uint8Array(await videoStartFrame(await bytes(a))),
+        {
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "private, no-store",
+          },
+        },
+      );
     if (
       a.category === "copy" &&
       new URL(request.url).searchParams.get("publishable") === "1"

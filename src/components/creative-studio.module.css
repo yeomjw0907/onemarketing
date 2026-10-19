@@ -1,0 +1,108 @@
+.studio {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  margin-bottom: 24px;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.flow {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 12px 2px 20px;
+}
+.node {
+  position: relative;
+  min-width: 148px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: white;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink);
+}
+.node:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  right: -18px;
+  top: 36px;
+  color: var(--muted);
+}
+.candidates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.candidate {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  overflow-wrap: anywhere;
+}
+.candidate h3 {
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 8px 0 12px;
+}
+.candidate p,
+.candidate li {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.candidate ul {
+  padding-left: 18px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.flowTitle {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 16px 0 4px;
+}
+@media (max-width: 900px) {
+  .candidates {
+    grid-template-columns: 1fr;
+  }
+  .candidate {
+    padding: 16px;
+  }
+  .flow {
+    flex-direction: column;
+    overflow: visible;
+    gap: 16px;
+  }
+  .node {
+    min-width: 0;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .node:not(:last-child)::after {
+    content: "↓";
+    right: auto;
+    left: 24px;
+    top: auto;
+    bottom: -17px;
+  }
+}

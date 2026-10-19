@@ -813,7 +813,7 @@ test("fal Seedance는 10초·720p 전체 생성 요청 후 영상을 보관", as
       assert.match(input.prompt, /과한 HDR/);
       assert.match(input.prompt, /공장·설비의 실제 구조/);
       assert.match(input.prompt, /연결부를 강조/);
-      assert.match(input.prompt, /절제된 카메라 움직임/);
+      assert.match(input.prompt, /미세한 단일 카메라 이동/);
       assert.equal(input.duration, "10");
       assert.equal(input.resolution, "720p");
       assert.equal(input.aspect_ratio, "auto");

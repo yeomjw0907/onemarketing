@@ -1028,6 +1028,21 @@ export function command(
       )
         throw new Error("원고와 계약 수량의 이미지를 등록하세요.");
       if (row.channel === "clip") requireClipMaterials(assets);
+      if (row.channel === "clip" && row.creativeFormat) {
+        if (row.creativeFormat === "story" && !row.approvedCreativePlanId)
+          throw new Error("시나리오를 먼저 승인하세요.");
+        if (
+          assets.some(
+            (a) =>
+              ["copy", "video"].includes(String(a.category)) &&
+              (a.creativePlanId || null) !==
+                (row.approvedCreativePlanId || null),
+          )
+        )
+          throw new Error(
+            "제작 방향 변경 전 결과물입니다. 승인한 기획으로 다시 제작하세요.",
+          );
+      }
       requireCopyApproval(assets, p);
       result = await update(
         id,

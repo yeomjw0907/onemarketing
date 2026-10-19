@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { DatabaseView, RecordData } from "@/lib/types";
 import type { MediaBrief } from "@/lib/media-plans";
 import { briefingPrompt } from "@/lib/media-guidance";
+import CreativeStudio from "./creative-studio";
 import { money } from "@/lib/types";
 
 export type BriefingRequest = {
@@ -40,7 +41,10 @@ function Plan({
   const dirty = JSON.stringify(brief) !== JSON.stringify(plan.brief);
   const used = Boolean(plan.consumedJobId),
     approved = plan.status === "approved";
-  const estimate = estimates[String(plan.mediaType)] || 1000;
+  const photoVideo =
+    plan.mediaType === "video" &&
+    data.tasks.find((t) => t.id === plan.taskId)?.mode === "slideshow";
+  const estimate = photoVideo ? 1 : estimates[String(plan.mediaType)] || 1000;
   const source = data.assets.find((a) => a.id === plan.sourceAssetId);
   async function act(action: "edit" | "approve" | "generate") {
     setBusy(true);
@@ -50,7 +54,7 @@ function Plan({
         await post("/api/jobs", {
           projectId: plan.projectId,
           taskId: plan.taskId,
-          type: plan.mediaType,
+          type: photoVideo ? "slideshow" : plan.mediaType,
           replaceAssetId: plan.replaceAssetId || undefined,
           mediaPlanId: plan.id,
           estimate,
@@ -93,7 +97,7 @@ function Plan({
         <details>
           <summary>생성에 사용할 참고 사진 · {String(source.name)}</summary>
           <img
-            src={`/api/assets/${source.id}`}
+            src={`/api/assets/${source.id}${plan.mediaType === "video" ? "?videoFrame=1" : ""}`}
             alt="생성에 사용할 참고 사진"
             style={{ maxWidth: 280, maxHeight: 240, objectFit: "contain" }}
           />
@@ -197,6 +201,39 @@ function Plan({
             onChange={(e) => setBrief({ ...brief, prompt: e.target.value })}
           />
         </label>
+        {plan.mediaType === "video" && (
+          <fieldset disabled={busy || used} style={{ border: 0, padding: 0 }}>
+            <legend>후편집 자막 · CTA</legend>
+            {(["hook", "detail", "cta"] as const).map((key) => (
+              <label key={key}>
+                {
+                  { hook: "도입 문구", detail: "핵심 특징", cta: "마무리 CTA" }[
+                    key
+                  ]
+                }
+                <input
+                  maxLength={key === "detail" ? 100 : 60}
+                  value={brief.edit?.[key] || ""}
+                  onChange={(e) =>
+                    setBrief({
+                      ...brief,
+                      edit: {
+                        hook: brief.edit?.hook || "",
+                        detail: brief.edit?.detail || "",
+                        cta: brief.edit?.cta || "자세히 알아보기",
+                        [key]: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </label>
+            ))}
+            <p className="hint">
+              글자는 영상 모델이 그리지 않고 편집으로 넣어요. 광고 표시도 함께
+              합성해요. 문구를 변경하면 저장 후 다시 승인하세요.
+            </p>
+          </fieldset>
+        )}
         <p className="hint">
           장면 설명과 실제 프롬프트가 일치하는지 확인하세요. 직접 수정하면
           양쪽에 반영한 뒤 저장하거나, 위 요청란에 변경 내용을 적고 새 브리핑을
@@ -226,10 +263,57 @@ function Plan({
         </div>
       </fieldset>
       {used && (
-        <p role="status">
-          생성 요청이 등록되었습니다. 실행 상태는 아래 로그에서, 완성본은
-          제작·검수에서 확인하세요.
-        </p>
+        <>
+          <p role="status">
+            생성 요청이 등록되었습니다. 실행 상태는 아래 로그에서, 완성본은
+            제작·검수에서 확인하세요.
+          </p>
+          {data.assets
+            .filter(
+              (a) => a.jobId === plan.consumedJobId && a.category === "video",
+            )
+            .map((a) => (
+              <details key={a.id}>
+                <summary>원본·완성본 비교 검수</summary>
+                <p className="hint">
+                  기준 사진과 제품 개수·형태·포장·글자를 비교하고, 영상을 재생해
+                  순간 변형·깜빡임·컷 전환을 확인하세요. 자동 통과 판정이
+                  아닙니다.
+                </p>
+                <div className="assets">
+                  {source && (
+                    <img
+                      alt="원본 기준 사진"
+                      src={`/api/assets/${source.id}`}
+                      style={{
+                        width: "100%",
+                        maxHeight: 300,
+                        objectFit: "contain",
+                      }}
+                    />
+                  )}
+                  <video
+                    controls
+                    src={`/api/assets/${a.id}`}
+                    style={{ width: "100%", maxHeight: 400 }}
+                  />
+                </div>
+                <div className="assets">
+                  {(["start", "middle", "end"] as const).map((point, i) => (
+                    <figure key={point} style={{ margin: 0 }}>
+                      <img
+                        loading="lazy"
+                        alt={["시작 프레임", "중간 프레임", "끝 프레임"][i]}
+                        src={`/api/assets/${a.id}?reviewFrame=${point}`}
+                        style={{ width: "100%" }}
+                      />
+                      <figcaption>{["시작", "중간", "끝"][i]}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </details>
+            ))}
+        </>
       )}
       {busy && (
         <p role="status">
@@ -262,6 +346,7 @@ export default function MediaBriefings({
       request?.replaceAssetId || "",
     ),
     [instructions, setInstructions] = useState("");
+  const [sourceAssetId, setSourceAssetId] = useState("");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
@@ -294,6 +379,7 @@ export default function MediaBriefings({
         type: "media-plan",
         mediaType,
         replaceAssetId: replaceAssetId || undefined,
+        sourceAssetId: sourceAssetId || undefined,
         generationRequest: instructions,
         estimate: estimates["media-plan"] || estimates.copy || 1000,
         key: crypto.randomUUID(),
@@ -307,7 +393,25 @@ export default function MediaBriefings({
   }
   return (
     <section>
-      <div className="section">
+      <CreativeStudio
+        project={project}
+        data={data}
+        reload={reload}
+        estimate={estimates["scenario"] || estimates.copy || 1000}
+        onTask={(id) => {
+          setTaskId(id);
+          setMediaType(
+            tasks.find((t) => t.id === id)?.channel === "clip"
+              ? "video"
+              : "image",
+          );
+          setSourceAssetId("");
+          document
+            .getElementById("media-brief-form")
+            ?.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
+      <div className="section" id="media-brief-form">
         <h2>생성 전 브리핑 · 승인</h2>
         <p>
           요청 입력 → AI 브리핑·프롬프트 작성 → 장면 검수·수정 → 생성 승인 →
@@ -324,6 +428,7 @@ export default function MediaBriefings({
             value={taskId}
             onChange={(e) => {
               setTaskId(e.target.value);
+              setSourceAssetId("");
               setReplaceAssetId("");
             }}
           >
@@ -348,6 +453,43 @@ export default function MediaBriefings({
             <option value="video">영상</option>
           </select>
         </label>
+        <label>
+          기준 사진
+          <select
+            value={sourceAssetId}
+            onChange={(e) => setSourceAssetId(e.target.value)}
+          >
+            <option value="">자동 선택 · 생성 전 브리핑에서 확인</option>
+            {data.assets
+              .filter(
+                (a) =>
+                  a.projectId === project.id &&
+                  a.current !== false &&
+                  String(a.mime).startsWith("image/") &&
+                  (a.category === "source" ||
+                    (a.taskId === taskId && a.category === "image")),
+              )
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {String(a.name)}
+                </option>
+              ))}
+          </select>
+        </label>
+        {sourceAssetId && mediaType === "video" && (
+          <details>
+            <summary>실제 전송할 세로 시작 프레임</summary>
+            <img
+              alt="영상 시작 프레임"
+              src={`/api/assets/${sourceAssetId}?videoFrame=1`}
+              style={{ maxWidth: 240, width: "100%" }}
+            />
+            <p className="hint">
+              720×1280 · 원본 비율 보존 · 여백 포함. 이 프레임을 기준으로 장면을
+              설계해요.
+            </p>
+          </details>
+        )}
         {replaceAssetId && (
           <p className="notice">
             선택한 이미지의 새 버전을 기획합니다.{" "}
@@ -376,9 +518,7 @@ export default function MediaBriefings({
             busy ||
             active ||
             !taskId ||
-            (mediaType === "video" &&
-              (selectedTask?.channel !== "clip" ||
-                selectedTask?.mode === "slideshow"))
+            (mediaType === "video" && selectedTask?.channel !== "clip")
           }
           onClick={draft}
         >

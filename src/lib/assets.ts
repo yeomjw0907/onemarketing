@@ -213,6 +213,19 @@ export async function saveAsset(
         throw new Error("마감·보류한 프로젝트에는 자료를 추가할 수 없습니다.");
       if (input.taskId) {
         const latestTask = await requireRecord(input.taskId, "tasks");
+        if (input.jobId) {
+          const job = await requireRecord(input.jobId, "jobs");
+          const original = (job.snapshot as { task?: RecordData }).task;
+          if (
+            (original?.approvedCreativePlanId || null) !==
+              (latestTask.approvedCreativePlanId || null) ||
+            (original?.creativeFormat || "standard") !==
+              (latestTask.creativeFormat || "standard")
+          )
+            throw new Error(
+              "제작 방향·시나리오가 변경되었습니다. 새 브리핑으로 제작하세요.",
+            );
+        }
         if (input.category === "copy" && input.jobId) {
           if (
             ["approved", "delivered", "submitted", "verified"].includes(
@@ -343,6 +356,9 @@ export async function saveAsset(
         slot,
         text: input.text || null,
         editorialNotes: input.editorialNotes || null,
+        creativePlanId: input.taskId
+          ? (await requireRecord(input.taskId)).approvedCreativePlanId || null
+          : null,
         copyQuality: input.copyQuality || null,
         copyQualityBasis: input.copyQuality ? copyBasis(latestProject) : null,
         extracted: input.extracted || null,

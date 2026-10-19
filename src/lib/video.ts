@@ -7,6 +7,9 @@ import { list } from "./db";
 import { localCopy, saveAsset } from "./assets";
 import { jobInput } from "./jobs";
 import type { RecordData } from "./types";
+import { orderedImages } from "./copy-format";
+import type { MediaBrief } from "./media-plans";
+import sharp from "sharp";
 export function runFFmpeg(args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn(
@@ -42,6 +45,29 @@ export function runFFmpeg(args: string[]) {
 }
 const scale =
   "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1";
+export async function videoReviewFrame(buffer: Buffer, seconds: number) {
+  const folder = mkdtempSync(path.join(tmpdir(), "om-review-"));
+  try {
+    const file = path.join(folder, "input.mp4"),
+      frame = path.join(folder, "frame.png");
+    writeFileSync(file, buffer);
+    await runFFmpeg([
+      "-y",
+      "-ss",
+      String(Math.max(0, seconds)),
+      "-i",
+      file,
+      "-frames:v",
+      "1",
+      "-vf",
+      "scale=360:-2",
+      frame,
+    ]);
+    return readFileSync(frame);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+}
 async function stillClip(image: string, seconds: number, file: string) {
   await runFFmpeg([
     "-y",
@@ -52,7 +78,8 @@ async function stillClip(image: string, seconds: number, file: string) {
     "-t",
     String(seconds),
     "-vf",
-    scale,
+    scale +
+      ",zoompan=z='min(zoom+0.0002,1.025)':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s=720x1280:fps=25",
     "-r",
     "25",
     "-c:v",
@@ -86,10 +113,103 @@ async function concat(folder: string, clips: string[]) {
   return readFileSync(output);
 }
 async function taskImages(job: RecordData) {
-  return (await list("assets")).filter(
-    (a) =>
-      a.taskId === job.taskId && a.category === "image" && a.current === true,
+  return orderedImages(
+    (await list("assets")).filter(
+      (a) =>
+        a.taskId === job.taskId && a.category === "image" && a.current === true,
+    ),
+    job.taskId,
   );
+}
+export async function decorateVideo(job: RecordData, buffer: Buffer) {
+  const s = jobInput(job);
+  const edit = (s.mediaPlan?.brief as MediaBrief | undefined)?.edit;
+  if (!edit) return buffer;
+  const folder = mkdtempSync(path.join(tmpdir(), "om-caption-"));
+  const duration = Number(s.task?.duration || 15);
+  const escape = (v: string) =>
+    v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  try {
+    const input = path.join(folder, "input.mp4"),
+      output = path.join(folder, "output.mp4");
+    writeFileSync(input, buffer);
+    const texts = ["유료 광고", edit.hook, edit.detail, edit.cta];
+    const inputs: string[] = [],
+      filters: string[] = [];
+    for (let i = 0; i < texts.length; i++) {
+      const text = await sharp({
+        text: {
+          text: `<span foreground="white">${escape(texts[i] || " ")}</span>`,
+          font: "NanumGothic 30",
+          fontfile: path.resolve("assets/fonts/NanumGothic-Regular.ttf"),
+          width: 560,
+          align: "center",
+          rgba: true,
+        },
+      })
+        .png()
+        .toBuffer();
+      const meta = await sharp(text).metadata();
+      const h = Math.max(80, Number(meta.height) + 32);
+      const file = path.join(folder, `${i}.png`);
+      await sharp({
+        create: {
+          width: 600,
+          height: h,
+          channels: 4,
+          background: { r: 25, g: 31, b: 40, alpha: 0.82 },
+        },
+      })
+        .composite([{ input: text, gravity: "centre" }])
+        .png()
+        .toFile(file);
+      inputs.push("-loop", "1", "-i", file);
+      const begin =
+        i === 0
+          ? 0
+          : i === 1
+            ? 0
+            : i === 2
+              ? Math.min(3, duration / 4)
+              : duration - Math.min(3, duration / 4);
+      const end =
+        i === 0
+          ? duration
+          : i === 1
+            ? Math.min(3, duration / 4)
+            : i === 2
+              ? duration - Math.min(3, duration / 4)
+              : duration;
+      filters.push(
+        `[${i === 0 ? "0:v" : `v${i - 1}`}][${i + 1}:v]overlay=60:${i === 0 ? 90 : 900}:enable='between(t,${begin},${end})':shortest=1[v${i}]`,
+      );
+    }
+    await runFFmpeg([
+      "-y",
+      "-i",
+      input,
+      ...inputs,
+      "-filter_complex",
+      filters.join(";"),
+      "-map",
+      "[v3]",
+      "-t",
+      String(duration),
+      "-an",
+      "-r",
+      "25",
+      "-c:v",
+      "libx264",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
+      output,
+    ]);
+    return readFileSync(output);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 }
 export async function slideshow(job: RecordData) {
   const { task } = jobInput(job);
@@ -98,14 +218,21 @@ export async function slideshow(job: RecordData) {
     throw new Error("계약 수량의 이미지를 먼저 등록하세요.");
   const folder = mkdtempSync(path.join(tmpdir(), "om-video-"));
   try {
-    const per = Number(task?.duration || 15) / images.length;
+    const weights = images.map((_, i) =>
+      i === 0 ? 1.3 : i === images.length - 1 ? 1.2 : 1,
+    );
+    const total = weights.reduce((s, v) => s + v, 0);
     const clips: string[] = [];
     for (let i = 0; i < images.length; i++) {
       const file = path.join(folder, `${i}.mp4`);
-      await stillClip(await localCopy(images[i], folder), per, file);
+      await stillClip(
+        await localCopy(images[i], folder),
+        (Number(task?.duration || 15) * weights[i]) / total,
+        file,
+      );
       clips.push(file);
     }
-    const buffer = await concat(folder, clips);
+    const buffer = await decorateVideo(job, await concat(folder, clips));
     await saveAsset(
       {
         projectId: String(job.projectId),
@@ -159,7 +286,7 @@ export async function hybrid(
       await stillClip(await localCopy(images[i], folder), per, file);
       clips.push(file);
     }
-    const buffer = await concat(folder, clips);
+    const buffer = await decorateVideo(job, await concat(folder, clips));
     await saveAsset(
       {
         projectId: String(job.projectId),

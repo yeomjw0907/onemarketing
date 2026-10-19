@@ -24,6 +24,13 @@ export const mediaBriefSchema = z.object({
     .max(8),
   warnings: z.array(z.string().max(1000)).max(10),
   prompt: z.string().trim().min(1).max(16000),
+  edit: z
+    .object({
+      hook: z.string().trim().max(60),
+      detail: z.string().trim().max(100),
+      cta: z.string().trim().min(1).max(60),
+    })
+    .optional(),
 });
 export type MediaBrief = z.infer<typeof mediaBriefSchema>;
 export async function mediaBinding(
@@ -31,9 +38,21 @@ export async function mediaBinding(
   taskId: string,
   type: "image" | "video",
   replaceAssetId?: string,
+  sourceAssetId?: string,
 ) {
   const project = await requireRecord(projectId, "projects");
   const task = await requireRecord(taskId, "tasks");
+  if (
+    type === "video" &&
+    task.creativeFormat === "story" &&
+    (
+      task.approvedCreativeCandidate as
+        { scenes?: { method: string }[] } | undefined
+    )?.scenes?.some((s) => s.method === "footage")
+  )
+    throw new Error(
+      "실제 촬영이 필요한 시나리오입니다. 실제 자료로 편집한 영상을 등록하거나 촬영이 필요 없는 방향으로 시나리오를 다시 승인하세요.",
+    );
   if (task.projectId !== projectId) throw new Error("프로젝트가 다릅니다.");
   const assets = (await list("assets")).filter(
     (a) =>
@@ -50,16 +69,30 @@ export async function mediaBinding(
   )
     throw new Error("교체할 이미지를 확인하세요.");
   const source =
-    (type === "video"
-      ? images.find(
+    (sourceAssetId
+      ? assets.find(
           (a) =>
-            Array.isArray(task.approvedAssets) &&
-            task.approvedAssets.includes(a.id),
+            a.id === sourceAssetId &&
+            a.current !== false &&
+            String(a.mime).startsWith("image/") &&
+            (a.category === "source" || a.taskId === taskId),
         )
       : undefined) ||
-    assets.find(
-      (a) => a.category === "source" && String(a.mime).startsWith("image/"),
-    );
+    (!sourceAssetId
+      ? (type === "video"
+          ? images.find(
+              (a) =>
+                Array.isArray(task.approvedAssets) &&
+                task.approvedAssets.includes(a.id),
+            )
+          : undefined) ||
+        assets.find(
+          (a) =>
+            a.category === "source" &&
+            a.current !== false &&
+            String(a.mime).startsWith("image/"),
+        )
+      : undefined);
   if (!source) throw new Error("기준 사진을 먼저 등록하세요.");
   const duration =
     task.mode === "hybrid"
@@ -67,10 +100,7 @@ export async function mediaBinding(
       : Number(task.duration || 10);
   if (
     type === "video" &&
-    (!Number.isInteger(duration) ||
-      duration < 4 ||
-      duration > 30 ||
-      task.mode === "slideshow")
+    (!Number.isInteger(duration) || duration < 4 || duration > 30)
   )
     throw new Error("영상 방식·길이를 확인하세요.");
   const settings =
@@ -111,6 +141,9 @@ export async function mediaBinding(
           duration: task.duration,
           mode: task.mode,
           approvedAssets: task.approvedAssets,
+          creativeFormat: task.creativeFormat || "standard",
+          approvedCreativePlanId: task.approvedCreativePlanId || null,
+          approvedCreativeCandidate: task.approvedCreativeCandidate || null,
         },
         assets: assets.map((a) => [a.id, a.version, a.sha256, a.current]),
         type,
@@ -118,6 +151,7 @@ export async function mediaBinding(
         model,
         settings,
         guidance,
+        sourceAssetId: source.id,
       }),
     )
     .digest("hex");
@@ -144,7 +178,13 @@ export async function validateMediaPlan(
     (plan.replaceAssetId || null) !== (replaceAssetId || null)
   )
     throw new Error("브리핑의 작업·생성 종류가 다릅니다.");
-  const binding = await mediaBinding(projectId, taskId, type, replaceAssetId);
+  const binding = await mediaBinding(
+    projectId,
+    taskId,
+    type,
+    replaceAssetId,
+    String(plan.sourceAssetId),
+  );
   if (binding.fingerprint !== plan.fingerprint)
     throw new Error(
       "자료·기획·설정이 변경되었습니다. 새 브리핑을 작성하고 검수하세요.",
@@ -152,6 +192,15 @@ export async function validateMediaPlan(
   const brief = mediaBriefSchema.parse(plan.brief);
   if (type === "image" && brief.scenes.length !== 1)
     throw new Error("이미지는 한 장면으로 브리핑하세요.");
+  const task = await requireRecord(taskId, "tasks");
+  if (
+    type === "video" &&
+    task.creativeFormat !== "story" &&
+    brief.scenes.length !== 1
+  )
+    throw new Error(
+      "기존형 영상 생성은 연속된 한 장면으로 작성하세요. 자막·CTA는 편집 단계에서 넣습니다.",
+    );
   return binding;
 }
 export function editMediaPlan(input: unknown, actor: string) {

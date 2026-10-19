@@ -1,3 +1,4 @@
+import { creativeBasis } from "./creative-schema";
 import { anthropicCost } from "./anthropic-cost";
 import { copyBasis } from "./copy-quality";
 import { productBasis, requireConfirmedProduct } from "./product-understanding";
@@ -23,6 +24,7 @@ import type { RecordData } from "./types";
 export const jobSchema = z.object({
   projectId: z.string().min(1),
   taskId: z.string().optional(),
+  sourceAssetId: z.string().uuid().optional(),
   copySourceAssetId: z.string().uuid().optional(),
   replaceAssetId: z.string().optional(),
   type: z.enum([
@@ -33,6 +35,7 @@ export const jobSchema = z.object({
     "video",
     "slideshow",
     "media-plan",
+    "scenario",
   ]),
   mediaType: z.enum(["image", "video"]).optional(),
   mediaPlanId: z.string().optional(),
@@ -94,6 +97,30 @@ export function enqueue(input: unknown, actor: string) {
         t.channel !== "clip"
       )
         throw new Error("영상 작업을 선택하세요.");
+      if (
+        body.type === "scenario" &&
+        (t.channel !== "clip" || t.creativeFormat !== "story")
+      )
+        throw new Error("시나리오형 클립을 선택하세요.");
+      if (
+        t.creativeFormat === "story" &&
+        body.type !== "scenario" &&
+        !t.approvedCreativePlanId
+      )
+        throw new Error("시나리오를 먼저 승인하세요.");
+      if (t.creativeFormat === "story" && body.type !== "scenario") {
+        const creative = await requireRecord(
+          String(t.approvedCreativePlanId),
+          "media_plans",
+        );
+        if (
+          creative.status !== "approved" ||
+          creative.creativeBasis !== creativeBasis(p, t)
+        )
+          throw new Error(
+            "제품 정보·기획이 변경되었습니다. 시나리오를 다시 제안·승인하세요.",
+          );
+      }
       if (!t.briefApprovedAt) throw new Error("기획 승인이 필요합니다.");
       if (
         ["approved", "delivered", "submitted", "verified"].includes(
@@ -110,7 +137,7 @@ export function enqueue(input: unknown, actor: string) {
         ).length < Number(t.images || 1)
       )
         throw new Error("혼합형에 사용할 이미지를 먼저 등록하세요.");
-      const needed = ["copy", "media-plan"].includes(body.type)
+      const needed = ["copy", "media-plan", "scenario"].includes(body.type)
         ? "ANTHROPIC_API_KEY"
         : body.type === "image"
           ? "FAL_KEY"
@@ -174,9 +201,13 @@ export function enqueue(input: unknown, actor: string) {
         body.taskId!,
         body.mediaType,
         body.replaceAssetId,
+        body.sourceAssetId,
       );
     }
-    if (["image", "video"].includes(body.type)) {
+    if (
+      ["image", "video"].includes(body.type) ||
+      (body.type === "slideshow" && body.mediaPlanId)
+    ) {
       if (!body.mediaPlanId)
         throw new Error("생성 브리핑을 검수·승인한 뒤 생성하세요.");
       mediaPlan = await requireRecord(body.mediaPlanId, "media_plans");
@@ -200,11 +231,17 @@ export function enqueue(input: unknown, actor: string) {
         mediaPlan,
         p.id,
         body.taskId!,
-        body.type as "image" | "video",
+        (body.type === "slideshow" ? "video" : body.type) as "image" | "video",
         body.replaceAssetId,
       );
     }
     const snapshot = {
+      creativeHistory:
+        body.type === "scenario"
+          ? (await list("media_plans")).filter(
+              (x) => x.taskId === body.taskId && x.mediaType === "scenario",
+            )
+          : [],
       copySource: copySource || null,
       copyPrevious:
         body.type === "copy"
@@ -421,6 +458,7 @@ export function jobResult(jobId: string, patch: Record<string, unknown>) {
 }
 export function jobInput(job: RecordData) {
   const s = job.snapshot as {
+    creativeHistory?: RecordData[];
     copyBasis?: string;
     copySource?: RecordData | null;
     copyPrevious?: RecordData | null;
