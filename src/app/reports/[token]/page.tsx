@@ -1,3 +1,4 @@
+import guidanceStyles from "@/components/workflow-guidance.module.css";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { customerReport, reportStatus } from "@/lib/customer-reports";
@@ -80,6 +81,61 @@ export default async function ReportPage({
             <StatusBadge value={p.status} label={reportStatus(p.status)} />
           </div>
           <p className="muted">마감일 {p.due || "협의 중"}</p>
+          {p.status !== "cancelled" && p.schedule && (
+            <div className={guidanceStyles.summary} aria-label="게시 일정 요약">
+              <h3>
+                {p.status === "completed"
+                  ? "캠페인 완료"
+                  : "이번 주 게시 마감 현황"}
+              </h3>
+              {p.status === "completed" ? (
+                <p>
+                  전체 {p.schedule.total}건의 진행 결과를 아래에서 확인할 수
+                  있어요.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    {p.schedule.weekStart} ~ {p.schedule.weekEnd}
+                  </p>
+                  {p.schedule.scheduled ? (
+                    <>
+                      <p>
+                        이번 주 마감 예정{" "}
+                        <strong>{p.schedule.planned}건</strong> · 링크 접수{" "}
+                        {p.schedule.submitted}건 · 게시 확인{" "}
+                        {p.schedule.verified}건
+                      </p>
+                      <p>
+                        {p.schedule.remaining
+                          ? `이번 주 마감 예정 작업 중 ${p.schedule.remaining}건은 링크 등록 전이에요.`
+                          : p.schedule.planned
+                            ? "이번 주 마감 예정 작업의 링크가 모두 접수됐어요."
+                            : "이번 주에 마감되는 게시 작업은 없어요."}
+                      </p>
+                      {p.schedule.overdue > 0 && (
+                        <p>
+                          예정일이 지난 미접수 작업 {p.schedule.overdue}건은
+                          담당자 확인이 필요해요.
+                        </p>
+                      )}
+                      {p.schedule.scheduled < p.schedule.total && (
+                        <p>
+                          나머지 {p.schedule.total - p.schedule.scheduled}건은
+                          게시 일정 조율 중이에요.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p>
+                      게시 일정은 담당자가 조율 중이에요. 확정된 진행 상황을
+                      이곳에 안내해드려요.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
           {p.keywords && (
             <div className="report-keywords">
               <h3>캠페인 키워드</h3>

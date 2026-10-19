@@ -23,11 +23,15 @@ type Row = Record<string, any>;
 export default function WorkflowConsole({
   data,
   onReload,
+  initialProjectId = "",
+  initialSection = "assignment",
 }: {
+  initialProjectId?: string;
+  initialSection?: string;
   data: DatabaseView;
   onReload: () => Promise<void>;
 }) {
-  const [tab, setTab] = useState("quote");
+  const [tab, setTab] = useState(initialProjectId ? initialSection : "quote");
   const [recommendationOrder, setRecommendationOrder] =
     useState<RecommendationOrder>("balanced");
   const { ask, confirm, dialog } = useDecisionDialog();
@@ -52,7 +56,7 @@ export default function WorkflowConsole({
     [message, setMessage] = useState(""),
     [config, setConfig] = useState<Row | null>(null),
     [offer, setOffer] = useState<Row>({ slotId: "", participantId: "" }),
-    [projectId, setProjectId] = useState(""),
+    [projectId, setProjectId] = useState(initialProjectId),
     [offerBatch, setOfferBatch] = useState<Row[]>([]);
   useEffect(() => {
     void fetch("/api/workflow")

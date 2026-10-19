@@ -1,3 +1,4 @@
+import { reportSchedule } from "./workflow-guidance";
 import { randomBytes, createHash } from "node:crypto";
 import ExcelJS from "exceljs";
 import { z } from "zod";
@@ -81,6 +82,7 @@ export type CustomerReport = {
     due: string;
     updatedAt: string;
     keywords?: PublicKeywords | null;
+    schedule?: ReturnType<typeof reportSchedule>;
     tasks: {
       label: string;
       channel: string;
@@ -170,6 +172,7 @@ export async function customerReport(
           due: String(p.due || ""),
           updatedAt: p.updatedAt,
           keywords,
+          schedule: reportSchedule(ts),
           tasks: ts.map((t) => {
             let url = "";
             if (["submitted", "verified"].includes(String(t.status))) {
@@ -224,6 +227,11 @@ export async function reportWorkbook(report: CustomerReport) {
       "마감일",
       "블로그 확인 / 계약 작업",
       "클립 확인 / 계약 작업",
+      "집계 주간 (한국 시간)",
+      "이번 주 마감 예정",
+      "예정 작업 링크 접수",
+      "예정 작업 게시 확인",
+      "예정일 지난 미접수",
     ],
   ]);
   for (const p of report.projects) {
@@ -239,6 +247,13 @@ export async function reportWorkbook(report: CustomerReport) {
       p.due,
       progress("블로그"),
       progress("클립"),
+      p.schedule
+        ? `${p.schedule.weekStart} ~ ${p.schedule.weekEnd}`
+        : "일정 미확정",
+      p.schedule?.planned ?? "미확인",
+      p.schedule?.submitted ?? "미확인",
+      p.schedule?.verified ?? "미확인",
+      p.schedule?.overdue ?? "미확인",
     ]);
   }
   for (const [name, channel] of [

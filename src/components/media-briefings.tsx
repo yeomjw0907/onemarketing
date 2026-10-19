@@ -4,6 +4,7 @@ import type { DatabaseView, RecordData } from "@/lib/types";
 import type { MediaBrief } from "@/lib/media-plans";
 import { briefingPrompt } from "@/lib/media-guidance";
 import CreativeStudio from "./creative-studio";
+import guidanceStyles from "./workflow-guidance.module.css";
 import { clipTitle, TITLE_STYLES, resolveTitleStyle } from "@/lib/clip-layout";
 import { money } from "@/lib/types";
 
@@ -85,7 +86,7 @@ function Plan({
   }
   return (
     <article className="section">
-      <div className="section-title">
+      <div className={`section-title ${guidanceStyles.briefingHeading}`}>
         <h3>
           {String(data.tasks.find((t) => t.id === plan.taskId)?.name || "작업")}{" "}
           · {plan.mediaType === "image" ? `이미지 ${plan.sceneNumber}` : "영상"}
@@ -115,8 +116,8 @@ function Plan({
       <p className="hint">
         {plan.mediaType === "image"
           ? "1024×1536 · 이미지 1장"
-          : `${String((plan.settings as Record<string, unknown>).duration)}초 · 720p · 무음${data.tasks.find((t) => t.id === plan.taskId)?.mode === "hybrid" ? " · 생성 구간 이후 기존 혼합형 편집 적용" : ""}`}{" "}
-        · 예상 제작비 {money(estimate)} (실제 청구액과 다를 수 있음)
+          : `${String((plan.settings as Record<string, unknown> | undefined)?.duration || "설정")}초 · 720p · 무음${data.tasks.find((t) => t.id === plan.taskId)?.mode === "hybrid" ? " · 생성 구간 이후 기존 혼합형 편집 적용" : ""}`}{" "}
+        · 예상 제작비 {money(estimate)} (실제 청구액은 달라질 수 있어요)
       </p>
       <details>
         <summary>모델·실행 설정</summary>
@@ -126,72 +127,85 @@ function Plan({
           {JSON.stringify(plan.settings, null, 2)}
         </pre>
       </details>
+      <div className="notice">
+        <strong>{brief.summary}</strong>
+        <ul>
+          {brief.scenes.map((scene, i) => (
+            <li key={i}>
+              {scene.timing} · {scene.composition} · {scene.action}
+            </li>
+          ))}
+        </ul>
+      </div>
       <fieldset
         disabled={busy || used}
         style={{ border: 0, padding: 0, minWidth: 0 }}
       >
-        <label>
-          장면 의도
-          <textarea
-            value={brief.summary}
-            onChange={(e) => setBrief({ ...brief, summary: e.target.value })}
-          />
-        </label>
-        {brief.scenes.map((scene, i) => (
-          <div className="section" key={i}>
-            <strong>
-              장면 {i + 1} · {scene.timing}
-            </strong>
-            <div className="row">
+        <details>
+          <summary>장면·연출 수정</summary>
+          <label>
+            이 장면에서 전할 내용
+            <textarea
+              value={brief.summary}
+              onChange={(e) => setBrief({ ...brief, summary: e.target.value })}
+            />
+          </label>
+          {brief.scenes.map((scene, i) => (
+            <div className="section" key={i}>
+              <strong>
+                장면 {i + 1} · {scene.timing}
+              </strong>
+              <div className="row">
+                {(
+                  [
+                    ["people", "인물 등장"],
+                    ["hands", "손 등장"],
+                    ["eating", "먹는 장면"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key}>
+                    <input
+                      type="checkbox"
+                      checked={scene[key]}
+                      onChange={(e) =>
+                        setBrief({
+                          ...brief,
+                          scenes: brief.scenes.map((s, n) =>
+                            n === i ? { ...s, [key]: e.target.checked } : s,
+                          ),
+                        })
+                      }
+                    />{" "}
+                    {label}
+                  </label>
+                ))}
+              </div>
               {(
                 [
-                  ["people", "인물 등장"],
-                  ["hands", "손 등장"],
-                  ["eating", "먹는 장면"],
+                  ["composition", "구도·빛·대상 위치"],
+                  ["action", "대상 동작"],
+                  ["camera", "카메라 연출"],
+                  ["timing", "장면 시간"],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key}>
-                  <input
-                    type="checkbox"
-                    checked={scene[key]}
+                  {label}
+                  <textarea
+                    value={scene[key]}
                     onChange={(e) =>
                       setBrief({
                         ...brief,
                         scenes: brief.scenes.map((s, n) =>
-                          n === i ? { ...s, [key]: e.target.checked } : s,
+                          n === i ? { ...s, [key]: e.target.value } : s,
                         ),
                       })
                     }
-                  />{" "}
-                  {label}
+                  />
                 </label>
               ))}
             </div>
-            {(
-              [
-                ["composition", "구도·빛·대상 위치"],
-                ["action", "대상 동작"],
-                ["camera", "카메라 연출"],
-                ["timing", "장면 시간"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key}>
-                {label}
-                <textarea
-                  value={scene[key]}
-                  onChange={(e) =>
-                    setBrief({
-                      ...brief,
-                      scenes: brief.scenes.map((s, n) =>
-                        n === i ? { ...s, [key]: e.target.value } : s,
-                      ),
-                    })
-                  }
-                />
-              </label>
-            ))}
-          </div>
-        ))}
+          ))}
+        </details>
         {brief.warnings.length > 0 && (
           <div className="notice">
             확인할 사항
@@ -202,74 +216,152 @@ function Plan({
             </ul>
           </div>
         )}
-        <label>
-          기본 연출 프롬프트
-          <textarea
-            rows={10}
-            value={brief.prompt}
-            onChange={(e) => setBrief({ ...brief, prompt: e.target.value })}
-          />
-        </label>
+        <details>
+          <summary>프롬프트 직접 수정</summary>
+          <label>
+            기본 연출 프롬프트
+            <textarea
+              rows={10}
+              value={brief.prompt}
+              onChange={(e) => setBrief({ ...brief, prompt: e.target.value })}
+            />
+          </label>
+        </details>
         {plan.mediaType === "video" && (
           <fieldset disabled={busy || used} style={{ border: 0, padding: 0 }}>
             <legend>상단 제목 · 스타일</legend>
-            {(["title"] as const).map((key) => (
-              <label key={key}>
-                {
+            <details>
+              <summary>제목·레이아웃 수정</summary>
+              {(["title"] as const).map((key) => (
+                <label key={key}>
                   {
-                    title: "상단 고정 제목",
-                    detail: "설명 자막 (선택)",
-                    cta: "마무리 CTA (선택)",
-                  }[key]
-                }
-                <input
-                  maxLength={key === "title" ? 36 : key === "detail" ? 100 : 60}
-                  value={
-                    key === "title"
-                      ? clipTitle(
-                          brief.edit,
-                          (
-                            data.projects.find((p) => p.id === plan.projectId)
-                              ?.knowledge as
-                              { product?: { name?: string } } | undefined
-                          )?.product?.name,
-                          data.tasks.find((t) => t.id === plan.taskId)?.name,
-                        )
-                      : brief.edit?.[key] || ""
-                  }
-                  onChange={(e) =>
-                    setBrief({
-                      ...brief,
-                      edit: {
-                        ...brief.edit,
-                        hook: brief.edit?.hook || "",
-                        detail: brief.edit?.detail || "",
-                        cta: brief.edit?.cta ?? "",
-                        [key]: e.target.value,
-                      },
-                    })
-                  }
-                />
-              </label>
-            ))}
-            {(["layout", "contentKind", "accentColor"] as const).map((key) => (
-              <label key={key}>
-                {
-                  {
-                    layout: "영상 레이아웃",
-                    contentKind: "콘텐츠 성격 · 자동 추천 기준",
-                    accentColor: "핵심 강조색",
-                  }[key]
-                }
-                <select
-                  value={
-                    brief.edit?.[key] ||
                     {
-                      layout: "auto",
-                      contentKind: "product",
-                      accentColor: "yellow",
+                      title: "상단 고정 제목",
+                      detail: "설명 자막 (선택)",
+                      cta: "마무리 CTA (선택)",
                     }[key]
                   }
+                  <input
+                    maxLength={
+                      key === "title" ? 36 : key === "detail" ? 100 : 60
+                    }
+                    value={
+                      key === "title"
+                        ? clipTitle(
+                            brief.edit,
+                            (
+                              data.projects.find((p) => p.id === plan.projectId)
+                                ?.knowledge as
+                                { product?: { name?: string } } | undefined
+                            )?.product?.name,
+                            data.tasks.find((t) => t.id === plan.taskId)?.name,
+                          )
+                        : brief.edit?.[key] || ""
+                    }
+                    onChange={(e) =>
+                      setBrief({
+                        ...brief,
+                        edit: {
+                          ...brief.edit,
+                          hook: brief.edit?.hook || "",
+                          detail: brief.edit?.detail || "",
+                          cta: brief.edit?.cta ?? "",
+                          [key]: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </label>
+              ))}
+              {(["layout", "contentKind", "accentColor"] as const).map(
+                (key) => (
+                  <label key={key}>
+                    {
+                      {
+                        layout: "영상 레이아웃",
+                        contentKind: "콘텐츠 성격 · 자동 추천 기준",
+                        accentColor: "핵심 강조색",
+                      }[key]
+                    }
+                    <select
+                      value={
+                        brief.edit?.[key] ||
+                        {
+                          layout: "auto",
+                          contentKind: "product",
+                          accentColor: "yellow",
+                        }[key]
+                      }
+                      onChange={(e) =>
+                        setBrief({
+                          ...brief,
+                          edit: {
+                            hook: "",
+                            detail: "",
+                            cta: "",
+                            ...brief.edit,
+                            [key]: e.target.value,
+                          },
+                        })
+                      }
+                    >
+                      {(key === "layout"
+                        ? [
+                            ["auto", "콘텐츠에 맞춰 자동"],
+                            ["split", "상단 분리형"],
+                            ["overlay", "전체 화면형"],
+                          ]
+                        : key === "contentKind"
+                          ? [
+                              ["service", "서비스 소개 · 화면 시연"],
+                              ["product", "제품 · 음식 · 공간"],
+                              ["story", "상황극 · 이야기"],
+                            ]
+                          : [
+                              ["yellow", "옐로"],
+                              ["red", "레드"],
+                              ["mint", "민트"],
+                            ]
+                      ).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ),
+              )}
+              {(["titleLead", "titleAccent"] as const).map((key) => (
+                <label key={key}>
+                  {key === "titleLead"
+                    ? "도입 문구 · 흰색"
+                    : "핵심 문구 · 강조색"}
+                  <input
+                    maxLength={24}
+                    value={brief.edit?.[key] || ""}
+                    onChange={(e) =>
+                      setBrief({
+                        ...brief,
+                        edit: {
+                          hook: "",
+                          detail: "",
+                          cta: "",
+                          ...brief.edit,
+                          [key]: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </label>
+              ))}
+              <p className="hint">
+                두 문구를 입력하면 기존 제목 대신 사용해요. 비워두면 기존 제목을
+                유지해요. 두 부분 제목은 굵은 고딕으로 표시해요.
+              </p>
+              <label>
+                기본 제목 스타일 (기존 제목용)
+                <select
+                  value={brief.edit?.titleStyle || "auto"}
                   onChange={(e) =>
                     setBrief({
                       ...brief,
@@ -278,44 +370,25 @@ function Plan({
                         detail: "",
                         cta: "",
                         ...brief.edit,
-                        [key]: e.target.value,
+                        titleStyle: e.target.value as NonNullable<
+                          MediaBrief["edit"]
+                        >["titleStyle"],
                       },
                     })
                   }
                 >
-                  {(key === "layout"
-                    ? [
-                        ["auto", "콘텐츠에 맞춰 자동"],
-                        ["split", "상단 분리형"],
-                        ["overlay", "전체 화면형"],
-                      ]
-                    : key === "contentKind"
-                      ? [
-                          ["service", "서비스 소개 · 화면 시연"],
-                          ["product", "제품 · 음식 · 공간"],
-                          ["story", "상황극 · 이야기"],
-                        ]
-                      : [
-                          ["yellow", "옐로"],
-                          ["red", "레드"],
-                          ["mint", "민트"],
-                        ]
-                  ).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  <option value="auto">자동 · 기존 스타일 유지</option>
+                  {TITLE_STYLES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
                     </option>
                   ))}
                 </select>
               </label>
-            ))}
-            {(["titleLead", "titleAccent"] as const).map((key) => (
-              <label key={key}>
-                {key === "titleLead"
-                  ? "도입 문구 · 흰색"
-                  : "핵심 문구 · 강조색"}
-                <input
-                  maxLength={24}
-                  value={brief.edit?.[key] || ""}
+              <label>
+                제목 등장 효과
+                <select
+                  value={brief.edit?.titleMotion || "auto"}
                   onChange={(e) =>
                     setBrief({
                       ...brief,
@@ -324,80 +397,30 @@ function Plan({
                         detail: "",
                         cta: "",
                         ...brief.edit,
-                        [key]: e.target.value,
+                        titleMotion: e.target.value as NonNullable<
+                          MediaBrief["edit"]
+                        >["titleMotion"],
                       },
                     })
                   }
-                />
+                >
+                  <option value="auto">스타일에 맞춰 자동</option>
+                  <option value="none">고정 · 효과 없음</option>
+                  <option value="fade">부드럽게 등장</option>
+                  <option value="slide">살짝 올라오며 등장</option>
+                </select>
               </label>
-            ))}
-            <p className="hint">
-              두 문구를 입력하면 기존 제목 대신 사용해요. 비워두면 기존 제목을
-              유지해요. 두 부분 제목은 굵은 고딕으로 표시해요.
-            </p>
-            <label>
-              제목 스타일
-              <select
-                value={brief.edit?.titleStyle || "auto"}
-                onChange={(e) =>
-                  setBrief({
-                    ...brief,
-                    edit: {
-                      hook: "",
-                      detail: "",
-                      cta: "",
-                      ...brief.edit,
-                      titleStyle: e.target.value as NonNullable<
-                        MediaBrief["edit"]
-                      >["titleStyle"],
-                    },
-                  })
-                }
-              >
-                <option value="auto">자동 · 기존 스타일 유지</option>
-                {TITLE_STYLES.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              제목 등장 효과
-              <select
-                value={brief.edit?.titleMotion || "auto"}
-                onChange={(e) =>
-                  setBrief({
-                    ...brief,
-                    edit: {
-                      hook: "",
-                      detail: "",
-                      cta: "",
-                      ...brief.edit,
-                      titleMotion: e.target.value as NonNullable<
-                        MediaBrief["edit"]
-                      >["titleMotion"],
-                    },
-                  })
-                }
-              >
-                <option value="auto">스타일에 맞춰 자동</option>
-                <option value="none">고정 · 효과 없음</option>
-                <option value="fade">부드럽게 등장</option>
-                <option value="slide">살짝 올라오며 등장</option>
-              </select>
-            </label>
-            <p className="hint">
-              자동 선택:{" "}
-              {
-                resolveTitleStyle(brief.edit?.titleStyle, String(plan.taskId))
-                  .label
-              }
-              . 자동 선택은 같은 작업에서 유지돼요. 효과는 시작 0.35초에만
-              적용하고 제목은 끝까지 남아요. 더빙·내부 자막·CTA는 출력하지
-              않아요. 광고 표시는 게시글·클립 설명에서 유지해요.
-            </p>
-            <details>
+              <p className="hint">
+                {brief.edit?.titleLead?.trim() ||
+                brief.edit?.titleAccent?.trim()
+                  ? "두 부분 제목은 굵은 고딕으로 표시해요"
+                  : `기본 제목 스타일: ${resolveTitleStyle(brief.edit?.titleStyle, String(plan.taskId)).label}`}
+                . 효과는 시작 0.35초에만 적용하고 제목은 끝까지 남아요.
+                더빙·내부 자막·CTA는 출력하지 않아요. 광고 표시는 게시글·클립
+                설명에서 유지해요.
+              </p>
+            </details>
+            <details open>
               <summary>세로 영상 레이아웃 미리보기</summary>
               <img
                 alt="상단 제목 스타일 미리보기"
@@ -418,25 +441,32 @@ function Plan({
           </fieldset>
         )}
         <p className="hint">
-          장면 설명과 실제 프롬프트가 일치하는지 확인하세요. 직접 수정하면
-          양쪽에 반영한 뒤 저장하거나, 위 요청란에 변경 내용을 적고 새 브리핑을
-          작성하세요. 저장하면 기존 승인이 해제됩니다.
+          직접 수정할 때는 장면 설명과 프롬프트를 함께 고쳐주세요. 저장하면 다시
+          승인해야 해요.
         </p>
-        <details open>
+        <details>
           <summary>실제 전송할 최종 프롬프트</summary>
           <pre className="content-preview">
             {briefingPrompt(brief, String(plan.guidance || ""))}
           </pre>
         </details>
         <div className="row">
-          <button disabled={!dirty} onClick={() => act("edit")}>
-            수정 저장 · 승인 해제
-          </button>
-          <button disabled={dirty || approved} onClick={() => act("approve")}>
-            브리핑 검수 완료 · 생성 승인
+          <button
+            className={dirty ? "primary" : undefined}
+            disabled={!dirty}
+            onClick={() => act("edit")}
+          >
+            수정 내용 저장
           </button>
           <button
-            className="primary"
+            className={!dirty && !approved ? "primary" : undefined}
+            disabled={dirty || approved}
+            onClick={() => act("approve")}
+          >
+            내용 확인 완료 · 생성 승인
+          </button>
+          <button
+            className={approved && !dirty ? "primary" : undefined}
             disabled={dirty || !approved}
             onClick={() => act("generate")}
           >

@@ -1,6 +1,8 @@
 "use client";
 import PostingSteps from "./posting-steps";
-import { useEffect, useState } from "react";
+import { participantTaskGuide } from "@/lib/workflow-guidance";
+import guidanceStyles from "./workflow-guidance.module.css";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
 import KakaoPortalLogin from "./kakao-portal-login";
@@ -35,11 +37,20 @@ export default function ParticipantPortal() {
     [notice, setNotice] = useState("");
   const [access, setAccess] = useState("");
   const { ask, dialog } = useDecisionDialog();
+  const firstLoad = useRef(true);
   async function load() {
     const r = await fetch("/api/participant-portal");
     const d = await r.json();
     if (!r.ok) throw new Error(d.error);
     setData(d);
+    if (firstLoad.current) {
+      const pendingOffers = d.offers.some(
+        (o: Row) =>
+          o.status === "proposed" && Date.parse(o.expiresAt) > Date.now(),
+      );
+      setTab(pendingOffers ? "offers" : d.tasks.length ? "tasks" : "offers");
+      firstLoad.current = false;
+    }
   }
   async function act(body: Row) {
     setBusy(true);
@@ -434,6 +445,16 @@ export default function ParticipantPortal() {
                     </div>
                     <StatusBadge value={t.status} />
                   </div>
+                  <div className={guidanceStyles.guide} role="note">
+                    <strong>{participantTaskGuide(t).title}</strong>
+                    <p>{participantTaskGuide(t).description}</p>
+                    {t.status === "delivered" && taskDeadline(t) && (
+                      <p>
+                        {t.revisionNotes ? "수정" : "제출"} 기한{" "}
+                        {date(taskDeadline(t)!)}
+                      </p>
+                    )}
+                  </div>
                   <p className="ui-account-url">{t.account?.url}</p>
                   {taskOverdue(t) && (
                     <Feedback tone="error">
@@ -541,49 +562,57 @@ export default function ParticipantPortal() {
                       {t.guideSnapshot?.text || p?.guide}
                     </p>
                   </details>
-                  {t.revisionNotes && t.status === "delivered" && (
-                    <Feedback>
-                      <strong>수정 요청</strong>
-                      <p>{t.revisionNotes}</p>
-                      <span>수정 기한 {date(t.revisionDue)}</span>
-                    </Feedback>
-                  )}
-                  {["delivered", "submitted", "verified"].includes(
-                    t.status,
-                  ) && <PostingSteps files={t.files} channel={t.channel} />}
+                  {t.status === "delivered" ? (
+                    <details open>
+                      <summary>자료 확인하고 게시하기</summary>
+                      <PostingSteps files={t.files} channel={t.channel} />
+                    </details>
+                  ) : ["submitted", "verified"].includes(t.status) ? (
+                    <details>
+                      <summary>전달받은 자료 다시 보기</summary>
+                      <PostingSteps files={t.files} channel={t.channel} />
+                    </details>
+                  ) : null}
                   {["delivered", "submitted"].includes(t.status) && (
-                    <Form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void act({
-                          action: "submit",
-                          id: t.id,
-                          link: new FormData(e.currentTarget).get("link"),
-                        });
-                      }}
-                    >
-                      <h3 className="posting-submit-title">
-                        게시물 링크를 제출해주세요
-                      </h3>
-                      <p className="hint">
-                        게시물의 공유 메뉴에서 링크를 복사한 뒤 여기에
-                        붙여넣어주세요. 임시 저장이나 편집 화면 주소는 제출하지
-                        마세요.
-                      </p>
-                      <Field help="배정된 계정에 게시한 글 또는 클립의 주소를 입력해주세요.">
-                        게시물 링크
-                        <input
-                          required
-                          type="url"
-                          name="link"
-                          defaultValue={t.link}
-                          placeholder="https://"
-                        />
-                      </Field>
-                      <Button variant="primary" busy={busy}>
-                        링크 제출
-                      </Button>
-                    </Form>
+                    <details open={t.status === "delivered"}>
+                      <summary>
+                        {t.status === "submitted"
+                          ? "제출한 링크 변경"
+                          : "게시물 링크 제출"}
+                      </summary>
+                      <Form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void act({
+                            action: "submit",
+                            id: t.id,
+                            link: new FormData(e.currentTarget).get("link"),
+                          });
+                        }}
+                      >
+                        <h3 className="posting-submit-title">
+                          게시물 링크를 제출해주세요
+                        </h3>
+                        <p className="hint">
+                          게시물의 공유 메뉴에서 링크를 복사한 뒤 여기에
+                          붙여넣어주세요. 임시 저장이나 편집 화면 주소는
+                          제출하지 마세요.
+                        </p>
+                        <Field help="배정된 계정에 게시한 글 또는 클립의 주소를 입력해주세요.">
+                          게시물 링크
+                          <input
+                            required
+                            type="url"
+                            name="link"
+                            defaultValue={t.link}
+                            placeholder="https://"
+                          />
+                        </Field>
+                        <Button variant="primary" busy={busy}>
+                          링크 제출
+                        </Button>
+                      </Form>
+                    </details>
                   )}
                 </article>
               );

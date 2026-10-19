@@ -11,6 +11,8 @@ import { requireCopyApproval } from "@/lib/copy-quality";
 import DeletedCatalog from "./deleted-catalog";
 import { Tabs, useDecisionDialog } from "./ui/workflow-ui";
 import WorkflowConsole from "./workflow-console";
+import ProjectNextActions from "./project-next-actions";
+import guidanceStyles from "./workflow-guidance.module.css";
 import { accountAssignable } from "@/lib/participant-account-policy";
 import { shootingTargetOptions } from "@/lib/media-guidance";
 import Participants from "./participants";
@@ -224,6 +226,7 @@ function Field({
 }
 export default function Workspace() {
   const [catalogTab, setCatalogTab] = useState("active");
+  const [workflowSection, setWorkflowSection] = useState("assignment");
   const [briefingRequest, setBriefingRequest] = useState<BriefingRequest>();
   const customerUploads = useRef<{ category: string; file: File }[]>([]);
   const [email, setEmail] = useState<string | null | undefined>(undefined),
@@ -266,6 +269,11 @@ export default function Workspace() {
       const next = q.get("page") || "overview";
       setPage(menus.some((m) => m[0] === next) ? next : "overview");
       setSelected(q.get("id") || "");
+      setWorkflowSection(
+        ["assignment", "review"].includes(q.get("section") || "")
+          ? q.get("section")!
+          : "assignment",
+      );
       setTab(0);
     };
     restore();
@@ -290,9 +298,11 @@ export default function Workspace() {
     }, 12000);
     return () => clearInterval(timer);
   }, [email, busy]);
-  function navigate(next: string, id = "") {
+  function navigate(next: string, id = "", section = "assignment") {
     const q = new URLSearchParams({ page: next });
     if (id) q.set("id", id);
+    if (next === "workflow" && id) q.set("section", section);
+    setWorkflowSection(section);
     window.history.pushState({}, "", `/?${q}`);
     setPage(next);
     setSelected(id);
@@ -1226,6 +1236,9 @@ export default function Workspace() {
         )}
         {page === "workflow" && (
           <WorkflowConsole
+            key={`${selected || "all"}:${workflowSection}`}
+            initialProjectId={selected}
+            initialSection={workflowSection}
             data={data}
             onReload={async () => setData(await api("/api/data"))}
           />
@@ -1704,7 +1717,7 @@ export default function Workspace() {
         )}
         {page === "projects" && project && (
           <>
-            <div className="pagehead">
+            <div className={`pagehead ${guidanceStyles.projectHeader}`}>
               <div>
                 <button onClick={() => navigate("projects")}>
                   ← 프로젝트 목록
@@ -1722,6 +1735,26 @@ export default function Workspace() {
                 {button("자료·예산 메모", () => open("notes", { ...project }))}
               </div>
             </div>
+            <ProjectNextActions
+              data={data}
+              project={project}
+              onOpen={(nextTab, workflow, key) => {
+                if (workflow)
+                  navigate(
+                    "workflow",
+                    project.id,
+                    ["recovery", "partial_payment"].includes(key || "")
+                      ? "review"
+                      : "assignment",
+                  );
+                else {
+                  setTab(nextTab ?? 0);
+                  document
+                    .getElementById("project-workspace-tabs")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }}
+            />
             <div className="stepbar">
               {stages.map((s, i) => (
                 <span
@@ -1732,7 +1765,7 @@ export default function Workspace() {
                 />
               ))}
             </div>
-            <div className="tabs">
+            <div className="tabs" id="project-workspace-tabs">
               {tabs.map((t, i) => (
                 <button
                   key={t}
@@ -1746,7 +1779,7 @@ export default function Workspace() {
             {tab === 0 && (
               <div className="split">
                 <section className="section">
-                  <h2>다음 단계</h2>
+                  <h2>프로젝트 단계</h2>
                   <p className="muted">
                     현재 {status(project.status)} 단계예요. 필요한 작업을 마친
                     뒤 진행하세요.

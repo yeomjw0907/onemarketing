@@ -1,0 +1,150 @@
+.section {
+  padding: 24px;
+  margin: 0 0 24px;
+  background: var(--bg-elevated, #fff);
+  border-radius: 16px;
+}
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.heading h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.heading span {
+  font-size: 13px;
+}
+.actions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.actions li + li {
+  border-top: 1px solid #f2f4f6;
+}
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 16px 8px;
+  text-align: left;
+  background: transparent;
+  color: #333d4b;
+}
+.action:hover {
+  background: #f9fafb;
+}
+.action:focus-visible {
+  outline: 2px solid #3182f6;
+  outline-offset: 2px;
+}
+.action strong {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.action small {
+  display: block;
+  margin-top: 5px;
+  color: #6b7684;
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.count {
+  color: #3182f6;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.guide {
+  margin: 16px 0;
+  padding: 16px 0;
+  border-top: 1px solid #f2f4f6;
+  border-bottom: 1px solid #f2f4f6;
+}
+.guide strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.guide p {
+  margin: 6px 0 0;
+  color: #6b7684;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.summary {
+  margin: 16px 0 24px;
+  padding: 18px 20px;
+  background: #f2f6fc;
+  border-radius: 12px;
+}
+.summary h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.summary p {
+  margin: 6px 0;
+  line-height: 1.7;
+  font-size: 14px;
+}
+@media (max-width: 640px) {
+  .section {
+    padding: 20px 16px;
+  }
+  .action {
+    padding: 16px 0;
+  }
+  .heading span {
+    width: 100%;
+  }
+}
+
+.projectHeader {
+  align-items: flex-start;
+  gap: 16px;
+}
+.projectHeader h1 {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.briefingHeading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.briefingHeading h3 {
+  flex: 1 1 220px;
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.briefingHeading :global(.badge) {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .projectHeader {
+    flex-direction: column;
+  }
+  .projectHeader > div {
+    width: 100%;
+    min-width: 0;
+  }
+  .projectHeader > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
