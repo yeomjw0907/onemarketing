@@ -1133,6 +1133,9 @@ export function command(
       )
         throw new Error("제출 후 3일이 지나야 검수 승인할 수 있습니다.");
       const sameLink = link === row.link;
+      const submittedAt =
+        sameLink && row.submittedAt ? String(row.submittedAt) : now;
+
       const qualityScore =
         input.qualityScore === undefined
           ? sameLink
@@ -1144,7 +1147,10 @@ export function command(
         {
           link,
           status: input.verified === true ? "verified" : "submitted",
-          submittedAt: sameLink && row.submittedAt ? row.submittedAt : now,
+          submittedAt,
+          reviewEligibleAt: new Date(
+            Date.parse(submittedAt) + (policy?.reviewDays ?? 3) * 86400000,
+          ).toISOString(),
           firstSubmittedAt: row.firstSubmittedAt || now,
           verifiedAt:
             input.verified === true

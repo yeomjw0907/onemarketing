@@ -375,18 +375,12 @@ export async function submitPublication(
   const t = await requireRecord(taskId, "tasks");
   if (t.participantId !== participantId)
     throw new Error("본인 작업만 제출할 수 있습니다.");
-  const result = await command(
+  return command(
     "publication",
     { id: t.id, version: t.version, link, verified: false },
     "participant:" + participantId,
     crypto.randomUUID(),
   );
-  return transaction(async () => {
-    const current = await requireRecord(t.id, "tasks");
-    return update(t.id, {
-      reviewEligibleAt: addDays(String(current.submittedAt), 3),
-    });
-  });
 }
 export async function requestRevision(
   taskId: string,
