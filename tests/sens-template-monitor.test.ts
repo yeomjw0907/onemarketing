@@ -126,7 +126,7 @@ test("concurrent approval checks send exactly one authorized test while normal s
     const url = new URL(String(input));
     if (url.pathname.endsWith("/messages/msg"))
       return Response.json({
-        messageStatus: "COMPLETED",
+        messageStatusName: "success",
         messageStatusCode: "0000",
       });
     return Response.json([detail(url.searchParams.get("templateCode")!)]);
