@@ -207,6 +207,8 @@ test("workflow reflects real failed jobs, blocked copy and final approval instea
   let flow = taskFlow(data, t);
   assert.equal(flow.find((n) => n.id === "video")!.state, "failed");
   assert.equal(flow.find((n) => n.id === "copy")!.state, "changes");
+  data.assets[0].copyQuality = null;
+  assert.equal(taskFlow(data, t).find((n) => n.id === "copy")!.state, "review");
   flow = taskFlow(data, { ...t, status: "approved" });
   assert.equal(flow.at(-1)!.state, "succeeded");
 });

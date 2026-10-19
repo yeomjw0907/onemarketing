@@ -85,7 +85,13 @@ export function taskFlow(data: DatabaseView, task: RecordData) {
       state:
         copy && (copy.copyQuality as { status?: string })?.status === "blocked"
           ? "changes"
-          : state(["copy"], !!copy),
+          : copy &&
+              !copy.copyQuality &&
+              !["approved", "delivered", "submitted", "verified"].includes(
+                String(task.status),
+              )
+            ? "review"
+            : state(["copy"], !!copy),
     },
     {
       id: "brief",
@@ -105,7 +111,14 @@ export function taskFlow(data: DatabaseView, task: RecordData) {
       title: "이미지 · 자료",
       state: state(
         ["image"],
-        assets.some((a) => a.category === "image"),
+        assets.some((a) => a.category === "image") ||
+          data.assets.some(
+            (a) =>
+              a.projectId === task.projectId &&
+              a.category === "source" &&
+              a.current !== false &&
+              String(a.mime).startsWith("image/"),
+          ),
       ),
     },
     ...(task.channel === "clip"
