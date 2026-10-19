@@ -1,4 +1,5 @@
 "use client";
+import { WorkflowOverview } from "./workspace-visuals";
 import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
 import { useState, useEffect } from "react";
 import { money, type DatabaseView, type RecordData } from "@/lib/types";
@@ -161,6 +162,7 @@ export default function WorkflowConsole({
           { id: "notifications", label: "알림 이력" },
         ]}
       />
+      <WorkflowOverview data={data} projectId={projectId} onTab={setTab} />
       <section
         className="section"
         hidden={tab !== "quote"}

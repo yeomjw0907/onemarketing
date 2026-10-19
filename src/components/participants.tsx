@@ -1,5 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { Tabs } from "./ui/workflow-ui";
+import { WorkspaceOverview } from "./workspace-visuals";
 import KakaoLinkReview from "./kakao-link-review";
 import ParticipantApplications from "./participant-applications";
 import ParticipantAccountReview from "./participant-account-review";
@@ -78,6 +80,7 @@ export default function Participants({
     [tab, setTab] = useState(0),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [listPanel, setListPanel] = useState("people");
   const participant = data.participants.find((p) => p.id === selected);
   const visibleParticipants = data.participants
     .filter(
@@ -443,15 +446,31 @@ export default function Participants({
           가능합니다.
         </p>
       )}
+      {!participant && <WorkspaceOverview data={data} page="participants" />}
+      {!participant && !editing && (
+        <Tabs
+          label="참여자 관리 화면"
+          value={listPanel}
+          onChange={(value) => {
+            setListPanel(value);
+            setChecked({});
+            setNotice("");
+          }}
+          items={[
+            { id: "people", label: "참여자 목록" },
+            { id: "applications", label: "가입·계정 검토" },
+          ]}
+        />
+      )}
       {error && (
         <div role="alert" className="error">
           {error}
         </div>
       )}
-      {!participant && !editing && (
+      {!participant && !editing && listPanel === "applications" && (
         <KakaoLinkReview participants={data.participants} />
       )}
-      {!participant && !editing && (
+      {!participant && !editing && listPanel === "applications" && (
         <ParticipantApplications
           refreshSignal={data}
           onApproved={async (id) => {
@@ -647,7 +666,7 @@ export default function Participants({
           </form>
         </section>
       )}
-      {!participant && !editing && (
+      {!participant && !editing && listPanel === "people" && (
         <>
           <div
             className="row"
@@ -752,7 +771,7 @@ export default function Participants({
           </div>
           {notice && <p role="status">{notice}</p>}
           <div className="tablewrap">
-            <table>
+            <table className={styles.registry}>
               <thead>
                 <tr>
                   <th>
@@ -807,7 +826,7 @@ export default function Participants({
                   const performance = participantPerformance(data.tasks, p.id);
                   return (
                     <tr key={p.id}>
-                      <td>
+                      <td data-label="선택">
                         <input
                           type="checkbox"
                           aria-label={`${String(p.name)} 선택`}
@@ -828,11 +847,11 @@ export default function Participants({
                           }
                         />
                       </td>
-                      <td>
+                      <td data-label="참여자">
                         <strong>{String(p.nickname || p.name)}</strong>
                         <small>{String(p.name)}</small>
                       </td>
-                      <td>
+                      <td data-label="활동 계정">
                         {(p.accounts as Draft[]).map((a) => (
                           <div key={a.id}>
                             <a href={a.url} target="_blank" rel="noreferrer">
@@ -842,7 +861,7 @@ export default function Participants({
                           </div>
                         ))}
                       </td>
-                      <td>
+                      <td data-label="분야·상태">
                         {String(p.specialties || "—")}
                         <small>
                           {p.deletedAt ? "삭제됨" : states[String(p.status)]}
@@ -857,8 +876,8 @@ export default function Participants({
                           </small>
                         )}
                       </td>
-                      <td>{s.count}건</td>
-                      <td>
+                      <td data-label="참여 이력">{s.count}건</td>
+                      <td data-label="응답·품질">
                         {elapsedLabel(performance.averageResponseMs)}
                         <small>
                           {performance.averageQuality === null
@@ -869,11 +888,11 @@ export default function Participants({
                           {performance.qualityCount}건
                         </small>
                       </td>
-                      <td>
+                      <td data-label="미지급 합계">
                         {money(s.unpaid)}
                         {s.missing && <small>미정 금액 별도</small>}
                       </td>
-                      <td>
+                      <td data-label="관리">
                         <button
                           onClick={() => {
                             onSelect(p.id);

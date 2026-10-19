@@ -1249,3 +1249,45 @@
     transition: none;
   }
 }
+
+.root :global(.dv-heading > div) {
+  min-width: 0;
+  flex: 1;
+}
+.root :global(.dv-heading h1) {
+  font-size: 25px;
+  max-width: 760px;
+  line-height: 1.6;
+  align-items: baseline;
+}
+.root :global(.dv-heading h1 span) {
+  flex-shrink: 0;
+}
+.root :global(.dv-headline-action) {
+  color: #2875df;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-size: 12px;
+  margin-top: 8px;
+}
+@media (max-width: 700px) {
+  .root :global(.dv-heading) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .root :global(.dv-heading > div) {
+    flex-basis: 100%;
+  }
+  .root :global(.dv-heading h1) {
+    font-size: 21px;
+    line-height: 1.65;
+  }
+  .root :global(.dv-heading > button) {
+    margin-top: 0;
+  }
+  .root :global(.dv-subtitle) {
+    font-size: 11px;
+  }
+}

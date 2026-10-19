@@ -20,6 +20,7 @@ import {
   boardLabels,
   type DashboardRow,
 } from "@/lib/dashboard-visualization";
+import { dashboardHeadline } from "@/lib/workspace-visuals";
 import { runningOrbState } from "@/lib/orb-state";
 import { stageLabels, money, type DatabaseView } from "@/lib/types";
 import { Button, Tabs } from "./ui/workflow-ui";
@@ -184,6 +185,7 @@ export default function Dashboard({
   const id = useId(),
     visuals = dashboardVisuals(data),
     { summary, rows, goal } = visuals;
+  const headline = dashboardHeadline(visuals);
   const chart = visuals[period],
     scale = Math.max(1, ...chart.bars.flatMap((b) => [b.actual, b.planned]));
   const filtered = rows.filter(
@@ -215,14 +217,33 @@ export default function Dashboard({
     <div className={styles.root} data-dashboard>
       <div className="dv-heading">
         <div>
-          <p className="dv-eyebrow">{summary.today} · 한국 시간</p>
           <h1>
-            오늘의 워크스페이스
+            {headline.title}
             <span />
           </h1>
           <p className="dv-subtitle">
-            진행 중인 캠페인 {rows.length}개 · 마감·지연 {summary.due}개
+            진행 중 {rows.length}개 · 오늘 마감{" "}
+            {rows.filter((r) => r.dueToday && !r.project.hold).length}개 · 마감
+            지연 {rows.filter((r) => r.overdue && !r.project.hold).length}개
           </p>
+          {rows.length > 0 && (
+            <button
+              className="dv-plain dv-headline-action"
+              onClick={() => {
+                if (headline.projectId)
+                  onOpen(
+                    headline.projectId,
+                    headline.tab ?? 0,
+                    headline.workflow,
+                    headline.section,
+                  );
+                else chooseFilter(summary.reviews ? "review" : "all");
+              }}
+            >
+              {headline.label}
+              <ArrowRight size={14} />
+            </button>
+          )}
         </div>
         <Button variant="primary" onClick={onNew}>
           <Plus size={17} />

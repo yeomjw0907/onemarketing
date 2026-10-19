@@ -1,4 +1,6 @@
 "use client";
+import { FolderOpen, Layers3, CircleCheck, ArrowRight } from "lucide-react";
+import { workspaceVisualStyles } from "./workspace-visuals";
 import { useState } from "react";
 import type { RecordData } from "@/lib/types";
 const labels: Record<string, string> = {
@@ -99,6 +101,28 @@ export default function CustomerDocuments({
         <a href="/api/templates/customer-intake">
           고객 작성용 Excel 다운로드 ↓
         </a>
+      </div>
+      <div
+        className={workspaceVisualStyles.processGuide}
+        aria-label="자료 활용 순서"
+      >
+        <span>
+          <FolderOpen size={18} />
+          <strong>고객 자료 보관</strong>
+          <small>소개서·작성 양식 업로드</small>
+        </span>
+        <ArrowRight size={15} />
+        <span>
+          <Layers3 size={18} />
+          <strong>프로젝트에 복사</strong>
+          <small>필요한 자료만 선택</small>
+        </span>
+        <ArrowRight size={15} />
+        <span>
+          <CircleCheck size={18} />
+          <strong>제품 정보 확인</strong>
+          <small>확정 후 제작에 사용</small>
+        </span>
       </div>
       <p className="hint">
         고객 작성 Excel과 회사·제품 소개서 PDF를 보관할 수 있어요. PPT·한글·워드

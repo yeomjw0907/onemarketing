@@ -1,0 +1,779 @@
+.admin {
+  --blue: #3182f6;
+}
+.overview {
+  margin: 0 0 27px;
+}
+.signals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  padding: 22px 0;
+  gap: 18px 0;
+}
+.signals > div {
+  border-right: 1px solid #e4e9f0;
+  padding: 0 24px;
+  min-width: 0;
+}
+.signals > div:first-child {
+  padding-left: 0;
+}
+.signals > div:last-child {
+  border: 0;
+}
+.signals span {
+  display: block;
+  color: #6b7684;
+  font-size: 12px;
+}
+.signals strong {
+  display: block;
+  font-size: 27px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.8px;
+  overflow-wrap: anywhere;
+  margin: 6px 0 0;
+}
+.signals small {
+  display: block;
+  color: #6b7684;
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 4px;
+}
+.distribution {
+  padding: 17px 20px;
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 12px;
+}
+.distributionTrack {
+  height: 8px;
+  display: flex;
+  gap: 3px;
+  background: #f3f5f8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.distributionTrack > span {
+  min-width: 0;
+  border-radius: 2px;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: #6b7684;
+}
+.legend > strong {
+  font-weight: 500;
+  margin-right: auto;
+}
+.legend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+.legend b {
+  font-weight: 600;
+  color: #4e5968;
+}
+.directory {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+  margin: 20px 0 28px;
+}
+.record {
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 15px;
+  padding: 22px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.record h3 {
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  margin: 15px 0 0;
+}
+.record > p {
+  font-size: 12px;
+  color: #6b7684;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  margin: 15px 0;
+}
+.recordMain {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 0;
+  width: 100%;
+}
+.recordMain > span:nth-child(2),
+.contractName > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.recordMain strong,
+.contractName strong {
+  font-size: 15px;
+  line-height: 1.7;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.recordMain small,
+.contractName small {
+  font-size: 11px;
+  color: #6b7684;
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.recordMain > svg {
+  color: #6b7684;
+  flex-shrink: 0;
+}
+.recordMain:hover strong {
+  color: #3182f6;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  background: #edf4ff;
+  color: #3182f6;
+  border-radius: 11px;
+}
+.recordFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  padding: 19px 0 0;
+  font-size: 12px;
+  color: #6b7684;
+}
+.recordFacts b {
+  color: #4e5968;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.recordActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid #edf0f4;
+  padding-top: 14px;
+  margin-top: auto;
+}
+.recordActions :global(.ui-button.text) {
+  padding-left: 0;
+  min-height: 36px;
+  color: #2875df;
+}
+.quietDelete {
+  border: 0;
+  background: none;
+  padding: 5px 0;
+  color: #6b7684;
+  font-size: 11px;
+  min-height: 36px;
+}
+.quietDelete:hover {
+  color: #c94d4d;
+}
+.quietDelete:disabled {
+  cursor: wait;
+}
+.productFacts {
+  flex: 1;
+  white-space: pre-line;
+}
+.empty {
+  padding: 38px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #8b95a1;
+  gap: 12px;
+  grid-column: 1/-1;
+  font-size: 12px;
+}
+.empty strong {
+  color: #4e5968;
+  font-size: 14px;
+}
+.quantity {
+  min-width: 0;
+}
+.quantity > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: #6b7684;
+  margin-bottom: 9px;
+}
+.quantity strong {
+  color: #4e5968;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.quantity small {
+  font-size: 11px;
+  color: #6b7684;
+  font-weight: 500;
+}
+.track {
+  height: 7px;
+  width: 100%;
+  border-radius: 4px;
+  background: #eaf0f8;
+  overflow: hidden;
+}
+.track > span {
+  display: block;
+  height: 100%;
+  background: #3182f6;
+  border-radius: 4px;
+}
+.projectList {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 15px;
+  padding: 0 22px;
+  margin: 20px 0 28px;
+  min-width: 0;
+}
+.projectRow {
+  display: grid;
+  grid-template-columns: 39px minmax(120px, 1fr) auto minmax(140px, 190px) 17px;
+  align-items: center;
+  gap: 18px;
+  border: 0;
+  border-bottom: 1px solid #edf0f4;
+  padding: 22px 0;
+  border-radius: 0;
+  text-align: left;
+  background: none;
+  min-width: 0;
+  width: 100%;
+}
+.projectRow:last-child {
+  border: 0;
+}
+.projectRow:hover .projectName strong {
+  color: #3182f6;
+}
+.projectName {
+  min-width: 0;
+}
+.projectName strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.projectName small {
+  display: block;
+  font-size: 11px;
+  color: #6b7684;
+  margin-top: 6px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.status {
+  display: inline-flex;
+  background: #eef4ff;
+  color: #3a73ca;
+  border-radius: 5px;
+  font-size: 11px;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+.projectRow > svg {
+  color: #8b95a1;
+  flex-shrink: 0;
+}
+.contractName {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+.contractPrice {
+  margin: 23px 0;
+}
+.contractPrice strong {
+  font-size: 24px;
+  letter-spacing: -0.8px;
+  display: block;
+}
+.contractPrice small {
+  font-size: 11px;
+  color: #6b7684;
+  display: block;
+  margin-top: 7px;
+  line-height: 1.8;
+}
+.packageDetails {
+  color: #6b7684;
+  font-size: 11px;
+  margin: 0 0 18px;
+}
+.packageDetails summary {
+  cursor: pointer;
+  min-height: 30px;
+}
+.packageDetails p {
+  margin: 6px 0;
+  line-height: 1.8;
+}
+.record > :global(.ui-button.primary) {
+  margin-top: auto;
+}
+.workflowSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 14px;
+  margin: 20px 0 26px;
+  overflow: hidden;
+}
+.workflowSteps > button {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 11px;
+  border: 0;
+  border-right: 1px solid #edf0f4;
+  border-radius: 0;
+  background: none;
+  padding: 20px;
+  text-align: left;
+  min-width: 0;
+}
+.workflowSteps > button:last-child {
+  border: 0;
+}
+.workflowSteps > button > svg:first-child {
+  color: #3182f6;
+  flex-shrink: 0;
+}
+.workflowSteps > button > svg:last-child {
+  margin-left: auto;
+  color: #8b95a1;
+  flex-shrink: 0;
+}
+.workflowSteps > button > span {
+  font-size: 11px;
+  color: #6b7684;
+  min-width: 0;
+}
+.workflowSteps strong {
+  display: block;
+  font-size: 26px;
+  color: #191f28;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.workflowSteps small {
+  display: block;
+  font-size: 10px;
+  color: #6b7684;
+  font-weight: 400;
+  line-height: 1.8;
+}
+.workflowSteps > button:hover {
+  background: #f6f9ff;
+}
+.admin :global(.pagehead) {
+  align-items: flex-start;
+  margin-bottom: 22px;
+  gap: 20px;
+}
+.admin :global(.pagehead h1) {
+  font-size: 27px;
+  line-height: 1.5;
+  letter-spacing: -0.9px;
+  margin: 0 0 8px;
+}
+.admin :global(.pagehead p) {
+  font-size: 13px;
+  line-height: 1.8;
+  max-width: 720px;
+}
+.admin :global(.section) {
+  border-color: #edf0f4;
+  border-radius: 15px;
+  box-shadow: none;
+  padding: 25px;
+}
+.admin :global(.section > h2),
+.admin :global(.section-title h2) {
+  font-size: 17px;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.admin :global(.section-title) {
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.admin :global(.section-title h2) {
+  margin-bottom: 0;
+}
+.admin :global(.tablewrap) {
+  border: 1px solid #edf0f4;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.admin :global(th) {
+  background: #f9fafc;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #6b7684;
+  font-weight: 500;
+  padding: 13px 16px;
+}
+.admin :global(td) {
+  font-size: 12px;
+  line-height: 1.9;
+  padding: 16px;
+}
+.admin :global(td > small) {
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 5px;
+}
+.admin :global(.toolbar) {
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 20px 0;
+}
+.admin :global(.toolbar input) {
+  max-width: 430px;
+  flex: 1 1 220px;
+  font-size: 13px;
+}
+.admin :global(.toolbar select) {
+  font-size: 12px;
+  max-width: 100%;
+}
+.admin :global(.amountline) {
+  gap: 14px;
+  font-size: 13px;
+  line-height: 1.9;
+  padding: 15px 0;
+  align-items: flex-start;
+}
+.admin :global(.amountline > span) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin :global(.hint) {
+  font-size: 11px;
+  line-height: 1.9;
+}
+.admin :global(.split) {
+  gap: 22px;
+}
+.admin :global(.badge) {
+  font-size: 11px;
+  line-height: 1.7;
+}
+.admin :global(.tabs button) {
+  font-size: 12px;
+  min-height: 42px;
+}
+.admin :global(details summary) {
+  cursor: pointer;
+  line-height: 1.8;
+}
+.admin :global(.stat strong) {
+  font-size: 26px;
+}
+.admin :global(.stat span),
+.admin :global(.stat small) {
+  font-size: 11px;
+  line-height: 1.8;
+}
+@media (max-width: 1050px) {
+  .workflowSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workflowSteps > button:nth-child(2) {
+    border-right: 0;
+  }
+  .workflowSteps > button:nth-child(-n + 2) {
+    border-bottom: 1px solid #edf0f4;
+  }
+  .projectRow {
+    grid-template-columns: 35px minmax(120px, 1fr) auto 17px;
+    gap: 14px;
+  }
+  .projectRow > .quantity {
+    grid-column: 2/4;
+    width: 100%;
+    max-width: 280px;
+  }
+  .projectRow > svg {
+    grid-column: 4;
+    grid-row: 1;
+  }
+}
+@media (max-width: 640px) {
+  .signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 0;
+    padding: 20px 0;
+  }
+  .signals > div {
+    padding: 0 0 0 18px;
+    border: 0;
+  }
+  .signals > div:nth-child(odd) {
+    padding: 0 15px 0 0;
+    border-right: 1px solid #e4e9f0;
+  }
+  .signals span {
+    font-size: 11px;
+  }
+  .signals strong {
+    font-size: 25px;
+  }
+  .signals small {
+    font-size: 10px;
+  }
+  .overview {
+    margin-bottom: 22px;
+  }
+  .distribution {
+    padding: 15px;
+  }
+  .legend {
+    gap: 8px 13px;
+    font-size: 10px;
+  }
+  .legend > strong {
+    width: 100%;
+  }
+  .directory {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+  .record {
+    padding: 20px;
+  }
+  .recordMain strong,
+  .contractName strong {
+    font-size: 14px;
+  }
+  .recordFacts {
+    font-size: 11px;
+  }
+  .recordActions {
+    gap: 9px;
+  }
+  .recordActions button {
+    font-size: 11px;
+  }
+  .projectList {
+    padding: 0 17px;
+  }
+  .projectRow {
+    grid-template-columns: 30px minmax(0, 1fr) 14px;
+    padding: 20px 0;
+    gap: 10px;
+  }
+  .projectRow > .mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  .projectName strong {
+    font-size: 13px;
+  }
+  .projectName small {
+    font-size: 10px;
+  }
+  .projectRow > .status {
+    grid-column: 2;
+    justify-self: start;
+    grid-row: 2;
+    font-size: 10px;
+  }
+  .projectRow > .quantity {
+    grid-column: 2/4;
+    grid-row: 3;
+    max-width: none;
+  }
+  .projectRow > svg {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .workflowSteps > button {
+    padding: 17px 12px;
+    gap: 7px;
+  }
+  .workflowSteps > button > svg:first-child {
+    width: 15px;
+  }
+  .workflowSteps > button > svg:last-child {
+    display: none;
+  }
+  .workflowSteps strong {
+    font-size: 24px;
+  }
+  .workflowSteps > button > span {
+    font-size: 10px;
+  }
+  .workflowSteps small {
+    font-size: 9px;
+  }
+  .admin :global(.pagehead) {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .admin :global(.pagehead h1) {
+    font-size: 23px;
+  }
+  .admin :global(.pagehead p) {
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .admin :global(.pagehead > .row) {
+    flex-wrap: wrap;
+  }
+  .admin :global(.section) {
+    padding: 20px 17px;
+    border-radius: 13px;
+  }
+  .admin :global(.section > h2),
+  .admin :global(.section-title h2) {
+    font-size: 16px;
+  }
+  .admin :global(.section-title button) {
+    font-size: 11px;
+    min-height: 38px;
+  }
+  .admin :global(.toolbar) {
+    gap: 10px;
+  }
+  .admin :global(.toolbar input) {
+    max-width: none;
+    min-width: 0;
+  }
+  .admin :global(.amountline) {
+    font-size: 12px;
+    flex-wrap: wrap;
+    gap: 5px 14px;
+  }
+  .admin :global(.amountline > span:last-child) {
+    margin-left: auto;
+  }
+  .admin :global(.stat strong) {
+    font-size: 23px;
+  }
+  .admin :global(.stat span),
+  .admin :global(.stat small) {
+    font-size: 10px;
+  }
+  .admin :global(td) {
+    padding: 13px;
+    font-size: 11px;
+  }
+  .admin :global(th) {
+    font-size: 10px;
+    padding: 12px 13px;
+  }
+  .admin :global(.split) {
+    gap: 16px;
+  }
+  .admin :global(.tabs button) {
+    font-size: 11px;
+  }
+}
+
+.processGuide {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+  padding: 21px 0;
+  margin: 20px 0;
+}
+.processGuide > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 5px 9px;
+  align-items: center;
+}
+.processGuide svg {
+  color: #3182f6;
+  flex-shrink: 0;
+}
+.processGuide strong {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.processGuide small {
+  grid-column: 2;
+  font-size: 10px;
+  color: #6b7684;
+  line-height: 1.8;
+}
+.processGuide > svg {
+  color: #adb6c3;
+}
+@media (max-width: 640px) {
+  .processGuide {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 13px;
+  }
+  .processGuide > svg {
+    display: none;
+  }
+  .processGuide > span {
+    grid-template-columns: 20px 1fr;
+  }
+  .processGuide strong {
+    font-size: 12px;
+  }
+  .processGuide small {
+    font-size: 10px;
+  }
+}

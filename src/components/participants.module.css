@@ -29,3 +29,112 @@
     width: calc(50% - 5px);
   }
 }
+
+@media (max-width: 700px) {
+  .registry {
+    display: block;
+    min-width: 0 !important;
+    width: 100%;
+    border: 0;
+  }
+  .registry thead,
+  .registry thead tr {
+    display: block;
+  }
+  .registry thead th:first-child {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 13px 16px;
+  }
+  .registry thead th:first-child:after {
+    content: "현재 목록 선택";
+    font-size: 11px;
+  }
+  .registry thead th:not(:first-child) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .registry tbody {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+    background: #f7f8fa;
+  }
+  .registry tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    background: #fff;
+    border: 1px solid #edf0f4;
+    border-radius: 12px;
+    padding: 9px;
+    min-width: 0;
+  }
+  .registry tbody td {
+    display: block;
+    border: 0;
+    padding: 9px 10px !important;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .registry tbody td:before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    color: #6b7684;
+    margin-bottom: 5px;
+  }
+  .registry tbody td:first-child {
+    position: absolute;
+    right: 9px;
+    top: 6px;
+    padding: 8px !important;
+  }
+  .registry tbody td:first-child:before {
+    display: none;
+  }
+  .registry tbody td:nth-child(2) {
+    grid-column: 1/-1;
+    padding-right: 46px !important;
+  }
+  .registry tbody td:nth-child(2):before {
+    display: none;
+  }
+  .registry tbody td:nth-child(2) > strong {
+    font-size: 14px;
+  }
+  .registry tbody td:nth-child(3),
+  .registry tbody td:nth-child(4),
+  .registry tbody td:last-child {
+    grid-column: 1/-1;
+  }
+  .registry tbody td:last-child {
+    border-top: 1px solid #edf0f4;
+    margin-top: 5px;
+    padding-top: 13px !important;
+  }
+  .registry tbody td:last-child:before {
+    display: none;
+  }
+  .registry tbody td:last-child > button {
+    font-size: 11px;
+    min-height: 36px;
+  }
+  .registry tbody td small {
+    display: block;
+    font-size: 10px !important;
+    line-height: 1.8;
+  }
+  .registry tbody td a {
+    font-size: 11px;
+  }
+}

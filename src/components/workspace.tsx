@@ -20,6 +20,15 @@ import SalesCartBuilder from "./sales-cart";
 import WorkSlots from "./work-slots";
 import { cartQuote } from "@/lib/sales-cart";
 import Dashboard from "./dashboard";
+import {
+  WorkspaceOverview,
+  CustomerDirectory,
+  ProductDirectory,
+  ProjectDirectory,
+  ContractDirectory,
+  SignalRail,
+  workspaceVisualStyles,
+} from "./workspace-visuals";
 import AiCosts from "./ai-costs";
 import PostingSets from "./posting-sets";
 import MaterialChecklist from "./material-checklist";
@@ -1210,7 +1219,7 @@ export default function Workspace() {
           </button>
         </div>
       </aside>
-      <main className="main">
+      <main className={`main ${workspaceVisualStyles.admin}`}>
         <div className="topbar">
           <span>
             WORKSPACE / <strong>{menus.find((m) => m[0] === page)?.[1]}</strong>
@@ -1276,6 +1285,7 @@ export default function Workspace() {
                 <p>고객 작성 양식과 고객별 참고자료를 보관하세요.</p>
               </div>
             </div>
+            <WorkspaceOverview data={data} page="library" />
             <CustomerDocuments
               customers={data.customers}
               assets={data.assets}
@@ -1309,6 +1319,7 @@ export default function Workspace() {
                 고객 등록
               </button>
             </div>
+            <WorkspaceOverview data={data} page="customers" />
             <Tabs
               label="고객·제품 목록"
               value={catalogTab}
@@ -1351,51 +1362,13 @@ export default function Workspace() {
                     onChange={(e) => setQuery(e.target.value)}
                   />
                 </div>
-                <div className="tablewrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>고객 / 브랜드</th>
-                        <th>연락처</th>
-                        <th>등록 제품</th>
-                        <th>관리</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered(data.customers.filter((c) => !c.deletedAt)).map(
-                        (c) => (
-                          <tr key={c.id}>
-                            <td>
-                              <strong>{String(c.name)}</strong>
-                              <small>{String(c.brand)}</small>
-                            </td>
-                            <td>{String(c.contact || "—")}</td>
-                            <td>
-                              {
-                                data.products.filter(
-                                  (p) => p.customerId === c.id && !p.deletedAt,
-                                ).length
-                              }
-                              개
-                            </td>
-                            <td>
-                              {button("상세 보기", () =>
-                                navigate("customers", c.id),
-                              )}
-                              <button
-                                disabled={busy}
-                                onClick={() => void deleteCatalog(c)}
-                              >
-                                고객 삭제
-                              </button>
-                            </td>
-                          </tr>
-                        ),
-                      )}
-                    </tbody>
-                  </table>
-                  {!data.customers.some((c) => !c.deletedAt) && <Empty />}
-                </div>
+                <CustomerDirectory
+                  rows={filtered(data.customers.filter((c) => !c.deletedAt))}
+                  data={data}
+                  busy={busy}
+                  onOpen={(c) => navigate("customers", c.id)}
+                  onDelete={(c) => void deleteCatalog(c)}
+                />
               </>
             )}
           </>
@@ -1440,19 +1413,28 @@ export default function Workspace() {
               </section>
               <section className="section">
                 <h2>고객 현황</h2>
-                <p>
-                  계약{" "}
-                  {
-                    data.contracts.filter((c) => c.customerId === customer.id)
-                      .length
-                  }
-                  건 · 프로젝트{" "}
-                  {
-                    data.projects.filter((c) => c.customerId === customer.id)
-                      .length
-                  }
-                  건
-                </p>
+                <SignalRail
+                  items={[
+                    {
+                      label: "계약",
+                      value: data.contracts.filter(
+                        (c) => c.customerId === customer.id,
+                      ).length,
+                    },
+                    {
+                      label: "프로젝트",
+                      value: data.projects.filter(
+                        (c) => c.customerId === customer.id,
+                      ).length,
+                    },
+                    {
+                      label: "제품",
+                      value: data.products.filter(
+                        (p) => p.customerId === customer.id && !p.deletedAt,
+                      ).length,
+                    },
+                  ]}
+                />
                 <p className="muted">
                   고객 정보 변경은 이전 프로젝트의 제작 기준을 바꾸지 않아요.
                 </p>
@@ -1489,40 +1471,14 @@ export default function Workspace() {
                 true,
               )}
             </div>
-            <div className="tablewrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>제품명</th>
-                    <th>제품 정보</th>
-                    <th>관리</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.products
-                    .filter((p) => p.customerId === customer.id && !p.deletedAt)
-                    .map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <strong>{String(p.name)}</strong>
-                        </td>
-                        <td>{String(p.facts).slice(0, 80) || "미등록"}</td>
-                        <td className="catalog-actions">
-                          {button("자료·규칙 수정", () =>
-                            open("products", { ...p }),
-                          )}
-                          <button
-                            disabled={busy}
-                            onClick={() => void deleteCatalog(p)}
-                          >
-                            제품 삭제
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            <ProductDirectory
+              rows={data.products.filter(
+                (p) => p.customerId === customer.id && !p.deletedAt,
+              )}
+              busy={busy}
+              onEdit={(p) => open("products", { ...p })}
+              onDelete={(p) => void deleteCatalog(p)}
+            />
           </>
         )}
         {page === "contracts" && (
@@ -1584,57 +1540,8 @@ export default function Workspace() {
                 견적 만들기
               </button>
             </div>
-            <div className="tablewrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>계약 / 고객</th>
-                    <th>진행 회차당 판매액</th>
-                    <th>제공 계획</th>
-                    <th>진행</th>
-                    <th>작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.contracts.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <strong>{String(c.name)}</strong>
-                        <small>{cname(c.customerId)}</small>
-                      </td>
-                      <td>
-                        {money(c.sale)}
-                        <small>공급가액 · VAT {money(c.vat)}</small>
-                      </td>
-                      <td>
-                        {String(c.months)}개월 × 월 {String(c.setsPerMonth)}회
-                        {Array.isArray(c.packageSnapshots) && (
-                          <small>
-                            {(c.packageSnapshots as Draft[])
-                              .map((p) => `${p.label} × ${p.quantity}`)
-                              .join(" · ")}
-                          </small>
-                        )}
-                      </td>
-                      <td>
-                        {
-                          data.projects.filter((p) => p.contractId === c.id)
-                            .length
-                        }{" "}
-                        / {String(c.slotCount)} 시작
-                      </td>
-                      <td>{button("프로젝트 시작", () => newProject(c))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!data.contracts.length && (
-                <Empty title="첫 견적을 만들어 보세요">
-                  설정에서 판매·지급 단가를 먼저 입력하면 마진을 계산할 수
-                  있어요.
-                </Empty>
-              )}
-            </div>
+            <WorkspaceOverview data={data} page="contracts" />
+            <ContractDirectory data={data} onStart={(c) => newProject(c)} />
           </>
         )}
         {page === "projects" && !project && (
@@ -1649,6 +1556,7 @@ export default function Workspace() {
                 프로젝트 시작
               </button>
             </div>
+            <WorkspaceOverview data={data} page="projects" />
             <div className="toolbar">
               <input
                 placeholder="프로젝트·고객 검색"
@@ -1667,55 +1575,16 @@ export default function Workspace() {
                 ))}
               </select>
             </div>
-            <div className="tablewrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>프로젝트 / 고객</th>
-                    <th>진행 단계</th>
-                    <th>납기</th>
-                    <th>게시 확인</th>
-                    <th>관리</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered(data.projects)
-                    .filter((p) => !filter || p.status === filter)
-                    .map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <strong>{String(p.name)}</strong>
-                          <small>{cname(p.customerId)}</small>
-                        </td>
-                        <td>
-                          <Badge value={p.status} />
-                        </td>
-                        <td>{String(p.due)}</td>
-                        <td>
-                          {
-                            data.tasks.filter(
-                              (t) =>
-                                t.projectId === p.id && t.status === "verified",
-                            ).length
-                          }{" "}
-                          /{" "}
-                          {
-                            data.tasks.filter((t) => t.projectId === p.id)
-                              .length
-                          }
-                        </td>
-                        <td>
-                          {button("열기", () => {
-                            navigate("projects", p.id);
-                            setTab(0);
-                          })}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-              {!data.projects.length && <Empty />}
-            </div>
+            <ProjectDirectory
+              rows={filtered(data.projects).filter(
+                (p) => !filter || p.status === filter,
+              )}
+              data={data}
+              onOpen={(p) => {
+                navigate("projects", p.id);
+                setTab(0);
+              }}
+            />
           </>
         )}
         {page === "projects" && project && (
@@ -2254,6 +2123,7 @@ export default function Workspace() {
                 <p>여러 프로젝트의 결과물을 모아서 확인하세요.</p>
               </div>
             </div>
+            <WorkspaceOverview data={data} page="reviews" />
             <section className="section">
               <TaskList
                 rows={data.tasks.filter((t) =>
@@ -2272,6 +2142,7 @@ export default function Workspace() {
                 <p>게시물 확인과 지급 내역을 따로 관리하세요.</p>
               </div>
             </div>
+            <WorkspaceOverview data={data} page="publishing" />
             <div className="toolbar">
               <input
                 placeholder="작업 검색"
@@ -2306,6 +2177,7 @@ export default function Workspace() {
                 true,
               )}
             </div>
+            <WorkspaceOverview data={data} page="settings" />
             <section className="section">
               <h2>AI 연결 상태</h2>
               <div className="row">
