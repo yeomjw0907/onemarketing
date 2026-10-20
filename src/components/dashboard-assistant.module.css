@@ -1,0 +1,373 @@
+.root {
+  max-width: 1080px;
+  margin: 0 auto;
+  color: #191f28;
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.heading h1 {
+  font-size: 25px;
+  letter-spacing: -0.6px;
+  margin: 0 0 8px;
+}
+.heading p {
+  color: #8b95a1;
+  font-size: 14px;
+  margin: 0;
+}
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: #8b95a1;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.connectionStatus strong {
+  font-size: 13px;
+  color: #4e5968;
+}
+.online,
+.offline {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c5cbd2;
+}
+.online {
+  background: #00a884;
+}
+.setup {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e5e8eb;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.setup h2 {
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.setup p {
+  color: #6b7684;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.setup details {
+  margin-top: 20px;
+  font-size: 13px;
+}
+.command {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 14px;
+  background: #f2f4f6;
+  border-radius: 9px;
+  margin: 12px 0;
+}
+.device {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  border-top: 1px solid #edf0f4;
+  margin-top: 16px;
+  padding-top: 12px;
+}
+.threadBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.threadBar label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: #8b95a1;
+  min-width: 0;
+}
+.threadBar select {
+  max-width: 300px;
+  min-width: 0;
+  font-size: 13px;
+  background: #fff;
+}
+.threadBar > span {
+  color: #8b95a1;
+  font-size: 11px;
+}
+.conversation {
+  background: #fff;
+  border: 1px solid #e5e8eb;
+  border-radius: 18px;
+  padding: 30px;
+  min-height: 360px;
+  max-height: 65vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+.empty {
+  padding: 35px 0;
+  text-align: center;
+  color: #8b95a1;
+}
+.empty > svg {
+  color: #3182f6;
+}
+.empty h2 {
+  font-size: 20px;
+  color: #333d4b;
+  margin: 15px 0 8px;
+}
+.empty p {
+  font-size: 13px;
+}
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  margin-top: 24px;
+}
+.suggestions button {
+  font-size: 13px;
+  border: 0;
+  background: #f2f6ff;
+  color: #3d6aaa;
+  padding: 12px 16px;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.6;
+}
+.turn {
+  padding-bottom: 26px;
+}
+.user {
+  margin-left: auto;
+  max-width: 80%;
+  width: fit-content;
+}
+.user > span,
+.assistant > span {
+  display: block;
+  color: #8b95a1;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.user > span {
+  text-align: right;
+}
+.user p {
+  background: #f2f6ff;
+  padding: 13px 17px;
+  border-radius: 15px 15px 3px 15px;
+}
+.assistant {
+  margin-top: 20px;
+}
+.user p,
+.assistant > p {
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.processing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #6b7684;
+  font-size: 13px;
+}
+.processing p {
+  margin: 0;
+}
+.proposal {
+  border: 1px solid #dce8fc;
+  border-radius: 14px;
+  padding: 22px;
+  margin-top: 18px;
+  background: #fafcff;
+}
+.proposal h3 {
+  font-size: 16px;
+  margin: 0 0 14px;
+}
+.context {
+  font-size: 12px;
+  color: #6b7684;
+}
+.proposal dl {
+  margin: 14px 0;
+}
+.proposal dl > div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 14px;
+  padding: 9px 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.proposal dt {
+  color: #8b95a1;
+}
+.proposal dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #333d4b;
+}
+.confirmHint {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #6b7684;
+  border-top: 1px solid #e5ecf5;
+  padding-top: 16px;
+}
+.proposalActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.saved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3182f6;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.warning {
+  font-size: 12px;
+  color: #b36b00;
+  line-height: 1.7;
+}
+.composer {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e5e8eb;
+  border-radius: 16px;
+  margin-top: 14px;
+  padding: 14px 18px;
+}
+.composerLabel {
+  font-size: 11px;
+  color: #8b95a1;
+}
+.inputRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 5px;
+}
+.inputRow textarea {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 5px 0 !important;
+  resize: vertical;
+  min-height: 64px;
+  max-height: 180px;
+  font-size: 14px;
+  line-height: 1.7;
+  box-shadow: none !important;
+  flex: 1;
+  min-width: 0;
+}
+.inputRow button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+}
+.composer > p {
+  color: #8b95a1;
+  font-size: 11px;
+  margin: 10px 0 0;
+  line-height: 1.7;
+}
+.root button {
+  min-height: 44px;
+}
+.root button:focus-visible,
+.inputRow textarea:focus-visible {
+  outline: 2px solid #3182f6;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .heading h1 {
+    font-size: 23px;
+  }
+  .headerActions {
+    width: 100%;
+  }
+  .threadBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .threadBar label {
+    width: 100%;
+  }
+  .threadBar select {
+    flex: 1;
+    max-width: none;
+  }
+  .conversation {
+    padding: 20px 16px;
+    max-height: 62svh;
+    min-height: 280px;
+  }
+  .user {
+    max-width: 92%;
+  }
+  .proposal {
+    padding: 18px 15px;
+  }
+  .proposal dl > div {
+    grid-template-columns: 85px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .proposalActions > * {
+    flex: 1;
+  }
+  .composer {
+    padding: 14px;
+  }
+  .setup {
+    padding: 20px 16px;
+  }
+  .connectionStatus {
+    line-height: 1.6;
+  }
+  .empty {
+    padding: 20px 0;
+  }
+  .suggestions {
+    align-items: stretch;
+  }
+}

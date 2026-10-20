@@ -20,6 +20,8 @@ import SalesCartBuilder from "./sales-cart";
 import WorkSlots from "./work-slots";
 import { cartQuote } from "@/lib/sales-cart";
 import Dashboard from "./dashboard";
+import DashboardAssistant from "./dashboard-assistant";
+import { MessageSquare } from "lucide-react";
 import {
   WorkspaceOverview,
   CustomerDirectory,
@@ -79,6 +81,7 @@ const empty = () =>
   Object.fromEntries(kinds.map((k) => [k, []])) as unknown as DatabaseView;
 const menus = [
   ["overview", "현황", LayoutDashboard],
+  ["assistant", "업무 도우미", MessageSquare],
   ["customers", "고객·제품", Users],
   ["participants", "체험단 관리", Users],
   ["library", "자료실", FolderOpen],
@@ -1242,6 +1245,11 @@ export default function Workspace() {
           <div role="alert" className="error">
             {error}
           </div>
+        )}
+        {page === "assistant" && (
+          <DashboardAssistant
+            onSaved={async () => setData(await api("/api/data"))}
+          />
         )}
         {page === "workflow" && (
           <WorkflowConsole

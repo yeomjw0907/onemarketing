@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { get, list, once, transaction, lock } from "./db";
 import { save, requireActiveCatalog } from "./domain";
-import { saveQuote, quoteDraftSchema } from "./quote-workflow";
+import { saveQuote, prepareQuote, quoteDraftSchema } from "./quote-workflow";
 import { mcpResource, type McpIdentity } from "./mcp-oauth";
 import type { RecordData } from "./types";
 
@@ -77,6 +77,69 @@ const schemas = {
 };
 export type McpToolName = keyof typeof schemas;
 export class McpScopeError extends Error {}
+export const assistantActions = [
+  "create_customer",
+  "create_product",
+  "create_campaign_draft",
+] as const;
+export async function prepareMcpProposal(tool: string, input: unknown) {
+  if (!(assistantActions as readonly string[]).includes(tool))
+    throw new Error("확인 카드로 만들 수 없는 작업이에요.");
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input) ||
+    Object.hasOwn(input, "confirmed") ||
+    Object.hasOwn(input, "requestId")
+  )
+    throw new Error("등록 내용을 확인해주세요.");
+  const parsed = schemas[tool as keyof typeof schemas].parse({
+    ...input,
+    confirmed: true,
+    requestId: "00000000-0000-4000-8000-000000000001",
+  }) as Record<string, unknown>;
+  const { confirmed: _, requestId: __, ...args } = parsed;
+  const labels: Record<string, unknown> = {};
+  if (tool !== "create_customer") {
+    const customer = await requireActiveCatalog(
+      String(args.customerId),
+      "customers",
+    );
+    labels.customerName = customer.name;
+  }
+  if (tool === "create_campaign_draft") {
+    const prepared = await prepareQuote(args);
+    Object.assign(labels, {
+      targetName: prepared.targetName,
+      supply: prepared.supply,
+      vat: prepared.vat,
+      total: prepared.total,
+      timeline: prepared.timeline,
+      warnings: prepared.warnings,
+    });
+    for (const channel of ["blog", "clip"]) {
+      const id = args[channel + "PriceId"];
+      if (id) {
+        const price = await get(String(id));
+        labels[channel + "PriceName"] = price?.name;
+      }
+    }
+  }
+  return { tool: tool as (typeof assistantActions)[number], args, labels };
+}
+export const assistantProposalSchemas = () =>
+  Object.fromEntries(
+    Object.entries({
+      create_customer: customerInput.omit({ confirmed: true, requestId: true }),
+      create_product: productInput.omit({ confirmed: true, requestId: true }),
+      create_campaign_draft: draftInput.omit({
+        confirmed: true,
+        requestId: true,
+      }),
+    }).map(([action, schema]) => {
+      return [action, z.toJSONSchema(schema)];
+    }),
+  );
 const scopes: Record<McpToolName, string> = {
   search: "catalog:read",
   fetch: "catalog:read",

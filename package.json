@@ -7,6 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
+    "assistant:pair": "tsx scripts/assistant-pc.ts pair",
+    "assistant:worker": "tsx scripts/assistant-pc.ts worker",
     "test": "tsx --test tests/*.test.ts",
     "dev": "next dev",
     "build": "next build",
@@ -52,6 +54,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@openai/codex": "^0.163.0",
     "@types/archiver": "^8.0.0",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.5",
