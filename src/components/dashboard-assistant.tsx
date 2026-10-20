@@ -58,6 +58,7 @@ export default function DashboardAssistant({
     [selected, setSelected] = useState(""),
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
+    [loadError, setLoadError] = useState(""),
     [busy, setBusy] = useState(false),
     [connecting, setConnecting] = useState(false),
     [pairCode, setPairCode] = useState(""),
@@ -113,12 +114,13 @@ export default function DashboardAssistant({
         const d = await r.json();
         if (!r.ok) throw new Error(d.error);
         if (!disposed) {
+          setLoadError("");
           setData(d);
           if (!selected && d.threads.length) setSelected(d.threads[0].id);
         }
       } catch (e) {
         if (!disposed && !(e instanceof Error && e.name === "AbortError"))
-          setError(
+          setLoadError(
             e instanceof Error ? e.message : "연결 상태를 불러오지 못했어요.",
           );
       }
@@ -394,7 +396,9 @@ export default function DashboardAssistant({
           ))}
         </section>
       )}
-      {error && <Feedback tone="error">{error}</Feedback>}
+      {(error || loadError) && (
+        <Feedback tone="error">{error || loadError}</Feedback>
+      )}
       <div className={styles.threadBar}>
         <label>
           대화

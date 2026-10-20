@@ -1,4 +1,8 @@
 import { requireActor, sameOrigin } from "@/lib/auth";
+import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "@/lib/database-errors";
 import { boundedBody, privateHeaders } from "@/lib/mcp-http";
 import { scheduleTick } from "@/lib/trigger";
 import {
@@ -24,7 +28,8 @@ export async function GET(r: Request) {
       ),
       { headers: privateHeaders },
     );
-  } catch {
+  } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
       { error: "관리자 로그인이 필요해요." },
       { status: 401, headers: privateHeaders },
@@ -81,6 +86,7 @@ export async function POST(r: Request) {
     }
     return Response.json(result, { headers: privateHeaders });
   } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
       { error: e instanceof Error ? e.message : "처리하지 못했어요." },
       { status: 400, headers: privateHeaders },

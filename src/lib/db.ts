@@ -26,8 +26,8 @@ function getPool() {
   pool = new Pool({
     connectionString: url,
     ssl,
-    max: Number(process.env.DATABASE_POOL_MAX || 6),
-    idleTimeoutMillis: 30000,
+    max: Number(process.env.DATABASE_POOL_MAX || (process.env.VERCEL ? 2 : 6)),
+    idleTimeoutMillis: process.env.VERCEL ? 5000 : 30000,
     connectionTimeoutMillis: 15000,
   });
   pool.on("error", () => {});

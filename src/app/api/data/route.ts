@@ -1,4 +1,8 @@
 import { requireActor, sameOrigin } from "@/lib/auth";
+import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "@/lib/database-errors";
 import { view } from "@/lib/db";
 import { save, command } from "@/lib/domain";
 import { activeStatuses } from "@/lib/jobs";
@@ -29,7 +33,8 @@ export async function GET() {
     )
       scheduleTick();
     return Response.json(data, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 }
@@ -49,6 +54,7 @@ export async function POST(request: Request) {
       await save(body.kind, body.data, email, body.id, body.version),
     );
   } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
       { error: e instanceof Error ? e.message : "저장에 실패했습니다." },
       { status: 400 },
