@@ -31,6 +31,8 @@
 
 ## 검증
 
+운영 Vercel의 public 스키마는 Supabase 공유 풀러의 트랜잭션 모드(6543)를 사용한다. 서버리스 인스턴스별 연결은 기본 2개이며, 사용하지 않는 연결은 5초 뒤 반환한다. 로컬·테스트·마이그레이션의 사용자 지정 스키마는 기존 세션 모드를 유지한다. 이 구성은 [Supabase 서버리스 연결 지침](https://supabase.com/docs/guides/database/connecting-to-postgres/serverless-drivers)을 따른다. 일시적인 DB 연결 실패는 재시도 가능한 503으로 처리하며 관리자 세션이나 PC 연결 해제로 해석하지 않는다.
+
 파일 소유권·형식·PDF/엑셀 추출·이미지 전달·확인 전 미등록·체크 없는 실행 거부·재시도 중복 방지·기존 승인/예산 조건·변경된 카드 차단·알림 미리보기 롤백을 테스트한다. 브라우저 검수는 일회용 DB·Storage에서 진행하고 실제 유료 공급사 호출이나 카카오 발송은 수행하지 않는다.
 
 구현 근거: [Codex App Server 입력](https://learn.chatgpt.com/docs/app-server), [PDF 파서](https://github.com/mehmet-kozan/pdf-parse).

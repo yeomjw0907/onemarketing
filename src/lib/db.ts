@@ -6,6 +6,24 @@ import { kinds, type Kind, type RecordData, type DatabaseView } from "./types";
 // 트랜잭션은 AsyncLocalStorage로 현재 클라이언트를 전달하므로 호출부는 get/list/create/update를 그대로 쓴다.
 const store = new AsyncLocalStorage<PoolClient>();
 let pool: Pool | undefined;
+export function serverlessDatabaseUrl(
+  url: string,
+  serverless: boolean,
+  schema: string,
+) {
+  const parsed = new URL(url);
+  // Supabase session pooling reserves one backend per warm function. Public
+  // serverless requests use transaction pooling; custom-schema test/migration
+  // clients retain session mode because they set a session search_path.
+  if (
+    serverless &&
+    schema === "public" &&
+    parsed.hostname.endsWith(".pooler.supabase.com") &&
+    parsed.port === "5432"
+  )
+    parsed.port = "6543";
+  return parsed.toString();
+}
 export function schemaName() {
   const schema = process.env.DB_SCHEMA || "public";
   if (!/^[a-z_][a-z0-9_]{0,62}$/.test(schema))
@@ -24,7 +42,11 @@ function getPool() {
         ? { ca: process.env.DATABASE_CA_CERT, rejectUnauthorized: true }
         : { rejectUnauthorized: false };
   pool = new Pool({
-    connectionString: url,
+    connectionString: serverlessDatabaseUrl(
+      url,
+      Boolean(process.env.VERCEL),
+      schemaName(),
+    ),
     ssl,
     max: Number(process.env.DATABASE_POOL_MAX || (process.env.VERCEL ? 2 : 6)),
     idleTimeoutMillis: process.env.VERCEL ? 5000 : 30000,

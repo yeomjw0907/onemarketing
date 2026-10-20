@@ -1,5 +1,33 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { serverlessDatabaseUrl } from "../src/lib/db";
+
+test("only public Supabase serverless sessions switch to transaction pooling", () => {
+  const url =
+    "postgresql://example:example@aws-0-test.pooler.supabase.com:5432/postgres";
+  assert.equal(
+    new URL(serverlessDatabaseUrl(url, true, "public")).port,
+    "6543",
+  );
+  assert.equal(
+    new URL(serverlessDatabaseUrl(url, false, "public")).port,
+    "5432",
+  );
+  assert.equal(
+    new URL(serverlessDatabaseUrl(url, true, "test_isolated")).port,
+    "5432",
+  );
+  assert.equal(
+    new URL(
+      serverlessDatabaseUrl(
+        "postgresql://example:example@localhost:5432/postgres",
+        true,
+        "public",
+      ),
+    ).port,
+    "5432",
+  );
+});
 import {
   databaseUnavailable,
   databaseUnavailableResponse,
