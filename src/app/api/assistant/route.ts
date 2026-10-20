@@ -9,6 +9,7 @@ import {
   dismissAssistant,
   cancelAssistant,
   disconnectAssistant,
+  answerAssistantQuestion,
 } from "@/lib/assistant-chat";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -51,6 +52,13 @@ export async function POST(r: Request) {
         break;
       case "confirm":
         result = await confirmAssistant(owner, b.id);
+        break;
+      case "answer":
+        result = await answerAssistantQuestion(owner, {
+          id: b.id,
+          requestId: b.requestId,
+          values: b.values,
+        });
         break;
       case "dismiss":
         await dismissAssistant(owner, b.id);

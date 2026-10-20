@@ -10,6 +10,10 @@ import {
   assistantProposalSchemas,
 } from "./mcp-tools";
 import { assistantOutputSchema } from "./assistant-schema";
+import {
+  prepareAssistantQuestion,
+  assistantQuestionAnswer,
+} from "./assistant-questions";
 const opaque = () => randomBytes(32).toString("base64url");
 const uuid = z.string().uuid();
 type Row = Record<string, any>;
@@ -44,7 +48,7 @@ export async function assistantStatus(owner: string, threadId?: string) {
   if (threadId) await thread(owner, threadId);
   const turns = threadId
     ? await query<Row>(
-        "select id,input,status,created_at,reply,proposal,proposal_status,save_result from assistant_turns where thread_id=$1 and owner=$2 order by created_at,id limit 100",
+        "select id,coalesce(input_display,input) as input,status,created_at,reply,proposal,proposal_status,save_result,question from assistant_turns where thread_id=$1 and owner=$2 order by created_at,id limit 100",
         [threadId, owner],
       )
     : [];
@@ -198,6 +202,54 @@ export async function enqueueAssistant(owner: string, input: unknown) {
     return { id };
   });
 }
+export async function answerAssistantQuestion(owner: string, input: unknown) {
+  admin(owner);
+  const b = z
+    .object({
+      id: uuid,
+      requestId: uuid,
+      values: z.array(z.string().max(200)).min(1).max(6),
+    })
+    .strict()
+    .parse(input);
+  return transaction(async () => {
+    await lock("assistant-owner:" + owner);
+    const [r] = await query<Row>(
+      "select * from assistant_turns where id=$1 and owner=$2",
+      [b.id, owner],
+    );
+    if (!r || r.status !== "completed" || !r.question)
+      throw new Error("질문을 찾을 수 없어요.");
+    const message = await assistantQuestionAnswer(r.question, b.values);
+    const [old] = await query<Row>(
+      "select id,input,thread_id from assistant_turns where owner=$1 and request_id=$2",
+      [owner, b.requestId],
+    );
+    if (old) {
+      if (old.input !== message || old.thread_id !== r.thread_id)
+        throw new Error("같은 요청 번호의 내용이 달라요.");
+      return { id: old.id };
+    }
+    const [latest] = await query<Row>(
+      "select id from assistant_turns where thread_id=$1 and owner=$2 order by created_at desc,id desc limit 1",
+      [r.thread_id, owner],
+    );
+    if (latest?.id !== r.id)
+      throw new Error(
+        "이미 답변한 질문이에요. 마지막 질문에 답하거나 직접 입력해주세요.",
+      );
+    const queued = await enqueueAssistant(owner, {
+      threadId: r.thread_id,
+      requestId: b.requestId,
+      message,
+    });
+    await execute("update assistant_turns set input_display=$2 where id=$1", [
+      queued.id,
+      message.replace(/ \(ID: [^)]+\)/g, ""),
+    ]);
+    return queued;
+  });
+}
 export async function cancelAssistant(owner: string, id: string) {
   admin(owner);
   uuid.parse(id);
@@ -308,7 +360,7 @@ export async function claimAssistant(device: { id: string; owner: string }) {
       [r.id, device.id, tokenHash(lease), Date.now() + 90000],
     );
     const history = await query<Row>(
-      "select input,reply,proposal,proposal_status from assistant_turns where thread_id=$1 and owner=$2 and id<>$3 and status='completed' order by created_at desc limit 8",
+      "select input,reply,proposal,proposal_status,question from assistant_turns where thread_id=$1 and owner=$2 and id<>$3 and status='completed' order by created_at desc limit 8",
       [r.thread_id, device.owner, r.id],
     );
     const found = (await callMcpTool(
@@ -390,9 +442,23 @@ export async function completeAssistant(
           "등록 내용을 확인할 정보가 부족하거나 현재 상품·고객 정보와 맞지 않아요. 고객·제품, 일정·수량·상품을 확인해 다시 요청해주세요. 아직 저장하지 않았어요.";
       }
     }
+    let question = null;
+    if (b.output.action === "none") {
+      try {
+        question = await prepareAssistantQuestion(b.output.questionJson);
+      } catch {
+        /* Natural-language reply remains available for invalid or stale questions. */
+      }
+    }
     await execute(
-      "update assistant_turns set status='completed',reply=$2,proposal=$3::jsonb,proposal_status=$4 where id=$1",
-      [b.id, reply, JSON.stringify(proposal), proposal ? "pending" : null],
+      "update assistant_turns set status='completed',reply=$2,proposal=$3::jsonb,proposal_status=$4,question=$5::jsonb where id=$1",
+      [
+        b.id,
+        reply,
+        JSON.stringify(proposal),
+        proposal ? "pending" : null,
+        JSON.stringify(question),
+      ],
     );
     return { ok: true };
   });

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "./ui/workflow-ui";
 import BrandOrb from "./brand-orb";
+import AssistantQuestion from "./assistant-question";
 import styles from "./dashboard-assistant.module.css";
 type Row = Record<string, any>;
 type State = { devices: Row[]; threads: Row[]; turns: Row[] };
@@ -507,6 +508,28 @@ export default function DashboardAssistant({
                   )}
                 </section>
               )}
+              {t.question &&
+                t.status === "completed" &&
+                (t.id === data.turns.at(-1)?.id ? (
+                  <AssistantQuestion
+                    key={t.id}
+                    id={t.id}
+                    question={t.question}
+                    disabled={busy || !!active || !device}
+                    onAnswer={action}
+                    onCustom={() => {
+                      input.current?.focus();
+                      input.current?.scrollIntoView({
+                        block: "center",
+                        behavior: "smooth",
+                      });
+                    }}
+                  />
+                ) : (
+                  <p className={styles.questionHint}>
+                    이전 질문 · {t.question.title}
+                  </p>
+                ))}
             </div>
           </article>
         ))}
@@ -520,7 +543,7 @@ export default function DashboardAssistant({
         }}
       >
         <label className={styles.composerLabel} htmlFor="assistant-message">
-          업무 요청
+          직접 입력하거나 추가로 요청하기
         </label>
         <div className={styles.inputRow}>
           <textarea
@@ -532,7 +555,7 @@ export default function DashboardAssistant({
             rows={3}
             placeholder={
               device
-                ? "고객 정보나 준비할 캠페인을 알려주세요"
+                ? "선택 대신 직접 답하거나, 원하는 내용을 자유롭게 적어주세요"
                 : "PC 연결 후 요청을 보낼 수 있어요"
             }
             onKeyDown={(e) => {

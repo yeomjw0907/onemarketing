@@ -287,6 +287,112 @@
   margin-top: 14px;
   padding: 14px 18px;
 }
+.question {
+  margin-top: 18px;
+  border: 1px solid #e5ecf5;
+  border-radius: 16px;
+  padding: 20px;
+  background: #fafcff;
+}
+.questionEyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3182f6;
+}
+.question h3 {
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 6px 0 16px;
+  letter-spacing: -0.3px;
+}
+.questionOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.questionOptions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: 1px solid #dce4ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 11px 15px;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #333d4b;
+  cursor: pointer;
+}
+.questionOptions button:hover:not(:disabled),
+.questionOptions button[aria-pressed="true"] {
+  border-color: #3182f6;
+  background: #edf5ff;
+  color: #1b64da;
+}
+.questionOptions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.optionCheck {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #b0b8c1;
+  border-radius: 5px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.questionOptions button[aria-pressed="true"] .optionCheck {
+  background: #3182f6;
+  border-color: #3182f6;
+  color: #fff;
+}
+.questionFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.questionFields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #6b7684;
+  font-size: 12px;
+}
+.questionFields input,
+.questionSearch {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #dce4ee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  font: inherit;
+  color: #333d4b;
+}
+.questionSearch {
+  margin-bottom: 12px;
+}
+.questionActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.questionHint {
+  color: #8b95a1;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 12px 0 0;
+}
 .composerLabel {
   font-size: 11px;
   color: #8b95a1;
@@ -331,6 +437,19 @@
   outline-offset: 3px;
 }
 @media (max-width: 700px) {
+  .question {
+    padding: 16px 12px;
+  }
+  .questionOptions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .questionOptions button {
+    width: 100%;
+  }
+  .questionFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .processing {
     flex-wrap: wrap;
     gap: 10px 12px;

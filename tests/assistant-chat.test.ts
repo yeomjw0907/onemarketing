@@ -16,10 +16,15 @@ import {
   cancelAssistant,
   dismissAssistant,
   disconnectAssistant,
+  answerAssistantQuestion,
 } from "../src/lib/assistant-chat";
 import { list, query, execute, update } from "../src/lib/db";
 import { save } from "../src/lib/domain";
 import { POST as workerPost } from "../src/app/api/assistant/worker/route";
+import {
+  prepareAssistantQuestion,
+  assistantQuestionAnswer,
+} from "../src/lib/assistant-questions";
 const owner = "assistant-test@local",
   other = "assistant-other@local";
 const previous = process.env.ADMIN_USERS_JSON;
@@ -53,6 +58,181 @@ const output = (action: string, args: unknown) => ({
   reply: "아래 내용을 확인하고 저장해주세요.",
   action,
   argumentsJson: JSON.stringify(args),
+});
+test("guided questions use live catalog values and reject deleted items, foreign products and changed prices", async () => {
+  const customer = await save("customers", { name: "선택형 고객" }, owner);
+  const second = await save("customers", { name: "다른 선택형 고객" }, owner);
+  const product = await save(
+    "products",
+    { name: "선택형 제품", customerId: customer.id },
+    owner,
+  );
+  const otherProduct = await save(
+    "products",
+    { name: "다른 고객 제품", customerId: second.id },
+    owner,
+  );
+  const q = await prepareAssistantQuestion(
+    JSON.stringify({
+      kind: "product",
+      title: "제품을 골라주세요",
+      customerId: customer.id,
+    }),
+  );
+  assert.ok(q);
+  assert.equal(
+    q.options.some((o) => o.value === product.id),
+    true,
+  );
+  assert.equal(
+    q.options.some((o) => o.value === otherProduct.id),
+    false,
+  );
+  await assert.rejects(assistantQuestionAnswer(q, [otherProduct.id]));
+  assert.match(await assistantQuestionAnswer(q, [product.id]), /선택형 제품/);
+  await update(product.id, { deletedAt: Date.now() });
+  await assert.rejects(assistantQuestionAnswer(q, [product.id]));
+  const price = await save(
+    "prices",
+    {
+      name: "선택형 가격",
+      channel: "blog",
+      sale: 30000,
+      payout: 4000,
+      images: 3,
+      aiEstimate: 1000,
+      duration: 0,
+      mode: "slideshow",
+      revisions: 1,
+    },
+    owner,
+  );
+  const pq = await prepareAssistantQuestion(
+    JSON.stringify({ kind: "price", title: "상품 선택", channel: "blog" }),
+  );
+  assert.ok(pq);
+  await update(price.id, { sale: 40000 });
+  await assert.rejects(assistantQuestionAnswer(pq, [price.id]));
+  const dates = await prepareAssistantQuestion(
+    '{"kind":"dates","title":"게시 기간"}',
+  );
+  assert.ok(dates);
+  await assert.rejects(
+    assistantQuestionAnswer(dates, ["2030-02-30", "2030-03-01"]),
+  );
+  await assert.rejects(
+    assistantQuestionAnswer(dates, ["2030-03-02", "2030-03-01"]),
+  );
+  const quantities = await prepareAssistantQuestion(
+    '{"kind":"quantities","title":"수량"}',
+  );
+  assert.ok(quantities);
+  await assert.rejects(assistantQuestionAnswer(quantities, ["100", "1"]));
+  await assert.rejects(assistantQuestionAnswer(quantities, ["0", "0"]));
+  assert.match(
+    await assistantQuestionAnswer(quantities, ["30", "30"]),
+    /블로그 30개, 클립 30개/,
+  );
+});
+
+test("guided answers are owner-bound, one-time, retry-safe and never save business records", async () => {
+  const s = await setup(),
+    j = await job(s, "캠페인을 준비하자");
+  const before = (await list("customers")).length;
+  await completeAssistant(s.device, {
+    id: j.turn.id,
+    lease: j.job.lease,
+    output: {
+      ...output("none", {}),
+      questionJson: '{"kind":"channels","title":"어떤 콘텐츠를 준비할까요?"}',
+    },
+  });
+  const req = {
+    id: j.turn.id,
+    requestId: randomUUID(),
+    values: ["blog", "clip"],
+  };
+  await assert.rejects(answerAssistantQuestion(other, req));
+  await assert.rejects(
+    answerAssistantQuestion(owner, { ...req, values: ["invalid"] }),
+  );
+  const answer = await answerAssistantQuestion(owner, req);
+  assert.deepEqual(await answerAssistantQuestion(owner, req), answer);
+  await assert.rejects(
+    answerAssistantQuestion(owner, { ...req, requestId: randomUUID() }),
+  );
+  const turns = (await assistantStatus(owner, s.thread.id)).turns;
+  assert.equal(turns.length, 2);
+  assert.match(turns[1].input, /블로그, 클립/);
+  assert.equal((await list("customers")).length, before);
+  await cancelAssistant(owner, answer.id);
+  const customer = await save(
+    "customers",
+    { name: "선택 표시 검수 고객" },
+    owner,
+  );
+  const k = await job(s, "고객을 선택하자");
+  await completeAssistant(s.device, {
+    id: k.turn.id,
+    lease: k.job.lease,
+    output: {
+      ...output("none", {}),
+      questionJson: '{"kind":"customer","title":"고객을 골라주세요"}',
+    },
+  });
+  const chosen = await answerAssistantQuestion(owner, {
+    id: k.turn.id,
+    requestId: randomUUID(),
+    values: [customer.id],
+  });
+  const visible = (await assistantStatus(owner, s.thread.id)).turns.at(-1)!;
+  assert.match(visible.input, /선택 표시 검수 고객/);
+  assert.equal(visible.input.includes(customer.id), false);
+  const [raw] = await query<{ input: string }>(
+    "select input from assistant_turns where id=$1",
+    [chosen.id],
+  );
+  assert.equal(raw.input.includes(customer.id), true);
+  await cancelAssistant(owner, chosen.id);
+});
+
+test("natural-language followups supersede question buttons and invalid questions fall back to text", async () => {
+  const s = await setup(),
+    j = await job(s, "고객 선택");
+  await completeAssistant(s.device, {
+    id: j.turn.id,
+    lease: j.job.lease,
+    output: {
+      ...output("none", {}),
+      questionJson: '{"kind":"channels","title":"콘텐츠 선택"}',
+    },
+  });
+  const next = await enqueueAssistant(owner, {
+    threadId: s.thread.id,
+    requestId: randomUUID(),
+    message: "선택 대신 블로그만 3개로 할게",
+  });
+  await assert.rejects(
+    answerAssistantQuestion(owner, {
+      id: j.turn.id,
+      requestId: randomUUID(),
+      values: ["blog"],
+    }),
+  );
+  await cancelAssistant(owner, next.id);
+  const k = await job(s);
+  await completeAssistant(s.device, {
+    id: k.turn.id,
+    lease: k.job.lease,
+    output: {
+      ...output("none", {}),
+      questionJson:
+        '{"kind":"product","title":"제품 선택","customerId":"not-real"}',
+    },
+  });
+  const last = (await assistantStatus(owner, s.thread.id)).turns.at(-1)!;
+  assert.equal(last.question, null);
+  assert.ok(last.reply);
 });
 test("PC pairing is one-use, hashes machine tokens, and never exposes credentials in dashboard status", async () => {
   const { code } = await createAssistantPairing(owner);
