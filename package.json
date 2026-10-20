@@ -9,6 +9,9 @@
   "scripts": {
     "assistant:pair": "tsx scripts/assistant-pc.ts pair",
     "assistant:worker": "tsx scripts/assistant-pc.ts worker",
+    "assistant:startup": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/assistant-startup.ps1 -Mode Install",
+    "assistant:startup:status": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/assistant-startup.ps1 -Mode Status",
+    "assistant:startup:disable": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/assistant-startup.ps1 -Mode Disable",
     "test": "tsx --test tests/*.test.ts",
     "dev": "next dev",
     "build": "next build",

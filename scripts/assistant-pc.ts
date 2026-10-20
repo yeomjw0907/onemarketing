@@ -10,6 +10,7 @@ import path from "node:path";
 import os from "node:os";
 import { createInterface } from "node:readline/promises";
 import { AssistantCodex } from "./lib/assistant-codex";
+import { acquireWindowsAssistantLock } from "./lib/assistant-singleton";
 
 const args = process.argv.slice(2),
   mode = args[0];
@@ -97,6 +98,11 @@ if (mode === "pair") {
   console.log("PC 연결 완료. npm run assistant:worker 로 실행해주세요.");
 } else if (mode === "worker") {
   const config = JSON.parse(readFileSync(configPath, "utf8")) as Config;
+  const singleton = await acquireWindowsAssistantLock(configPath);
+  if (!singleton) {
+    console.log("이미 실행 중인 원케이션 PC 연결 프로그램을 사용해요.");
+    process.exit(0);
+  }
   if (
     !/^https:\/\//.test(config.url) &&
     !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(config.url)
@@ -115,6 +121,10 @@ if (mode === "pair") {
   console.log("원케이션 PC 연결 프로그램 시작. 종료하려면 Ctrl+C를 누르세요.");
   while (!stopped) {
     try {
+      if (codex && !codex.isAlive()) {
+        codex.close();
+        codex = null;
+      }
       if (!codex) {
         const candidate = new AssistantCodex();
         try {
@@ -201,4 +211,5 @@ if (mode === "pair") {
     }
   }
   codex?.close();
+  await singleton.release();
 } else throw new Error("pair 또는 worker 명령을 사용해주세요.");

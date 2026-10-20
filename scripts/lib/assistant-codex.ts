@@ -330,4 +330,7 @@ export class AssistantCodex {
     this.child?.kill();
     this.child = null;
   }
+  isAlive() {
+    return !!this.child && !this.child.killed && this.child.exitCode === null;
+  }
 }
