@@ -132,7 +132,7 @@ export async function beginMcpAuthorization(params: URLSearchParams) {
     params.get("response_type") !== "code" ||
     params.get("code_challenge_method") !== "S256" ||
     !/^[A-Za-z0-9_-]{43}$/.test(challenge) ||
-    params.get("resource") !== mcpResource()
+    (params.has("resource") && params.get("resource") !== mcpResource())
   )
     throw new OAuthError(
       "invalid_request",

@@ -107,6 +107,14 @@ test("OAuth discovery binds exact resource, public PKCE clients and registered s
     registerMcpClient({ redirect_uris: ["https://evil.test/callback"] }),
   );
   const s = await start();
+  const legacy = new URLSearchParams(s.params);
+  legacy.delete("resource");
+  const pending = await beginMcpAuthorization(legacy);
+  assert.deepEqual((await mcpConsent(pending.id)).scopes, [
+    "catalog:read",
+    "catalog:write",
+    "campaigns:draft",
+  ]);
   s.params.set("redirect_uri", "http://127.0.0.1:9999/callback");
   await assert.rejects(beginMcpAuthorization(s.params));
 });

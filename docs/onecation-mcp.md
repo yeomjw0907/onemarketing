@@ -39,6 +39,7 @@ codex mcp login onecation --scopes catalog:read,catalog:write,campaigns:draft
 
 - 공식 MCP TypeScript SDK의 상태 없는 Streamable HTTP 전송 사용. 세션 쿠키만으로 MCP를 호출할 수 없다.
 - 공개 클라이언트 DCR, Authorization Code + PKCE S256, 고정 리소스 대상·등록 redirect URI 검증.
+- 일부 Codex CLI가 `resource`를 생략하면 원케이션 MCP를 유일한 기본 대상으로 사용한다. 다른 `resource`를 명시하면 거부하며 발급 토큰도 고정된 원케이션 MCP 대상에만 유효하다.
 - 등록 callback은 ChatGPT의 connector callback과 Codex의 loopback `/callback`만 허용한다. 원격 URL을 가져오는 CIMD는 구현하지 않고 DCR을 사용한다.
 - 관리자 목록은 기존 `ADMIN_USERS_JSON`을 사용하고 요청마다 관리자 자격을 재확인한다.
 - 권한 허용 POST는 관리자 세션, 같은 출처 검사, 브라우저에 묶인 일회용 요청을 모두 요구한다.
