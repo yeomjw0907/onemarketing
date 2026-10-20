@@ -2159,6 +2159,7 @@ export default function Workspace() {
               <div>
                 <h1>운영 설정</h1>
                 <p>단가와 제작 기준을 관리하세요.</p>
+                <a href="/connect/onecation">대화 연결·권한 관리</a>
               </div>
               {button(
                 "상품·단가 추가",
