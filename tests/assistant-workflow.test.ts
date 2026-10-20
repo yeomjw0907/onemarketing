@@ -28,7 +28,10 @@ import {
   deleteAssistantFile,
   assistantFileContext,
 } from "../src/lib/assistant-files";
-import { prepareWorkflowProposal } from "../src/lib/assistant-workflow";
+import {
+  prepareWorkflowProposal,
+  assistantWorkflowContext,
+} from "../src/lib/assistant-workflow";
 
 const owner = "workflow-chat@local",
   other = "workflow-chat-other@local";
@@ -344,6 +347,13 @@ test("changed project data invalidate workflow cards and existing stage, media a
     (await list("jobs")).filter((j) => j.projectId === s.project.id).length,
     0,
   );
+  await update(s.project.id, {
+    materialNotes: "검증용 긴 자료 ".repeat(30000),
+  });
+  const context = await assistantWorkflowContext();
+  assert.equal(context.contextLimited, true);
+  assert.ok(context.tasks.some((t: any) => t.id === s.tasks[0].id));
+  assert.ok(JSON.stringify(context).length < 200000);
 });
 
 test("participant proposal preview does not queue a message; confirmation queues only the reviewed recipient", async () => {

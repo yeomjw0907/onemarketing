@@ -710,7 +710,7 @@ export async function assistantWorkflowContext() {
     );
   const byProject = (rows: RecordData[]) =>
     rows.filter((r) => ids.has(String(r.projectId)));
-  return {
+  const context = {
     projects: projects.map((p) =>
       pick(p, [
         "name",
@@ -855,6 +855,33 @@ export async function assistantWorkflowContext() {
     ),
     schema: z.toJSONSchema(assistantWorkflowSchema),
   };
+  // Preserve IDs and quantities, without repeatedly sending every full draft.
+  const { schema, ...state } = context;
+  let remaining = 60000,
+    limited = false;
+  function compact(value: unknown, key = ""): any {
+    if (typeof value === "string") {
+      if (
+        /(^id$|Id$)/.test(key) ||
+        ["name", "status", "channel", "type", "mediaType", "url"].includes(key)
+      )
+        return value;
+      const text = value.slice(0, Math.min(1000, Math.max(0, remaining)));
+      remaining -= text.length;
+      if (text.length < value.length) {
+        limited = true;
+        return text || "[추가 확인 필요]";
+      }
+      return text;
+    }
+    if (Array.isArray(value)) return value.map((v) => compact(v, key));
+    if (value && typeof value === "object")
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) => [k, compact(v, k)]),
+      );
+    return value;
+  }
+  return { ...compact(state), schema, contextLimited: limited };
 }
 export async function assistantExecutionStatus(
   result: Record<string, unknown>,
