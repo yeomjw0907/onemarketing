@@ -1,6 +1,13 @@
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import "./helpers";
+// Provider requests below are mocked. Do not depend on a developer's live key.
+const previousKey = process.env.ANTHROPIC_API_KEY;
+process.env.ANTHROPIC_API_KEY = "job-log-test-only-key";
+after(() => {
+  if (previousKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+  else process.env.ANTHROPIC_API_KEY = previousKey;
+});
 const { create, view, list } = await import("../src/lib/db");
 const { jobLog, withJobLogs, projectJobLogs, redactLog } =
   await import("../src/lib/job-logs");

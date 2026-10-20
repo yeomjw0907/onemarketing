@@ -17,9 +17,41 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: onemarketing_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d onemarketing_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Test with isolated database and storage
         env:
-          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_DATABASE_URL: postgres://ci:ci-only-password@127.0.0.1:5432/onemarketing_test
+          DATABASE_SSL: disable
           SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_STORAGE_BUCKET: ${{ secrets.TEST_SUPABASE_STORAGE_BUCKET }}
@@ -33,6 +65,4 @@ jobs:
               process.exit(1);
             }
           '
-          npx tsx --test --test-concurrency=2 tests/*.test.ts
-      - run: npm run build
-      - run: npm audit --omit=dev --audit-level=high
+          npx tsx --test --test-concurrency=2 --test-shard=${{ matrix.shard }}/3 tests/*.test.ts
