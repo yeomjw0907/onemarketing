@@ -334,15 +334,28 @@ export default function DashboardAssistant({
                   <BrandOrb
                     active={!!device}
                     state={t.status === "queued" ? "connecting" : "composing"}
-                    size={20}
+                    size={64}
                   />
-                  <p>
-                    {!device
-                      ? "PC 연결이 끊겼어요. 다시 연결하거나 요청을 중단해주세요."
-                      : t.status === "queued"
-                        ? "연결된 PC에서 요청을 받고 있어요."
-                        : "답변과 확인할 내용을 준비하고 있어요."}
-                  </p>
+                  <div
+                    className={styles.processingCopy}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <strong>
+                      {!device
+                        ? "PC 연결을 기다리고 있어요"
+                        : t.status === "queued"
+                          ? "요청을 전달하고 있어요"
+                          : "내용을 정리하고 있어요"}
+                    </strong>
+                    <p>
+                      {!device
+                        ? "PC 연결이 끊겼어요. 다시 연결하거나 요청을 중단해주세요."
+                        : t.status === "queued"
+                          ? "연결된 PC가 요청을 받으면 답변을 준비해요."
+                          : "잠시만 기다려주세요. 저장할 내용은 먼저 보여드릴게요."}
+                    </p>
+                  </div>
                   <Button
                     variant="text"
                     disabled={busy}
