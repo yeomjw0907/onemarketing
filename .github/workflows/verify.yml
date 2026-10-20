@@ -17,6 +17,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test
+      - name: Test with isolated database and storage
+        env:
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_STORAGE_BUCKET: ${{ secrets.TEST_SUPABASE_STORAGE_BUCKET }}
+          DATABASE_POOL_MAX: 2
+        run: |
+          node --input-type=module -e '
+            const required = ["TEST_DATABASE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_STORAGE_BUCKET"];
+            const missing = required.filter(name => !process.env[name]);
+            if (missing.length) {
+              console.error("Missing CI test secrets: " + missing.join(", "));
+              process.exit(1);
+            }
+          '
+          npx tsx --test --test-concurrency=2 tests/*.test.ts
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
