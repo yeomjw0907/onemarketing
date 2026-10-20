@@ -599,6 +599,15 @@
 .root button {
   min-height: 44px;
 }
+.requestStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  color: #6b7684;
+  font-size: 13px;
+  line-height: 1.6;
+}
 .root button:focus-visible,
 .inputRow textarea:focus-visible {
   outline: 2px solid #3182f6;

@@ -45,11 +45,13 @@ const names: Record<string, string> = {
 export default function AssistantWorkflowCard({
   turn,
   busy,
+  confirming = false,
   onConfirm,
   onDismiss,
 }: {
   turn: Record<string, any>;
   busy: boolean;
+  confirming?: boolean;
   onConfirm: () => Promise<void>;
   onDismiss: () => void;
 }) {
@@ -58,7 +60,15 @@ export default function AssistantWorkflowCard({
     pending = turn.proposal_status === "pending",
     execution = turn.execution;
   const jobs = execution?.jobs || [],
-    running = jobs.some((j: any) => ["pending", "running"].includes(j.status));
+    runningJob = jobs.find((j: any) => j.status === "running");
+  const jobOrbState =
+    runningJob?.type === "research" || runningJob?.type === "product-review"
+      ? "searching"
+      : ["copy", "scenario", "media-plan"].includes(runningJob?.type)
+        ? "composing"
+        : ["image", "video", "slideshow"].includes(runningJob?.type)
+          ? "shaping"
+          : "working";
   const stages = ["자료 준비", "기획", "제작", "검수", "참여자 전달"];
   const stageIndex = (
     {
@@ -166,16 +176,27 @@ export default function AssistantWorkflowCard({
             <Button
               variant="primary"
               disabled={busy || !reviewed}
+              aria-busy={confirming || undefined}
               onClick={() => void onConfirm()}
             >
-              확인하고{" "}
-              {labels.risk === "paid"
-                ? "실행"
-                : labels.risk === "external"
-                  ? "진행"
-                  : labels.risk === "contract"
-                    ? "확정"
-                    : "저장"}
+              <BrandOrb
+                active={confirming}
+                state={labels.risk === "external" ? "connecting" : "shaping"}
+              />
+              {confirming ? (
+                "요청을 반영하고 있어요"
+              ) : (
+                <>
+                  확인하고{" "}
+                  {labels.risk === "paid"
+                    ? "실행"
+                    : labels.risk === "external"
+                      ? "진행"
+                      : labels.risk === "contract"
+                        ? "확정"
+                        : "저장"}
+                </>
+              )}
             </Button>
             <Button disabled={busy} onClick={onDismiss}>
               취소
@@ -215,7 +236,7 @@ export default function AssistantWorkflowCard({
             <div className={styles.execution}>
               <div className={styles.executionHeader}>
                 <strong>작업 현황</strong>
-                <BrandOrb active={running} size={20} state="working" />
+                <BrandOrb active={!!runningJob} size={20} state={jobOrbState} />
                 <span>
                   {jobs.filter((j: any) => j.status === "succeeded").length} /{" "}
                   {jobs.length} 완료

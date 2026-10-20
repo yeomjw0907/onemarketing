@@ -60,6 +60,11 @@ export default function DashboardAssistant({
     [error, setError] = useState(""),
     [loadError, setLoadError] = useState(""),
     [busy, setBusy] = useState(false),
+    [operation, setOperation] = useState<{
+      action: string;
+      id?: string;
+    } | null>(null),
+    [sending, setSending] = useState(false),
     [connecting, setConnecting] = useState(false),
     [pairCode, setPairCode] = useState(""),
     [copied, setCopied] = useState(false);
@@ -150,6 +155,7 @@ export default function DashboardAssistant({
   }
   async function action(body: Row) {
     setBusy(true);
+    setOperation({ action: body.action, id: body.id });
     setError("");
     try {
       const d = await act(body);
@@ -160,6 +166,7 @@ export default function DashboardAssistant({
       return null;
     } finally {
       setBusy(false);
+      setOperation(null);
     }
   }
   async function send(override?: string) {
@@ -173,6 +180,7 @@ export default function DashboardAssistant({
     )
       return;
     setBusy(true);
+    setSending(true);
     setError("");
     try {
       let id = selected;
@@ -207,6 +215,7 @@ export default function DashboardAssistant({
       setError(e instanceof Error ? e.message : "요청을 보내지 못했어요.");
     } finally {
       setBusy(false);
+      setSending(false);
     }
   }
   async function uploadFiles(files: FileList | null) {
@@ -470,7 +479,13 @@ export default function DashboardAssistant({
                 <div className={styles.processing}>
                   <BrandOrb
                     active={!!device}
-                    state={t.status === "queued" ? "connecting" : "composing"}
+                    state={
+                      t.status === "queued"
+                        ? "connecting"
+                        : t.attachment_ids?.length
+                          ? "searching"
+                          : "composing"
+                    }
                     size={64}
                   />
                   <div
@@ -483,7 +498,9 @@ export default function DashboardAssistant({
                         ? "PC 연결을 기다리고 있어요"
                         : t.status === "queued"
                           ? "요청을 전달하고 있어요"
-                          : "내용을 정리하고 있어요"}
+                          : t.attachment_ids?.length
+                            ? "첨부 자료를 살펴보고 있어요"
+                            : "내용을 정리하고 있어요"}
                     </strong>
                     <p>
                       {!device
@@ -511,6 +528,9 @@ export default function DashboardAssistant({
                     key={t.id}
                     turn={t}
                     busy={busy}
+                    confirming={
+                      operation?.action === "confirm" && operation.id === t.id
+                    }
                     onConfirm={async () => {
                       const d = await action({
                         action: "confirm",
@@ -624,7 +644,12 @@ export default function DashboardAssistant({
                         <div className={styles.proposalActions}>
                           <Button
                             variant="primary"
-                            busy={busy}
+                            disabled={busy}
+                            aria-busy={
+                              (operation?.action === "confirm" &&
+                                operation.id === t.id) ||
+                              undefined
+                            }
                             onClick={async () => {
                               const result = await action({
                                 action: "confirm",
@@ -633,7 +658,17 @@ export default function DashboardAssistant({
                               if (result) await onSaved();
                             }}
                           >
-                            확인하고 저장
+                            <BrandOrb
+                              active={
+                                operation?.action === "confirm" &&
+                                operation.id === t.id
+                              }
+                              state="shaping"
+                            />
+                            {operation?.action === "confirm" &&
+                            operation.id === t.id
+                              ? "저장하고 있어요"
+                              : "확인하고 저장"}
                           </Button>
                           <Button
                             disabled={busy}
@@ -691,6 +726,12 @@ export default function DashboardAssistant({
             </div>
           </article>
         ))}
+        {sending && !active && (
+          <div className={styles.requestStatus} role="status">
+            <BrandOrb active state="connecting" />
+            요청을 전달하고 있어요
+          </div>
+        )}
         <div ref={end} />
       </section>
       <form
@@ -716,11 +757,14 @@ export default function DashboardAssistant({
             disabled={busy || uploading || !!active}
             onClick={() => fileInput.current?.click()}
           >
-            <Paperclip size={16} />
+            {uploading ? (
+              <BrandOrb active state="weaving" />
+            ) : (
+              <Paperclip size={16} />
+            )}
             {uploading ? "파일을 읽고 있어요" : "파일 첨부"}
           </Button>
           <span>PDF·엑셀·텍스트·이미지 · 파일당 4MB</span>
-          <BrandOrb active={uploading} state="weaving" size={20} />
         </div>
         {!!chosenFiles.length && (
           <div className={styles.pendingFiles}>
