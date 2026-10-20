@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
-import { query, execute, transaction, lock, audit } from "./db";
+import { query, execute, transaction, lock, audit, list } from "./db";
 import { tokenHash } from "./auth";
 import { isMcpAdmin, mcpRateLimit, type McpIdentity } from "./mcp-oauth";
 import {
@@ -10,6 +10,18 @@ import {
   assistantProposalSchemas,
 } from "./mcp-tools";
 import { assistantOutputSchema } from "./assistant-schema";
+import {
+  assistantWorkflowContext,
+  prepareWorkflowProposal,
+  executeWorkflow,
+  assistantExecutionStatus,
+} from "./assistant-workflow";
+import {
+  ownedAssistantFiles,
+  assistantFileContext,
+  publicAssistantFile,
+  type AssistantAttachment,
+} from "./assistant-files";
 import {
   prepareAssistantQuestion,
   assistantQuestionAnswer,
@@ -63,11 +75,42 @@ export async function assistantStatus(owner: string, threadId?: string) {
   if (threadId) await thread(owner, threadId);
   const turns = threadId
     ? await query<Row>(
-        "select id,coalesce(input_display,input) as input,status,created_at,reply,proposal,proposal_status,save_result,question from assistant_turns where thread_id=$1 and owner=$2 order by created_at,id limit 100",
+        "select id,coalesce(input_display,input) as input,status,created_at,reply,proposal,proposal_status,save_result,question,attachment_ids from assistant_turns where thread_id=$1 and owner=$2 order by created_at,id limit 100",
+        [threadId, owner],
+      )
+    : [];
+  const executionTurns = turns.filter(
+    (t) =>
+      t.proposal?.tool === "run_workflow" &&
+      t.proposal_status === "saved" &&
+      t.save_result,
+  );
+  const executionData = executionTurns.length
+    ? {
+        projects: await list("projects"),
+        tasks: await list("tasks"),
+        assets: await list("assets"),
+        jobs: await list("jobs"),
+      }
+    : undefined;
+  for (const turn of executionTurns)
+    if (
+      turn.proposal?.tool === "run_workflow" &&
+      turn.proposal_status === "saved" &&
+      turn.save_result
+    )
+      turn.execution = await assistantExecutionStatus(
+        turn.save_result,
+        executionData,
+      );
+  const attachments = threadId
+    ? await query<AssistantAttachment>(
+        "select * from assistant_attachments where thread_id=$1 and owner=$2 order by created_at",
         [threadId, owner],
       )
     : [];
   return {
+    attachments: attachments.map(publicAssistantFile),
     devices: devices.map((d) => ({
       ...d,
       online: Date.now() - Number(d.last_seen) < 45000,
@@ -158,6 +201,7 @@ export async function enqueueAssistant(owner: string, input: unknown) {
       threadId: uuid,
       requestId: uuid,
       message: z.string().trim().min(1).max(6000),
+      attachmentIds: z.array(uuid).max(6).default([]),
     })
     .strict()
     .parse(input);
@@ -167,11 +211,15 @@ export async function enqueueAssistant(owner: string, input: unknown) {
     await lock("assistant-thread:" + b.threadId);
     await thread(owner, b.threadId);
     const [old] = await query<Row>(
-      "select id,input,thread_id from assistant_turns where owner=$1 and request_id=$2",
+      "select id,input,thread_id,attachment_ids from assistant_turns where owner=$1 and request_id=$2",
       [owner, b.requestId],
     );
     if (old) {
-      if (old.input !== b.message || old.thread_id !== b.threadId)
+      if (
+        old.input !== b.message ||
+        old.thread_id !== b.threadId ||
+        !isDeepStrictEqual(old.attachment_ids, b.attachmentIds)
+      )
         throw new Error("같은 요청 번호의 내용이 달라요.");
       return { id: old.id };
     }
@@ -203,9 +251,19 @@ export async function enqueueAssistant(owner: string, input: unknown) {
     if (count.n >= 100)
       throw new Error("대화가 길어졌어요. 새 대화를 시작해주세요.");
     const id = randomUUID();
+    await lock("assistant-files:" + b.threadId);
+    await ownedAssistantFiles(owner, b.threadId, b.attachmentIds);
     await execute(
-      "insert into assistant_turns(id,thread_id,owner,request_id,input,status,created_at) values($1,$2,$3,$4,$5,'queued',$6)",
-      [id, b.threadId, owner, b.requestId, b.message, Date.now()],
+      "insert into assistant_turns(id,thread_id,owner,request_id,input,status,created_at,attachment_ids) values($1,$2,$3,$4,$5,'queued',$6,$7::jsonb)",
+      [
+        id,
+        b.threadId,
+        owner,
+        b.requestId,
+        b.message,
+        Date.now(),
+        JSON.stringify(b.attachmentIds),
+      ],
     );
     await execute(
       "update assistant_threads set title=$2 where id=$1 and title='새 대화'",
@@ -275,7 +333,11 @@ export async function cancelAssistant(owner: string, id: string) {
     [id, owner, "요청을 중단했어요. 저장한 내용은 없어요."],
   );
 }
-export async function confirmAssistant(owner: string, id: string) {
+export async function confirmAssistant(
+  owner: string,
+  id: string,
+  reviewed = false,
+) {
   admin(owner);
   uuid.parse(id);
   return transaction(async () => {
@@ -293,16 +355,24 @@ export async function confirmAssistant(owner: string, id: string) {
       throw new Error(
         "이 확인 카드는 더 이상 저장할 수 없어요. 새 내용을 확인해주세요.",
       );
-    const p = await prepareMcpProposal(r.proposal.tool, r.proposal.args);
+    if (r.proposal.tool === "run_workflow" && !reviewed)
+      throw new Error("실행 대상과 비용·영향을 확인한 뒤 체크해주세요.");
+    const p =
+      r.proposal.tool === "run_workflow"
+        ? await prepareWorkflowProposal(r.proposal.args, owner, r.thread_id)
+        : await prepareMcpProposal(r.proposal.tool, r.proposal.args);
     if (!isDeepStrictEqual(p.labels, r.proposal.labels))
       throw new Error(
         "고객·상품·단가 정보가 변경됐어요. 새 확인 카드를 요청해주세요.",
       );
-    const result = await callMcpTool(
-      p.tool,
-      { ...p.args, confirmed: true, requestId: r.id },
-      identity(owner),
-    );
+    const result =
+      p.tool === "run_workflow"
+        ? await executeWorkflow(p.args, owner, r.thread_id, r.id)
+        : await callMcpTool(
+            p.tool,
+            { ...p.args, confirmed: true, requestId: r.id },
+            identity(owner),
+          );
     if (
       p.tool === "create_campaign_draft" &&
       (result as Row).total !== p.labels.total
@@ -398,17 +468,21 @@ export async function claimAssistant(device: { id: string; owner: string }) {
       {},
       identity(device.owner),
     );
+    const fileContext = await assistantFileContext(device.owner, r.thread_id);
     return {
       id: r.id,
       lease,
       message: r.input,
       history: history.reverse(),
+      images: fileContext.images,
       context: {
         todayKst: new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10),
         catalog,
         catalogLimit: 50,
         options,
         proposalSchemas: assistantProposalSchemas(),
+        attachments: fileContext.attachments,
+        workflow: await assistantWorkflowContext(),
       },
     };
   });
@@ -439,13 +513,24 @@ export async function completeAssistant(
       reply = b.output.reply;
     if (b.output.action !== "none") {
       try {
-        proposal = await prepareMcpProposal(
-          b.output.action,
-          JSON.parse(b.output.argumentsJson),
-        );
-      } catch {
+        proposal =
+          b.output.action === "run_workflow"
+            ? await prepareWorkflowProposal(
+                JSON.parse(b.output.argumentsJson),
+                device.owner,
+                r.thread_id,
+              )
+            : await prepareMcpProposal(
+                b.output.action,
+                JSON.parse(b.output.argumentsJson),
+              );
+      } catch (e) {
         reply =
-          "등록 내용을 확인할 정보가 부족하거나 현재 상품·고객 정보와 맞지 않아요. 고객·제품, 일정·수량·상품을 확인해 다시 요청해주세요. 아직 저장하지 않았어요.";
+          b.output.action === "run_workflow" &&
+          e instanceof Error &&
+          !(e instanceof z.ZodError)
+            ? `아직 실행하지 않았어요. ${e.message} 필요한 정보를 확인한 뒤 다시 요청해주세요.`
+            : "등록 내용을 확인할 정보가 부족하거나 현재 상품·고객 정보와 맞지 않아요. 고객·제품, 일정·수량·상품을 확인해 다시 요청해주세요. 아직 저장하지 않았어요.";
       }
     }
     let question = null;

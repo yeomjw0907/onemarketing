@@ -217,7 +217,12 @@ export class AssistantCodex {
     return true;
   }
   async run(
-    job: { message: string; history: unknown; context: unknown },
+    job: {
+      message: string;
+      history: unknown;
+      context: unknown;
+      images?: { id: string; name: string; url: string }[];
+    },
     signal?: AbortSignal,
   ) {
     await this.checkAccount();
@@ -311,7 +316,22 @@ export class AssistantCodex {
         model: this.model,
         effort: this.effort,
         threadId,
-        input: [{ type: "text", text: JSON.stringify(job), text_elements: [] }],
+        input: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              message: job.message,
+              history: job.history,
+              context: job.context,
+              imageReferences: job.images?.map(({ id, name }) => ({
+                id,
+                name,
+              })),
+            }),
+            text_elements: [],
+          },
+          ...(job.images || []).map(({ url }) => ({ type: "image", url })),
+        ],
         outputSchema: assistantOutputJsonSchema,
       })
         .then((r) => {

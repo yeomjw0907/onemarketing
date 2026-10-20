@@ -167,7 +167,12 @@ if (mode === "pair") {
       }, 10000);
       try {
         const output = await codex.run(
-          { message: job.message, history: job.history, context: job.context },
+          {
+            message: job.message,
+            history: job.history,
+            context: job.context,
+            images: job.images,
+          },
           controller.signal,
         );
         let delivered = false;

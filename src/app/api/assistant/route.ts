@@ -1,5 +1,6 @@
 import { requireActor, sameOrigin } from "@/lib/auth";
 import { boundedBody, privateHeaders } from "@/lib/mcp-http";
+import { scheduleTick } from "@/lib/trigger";
 import {
   assistantStatus,
   createAssistantPairing,
@@ -12,7 +13,7 @@ import {
   answerAssistantQuestion,
 } from "@/lib/assistant-chat";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 export async function GET(r: Request) {
   try {
     const owner = await requireActor();
@@ -48,10 +49,13 @@ export async function POST(r: Request) {
           threadId: b.threadId,
           requestId: b.requestId,
           message: b.message,
+          attachmentIds: b.attachmentIds || [],
         });
         break;
       case "confirm":
-        result = await confirmAssistant(owner, b.id);
+        result = await confirmAssistant(owner, b.id, b.reviewed === true);
+        if (result && typeof result === "object" && "jobIds" in result)
+          scheduleTick(true);
         break;
       case "answer":
         result = await answerAssistantQuestion(owner, {

@@ -25,7 +25,7 @@ export async function POST(r: Request) {
   }
   try {
     await mcpRateLimit("assistant-worker:" + device.id, 180);
-    const b = JSON.parse(await boundedBody(r, 50000));
+    const b = JSON.parse(await boundedBody(r, 70000));
     let result;
     if (b.action === "heartbeat")
       result = await heartbeatAssistant(device, b.status, b.id, b.lease);

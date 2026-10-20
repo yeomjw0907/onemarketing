@@ -7,13 +7,21 @@ import {
   ArrowUp,
   Check,
   Square,
+  Paperclip,
+  X,
 } from "lucide-react";
 import { Button, Feedback } from "./ui/workflow-ui";
 import BrandOrb from "./brand-orb";
 import AssistantQuestion from "./assistant-question";
+import AssistantWorkflowCard from "./assistant-workflow-card";
 import styles from "./dashboard-assistant.module.css";
 type Row = Record<string, any>;
-type State = { devices: Row[]; threads: Row[]; turns: Row[] };
+type State = {
+  devices: Row[];
+  threads: Row[];
+  turns: Row[];
+  attachments?: Row[];
+};
 const titles: Record<string, string> = {
   create_customer: "고객 등록 전 확인",
   create_product: "제품 등록 전 확인",
@@ -54,12 +62,22 @@ export default function DashboardAssistant({
     [connecting, setConnecting] = useState(false),
     [pairCode, setPairCode] = useState(""),
     [copied, setCopied] = useState(false);
+  const [uploading, setUploading] = useState(false),
+    [pendingFiles, setPendingFiles] = useState<Record<string, string[]>>({});
+  const fileInput = useRef<HTMLInputElement>(null);
+  const usedFiles = new Set(data.turns.flatMap((t) => t.attachment_ids || []));
+  const chosenFiles =
+    pendingFiles[selected] ??
+    (data.attachments || [])
+      .filter((f) => !usedFiles.has(f.id))
+      .map((f) => f.id);
   const input = useRef<HTMLTextAreaElement>(null),
     end = useRef<HTMLDivElement>(null),
     retry = useRef<{
       threadId: string;
       message: string;
       requestId: string;
+      attachmentIds: string[];
     } | null>(null);
   const active = data.turns.find((t) =>
     ["queued", "running"].includes(t.status),
@@ -142,8 +160,16 @@ export default function DashboardAssistant({
       setBusy(false);
     }
   }
-  async function send() {
-    if (!message.trim() || busy || active || !device) return;
+  async function send(override?: string) {
+    const requested = override ?? message;
+    if (
+      (!requested.trim() && !chosenFiles.length) ||
+      busy ||
+      uploading ||
+      active ||
+      !device
+    )
+      return;
     setBusy(true);
     setError("");
     try {
@@ -152,22 +178,91 @@ export default function DashboardAssistant({
         id = (await act({ action: "new" })).id;
         setSelected(id);
       }
+      const text =
+        requested.trim() ||
+        "첨부한 자료를 정리하고 필요한 정보와 다음 단계를 안내해줘.";
       const payload =
         retry.current?.threadId === id &&
-        retry.current.message === message.trim()
+        retry.current.message === text &&
+        JSON.stringify(retry.current.attachmentIds) ===
+          JSON.stringify(chosenFiles)
           ? retry.current
           : {
               threadId: id,
-              message: message.trim(),
+              message: text,
               requestId: crypto.randomUUID(),
+              attachmentIds: chosenFiles,
             };
       retry.current = payload;
       await act({ action: "message", ...payload });
       retry.current = null;
-      setMessage("");
+      setMessage((current) =>
+        current.trim() === requested.trim() ? "" : current,
+      );
+      setPendingFiles((prev) => ({ ...prev, [id]: [] }));
       await refresh(id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "요청을 보내지 못했어요.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function uploadFiles(files: FileList | null) {
+    if (!files?.length || uploading || busy) return;
+    setUploading(true);
+    setError("");
+    try {
+      let threadId = selected;
+      if (!threadId) {
+        threadId = (await act({ action: "new" })).id;
+        setSelected(threadId);
+      }
+      const ids = [
+        ...(pendingFiles[threadId] ||
+          (threadId === selected ? chosenFiles : [])),
+      ];
+      if (ids.length + files.length > 6)
+        throw new Error("한 번에 파일을 최대 6개까지 보낼 수 있어요.");
+      for (const file of Array.from(files)) {
+        if (file.size > 4 * 1024 * 1024)
+          throw new Error("파일은 4MB 이하로 첨부해주세요.");
+        const form = new FormData();
+        form.set("file", file);
+        form.set("threadId", threadId);
+        const r = await fetch("/api/assistant/attachments", {
+            method: "POST",
+            body: form,
+          }),
+          d = await r.json();
+        if (!r.ok) throw new Error(d.error || "파일을 첨부하지 못했어요.");
+        ids.push(d.id);
+        setPendingFiles((prev) => ({ ...prev, [threadId]: [...ids] }));
+      }
+      await refresh(threadId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "파일을 첨부하지 못했어요.");
+      await refresh().catch(() => {});
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  }
+  async function removePendingFile(id: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await fetch("/api/assistant/attachments/" + id, {
+        method: "DELETE",
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setPendingFiles((prev) => ({
+        ...prev,
+        [selected]: chosenFiles.filter((x) => x !== id),
+      }));
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "파일을 제외하지 못했어요.");
     } finally {
       setBusy(false);
     }
@@ -180,7 +275,7 @@ export default function DashboardAssistant({
       <div className={styles.heading}>
         <div>
           <h1>업무 도우미</h1>
-          <p>대화로 준비하고, 내용을 확인한 뒤 저장하세요.</p>
+          <p>자료를 첨부하고 업무를 준비하세요. 실행 전에는 꼭 확인받아요.</p>
         </div>
         <div className={styles.headerActions}>
           <Button onClick={() => setConnecting(!connecting)}>
@@ -188,10 +283,13 @@ export default function DashboardAssistant({
             {device ? "PC 연결 관리" : "PC 연결"}
           </Button>
           <Button
-            disabled={busy || !!active}
+            disabled={busy || uploading || !!active}
             onClick={async () => {
               const d = await action({ action: "new" });
-              if (d) setSelected(d.id);
+              if (d) {
+                setData((prev) => ({ ...prev, turns: [], attachments: [] }));
+                setSelected(d.id);
+              }
             }}
           >
             <Plus size={16} />새 대화
@@ -303,7 +401,10 @@ export default function DashboardAssistant({
           <select
             aria-label="대화 선택"
             value={selected}
-            onChange={(e) => setSelected(e.target.value)}
+            onChange={(e) => {
+              setData((prev) => ({ ...prev, turns: [], attachments: [] }));
+              setSelected(e.target.value);
+            }}
           >
             <option value="">새 대화</option>
             {data.threads.map((t) => (
@@ -313,14 +414,14 @@ export default function DashboardAssistant({
             ))}
           </select>
         </label>
-        <span>계약 확정·카톡 발송은 운영 화면에서 진행해요.</span>
+        <span>저장·제작·참여자 전달은 확인한 뒤 실행해요.</span>
       </div>
       <section className={styles.conversation} aria-label="업무 대화">
         {!data.turns.length && (
           <div className={styles.empty}>
             <MessageSquare size={27} />
             <h2>어떤 업무를 준비할까요?</h2>
-            <p>고객·제품 조회와 등록, 캠페인 초안부터 시작해보세요.</p>
+            <p>회사·제품 자료를 첨부하거나, 준비할 캠페인을 알려주세요.</p>
             <div className={styles.suggestions}>
               {[
                 "등록된 고객과 제품을 알려줘",
@@ -345,6 +446,19 @@ export default function DashboardAssistant({
             <div className={styles.user}>
               <span>나</span>
               <p>{t.input}</p>
+              {!!t.attachment_ids?.length && (
+                <div className={styles.fileLinks}>
+                  {t.attachment_ids.map((id: string) => {
+                    const f = data.attachments?.find((f) => f.id === id);
+                    return f ? (
+                      <a key={id} href={f.url} target="_blank" rel="noreferrer">
+                        <Paperclip size={13} />
+                        {f.name}
+                      </a>
+                    ) : null;
+                  })}
+                </div>
+              )}
             </div>
             <div className={styles.assistant}>
               <span>원케이션</span>
@@ -387,145 +501,167 @@ export default function DashboardAssistant({
               ) : (
                 <p>{t.reply}</p>
               )}
-              {t.proposal && (
-                <section
-                  className={styles.proposal}
-                  aria-label={titles[t.proposal.tool]}
-                >
-                  <h3>{titles[t.proposal.tool]}</h3>
-                  {t.proposal.labels.customerName && (
-                    <p className={styles.context}>
-                      고객 · {t.proposal.labels.customerName}
-                      {t.proposal.labels.targetName
-                        ? " / " + t.proposal.labels.targetName
-                        : ""}
-                    </p>
-                  )}
-                  <dl>
-                    {["blog", "clip"].map(
-                      (channel) =>
-                        t.proposal.labels[channel + "PriceName"] && (
-                          <div key={channel}>
-                            <dt>
-                              {channel === "blog" ? "블로그 상품" : "클립 상품"}
-                            </dt>
-                            <dd>{t.proposal.labels[channel + "PriceName"]}</dd>
-                          </div>
-                        ),
+              {t.proposal &&
+                (t.proposal.tool === "run_workflow" ? (
+                  <AssistantWorkflowCard
+                    key={t.id}
+                    turn={t}
+                    busy={busy}
+                    onConfirm={async () => {
+                      const d = await action({
+                        action: "confirm",
+                        id: t.id,
+                        reviewed: true,
+                      });
+                      if (d) await onSaved();
+                    }}
+                    onDismiss={() =>
+                      void action({ action: "dismiss", id: t.id })
+                    }
+                  />
+                ) : (
+                  <section
+                    className={styles.proposal}
+                    aria-label={titles[t.proposal.tool]}
+                  >
+                    <h3>{titles[t.proposal.tool]}</h3>
+                    {t.proposal.labels.customerName && (
+                      <p className={styles.context}>
+                        고객 · {t.proposal.labels.customerName}
+                        {t.proposal.labels.targetName
+                          ? " / " + t.proposal.labels.targetName
+                          : ""}
+                      </p>
                     )}
-                    {Object.entries(t.proposal.args as Row)
-                      .filter(([k]) => fieldLabels[k])
-                      .map(([k, v]) => (
-                        <div key={k}>
-                          <dt>{fieldLabels[k]}</dt>
-                          <dd>
-                            {String(v ?? "—")}
-                            {["blog", "clip"].includes(k) ? "개" : ""}
-                          </dd>
-                        </div>
-                      ))}
-                    {t.proposal.labels.supply !== undefined && (
+                    <dl>
+                      {["blog", "clip"].map(
+                        (channel) =>
+                          t.proposal.labels[channel + "PriceName"] && (
+                            <div key={channel}>
+                              <dt>
+                                {channel === "blog"
+                                  ? "블로그 상품"
+                                  : "클립 상품"}
+                              </dt>
+                              <dd>
+                                {t.proposal.labels[channel + "PriceName"]}
+                              </dd>
+                            </div>
+                          ),
+                      )}
+                      {Object.entries(t.proposal.args as Row)
+                        .filter(([k]) => fieldLabels[k])
+                        .map(([k, v]) => (
+                          <div key={k}>
+                            <dt>{fieldLabels[k]}</dt>
+                            <dd>
+                              {String(v ?? "—")}
+                              {["blog", "clip"].includes(k) ? "개" : ""}
+                            </dd>
+                          </div>
+                        ))}
+                      {t.proposal.labels.supply !== undefined && (
+                        <>
+                          <div>
+                            <dt>공급가</dt>
+                            <dd>
+                              {Number(t.proposal.labels.supply).toLocaleString(
+                                "ko-KR",
+                              )}
+                              원
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>합계 · 부가세 포함</dt>
+                            <dd>
+                              {Number(t.proposal.labels.total).toLocaleString(
+                                "ko-KR",
+                              )}
+                              원
+                            </dd>
+                          </div>
+                        </>
+                      )}
+                    </dl>
+                    {t.proposal.args.policy && (
+                      <details>
+                        <summary>모집·제출·수정 조건 확인</summary>
+                        <p className={styles.context}>
+                          제안 유효 {t.proposal.args.policy.offerHours}시간 ·
+                          제출 {t.proposal.args.policy.submissionDays}일 · 수정{" "}
+                          {t.proposal.args.policy.revisionDays}일 · 준비{" "}
+                          {t.proposal.args.policy.preparationDays}일 · 검수 3일
+                          후 · 유지 90일
+                        </p>
+                      </details>
+                    )}
+                    {t.proposal.labels.timeline && (
+                      <details>
+                        <summary>주차별 게시 계획 확인</summary>
+                        {t.proposal.labels.timeline.map((w: Row) => (
+                          <p key={w.start} className={styles.context}>
+                            {w.start} ~ {w.end} · 블로그 {w.blog}개 · 클립{" "}
+                            {w.clip}개
+                          </p>
+                        ))}
+                      </details>
+                    )}
+                    {t.proposal.labels.warnings?.map((w: string) => (
+                      <p className={styles.warning} key={w}>
+                        {w}
+                      </p>
+                    ))}
+                    {t.proposal_status === "pending" ? (
                       <>
-                        <div>
-                          <dt>공급가</dt>
-                          <dd>
-                            {Number(t.proposal.labels.supply).toLocaleString(
-                              "ko-KR",
-                            )}
-                            원
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>합계 · 부가세 포함</dt>
-                          <dd>
-                            {Number(t.proposal.labels.total).toLocaleString(
-                              "ko-KR",
-                            )}
-                            원
-                          </dd>
+                        <p className={styles.confirmHint}>
+                          아직 저장되지 않았어요. 내용을 확인하고 저장해주세요.
+                          수정할 내용은 대화로 알려주세요.
+                        </p>
+                        <div className={styles.proposalActions}>
+                          <Button
+                            variant="primary"
+                            busy={busy}
+                            onClick={async () => {
+                              const result = await action({
+                                action: "confirm",
+                                id: t.id,
+                              });
+                              if (result) await onSaved();
+                            }}
+                          >
+                            확인하고 저장
+                          </Button>
+                          <Button
+                            disabled={busy}
+                            onClick={() =>
+                              void action({ action: "dismiss", id: t.id })
+                            }
+                          >
+                            취소
+                          </Button>
                         </div>
                       </>
+                    ) : (
+                      <p className={styles.saved}>
+                        {t.proposal_status === "saved" ? (
+                          <>
+                            <Check size={15} />
+                            {t.save_result?.existing
+                              ? "기존 항목이 있어 추가 등록하지 않았어요."
+                              : "저장했어요. " +
+                                (t.proposal.tool === "create_campaign_draft"
+                                  ? "캠페인 운영에서 초안을 확인해주세요."
+                                  : "고객·제품 목록에서 확인할 수 있어요.")}
+                          </>
+                        ) : t.proposal_status === "superseded" ? (
+                          "새 요청으로 대체된 확인 카드예요."
+                        ) : (
+                          "저장하지 않은 확인 카드예요."
+                        )}
+                      </p>
                     )}
-                  </dl>
-                  {t.proposal.args.policy && (
-                    <details>
-                      <summary>모집·제출·수정 조건 확인</summary>
-                      <p className={styles.context}>
-                        제안 유효 {t.proposal.args.policy.offerHours}시간 · 제출{" "}
-                        {t.proposal.args.policy.submissionDays}일 · 수정{" "}
-                        {t.proposal.args.policy.revisionDays}일 · 준비{" "}
-                        {t.proposal.args.policy.preparationDays}일 · 검수 3일 후
-                        · 유지 90일
-                      </p>
-                    </details>
-                  )}
-                  {t.proposal.labels.timeline && (
-                    <details>
-                      <summary>주차별 게시 계획 확인</summary>
-                      {t.proposal.labels.timeline.map((w: Row) => (
-                        <p key={w.start} className={styles.context}>
-                          {w.start} ~ {w.end} · 블로그 {w.blog}개 · 클립{" "}
-                          {w.clip}개
-                        </p>
-                      ))}
-                    </details>
-                  )}
-                  {t.proposal.labels.warnings?.map((w: string) => (
-                    <p className={styles.warning} key={w}>
-                      {w}
-                    </p>
-                  ))}
-                  {t.proposal_status === "pending" ? (
-                    <>
-                      <p className={styles.confirmHint}>
-                        아직 저장되지 않았어요. 내용을 확인하고 저장해주세요.
-                        수정할 내용은 대화로 알려주세요.
-                      </p>
-                      <div className={styles.proposalActions}>
-                        <Button
-                          variant="primary"
-                          busy={busy}
-                          onClick={async () => {
-                            const result = await action({
-                              action: "confirm",
-                              id: t.id,
-                            });
-                            if (result) await onSaved();
-                          }}
-                        >
-                          확인하고 저장
-                        </Button>
-                        <Button
-                          disabled={busy}
-                          onClick={() =>
-                            void action({ action: "dismiss", id: t.id })
-                          }
-                        >
-                          취소
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <p className={styles.saved}>
-                      {t.proposal_status === "saved" ? (
-                        <>
-                          <Check size={15} />
-                          {t.save_result?.existing
-                            ? "기존 항목이 있어 추가 등록하지 않았어요."
-                            : "저장했어요. " +
-                              (t.proposal.tool === "create_campaign_draft"
-                                ? "캠페인 운영에서 초안을 확인해주세요."
-                                : "고객·제품 목록에서 확인할 수 있어요.")}
-                        </>
-                      ) : t.proposal_status === "superseded" ? (
-                        "새 요청으로 대체된 확인 카드예요."
-                      ) : (
-                        "저장하지 않은 확인 카드예요."
-                      )}
-                    </p>
-                  )}
-                </section>
-              )}
+                  </section>
+                ))}
               {t.question &&
                 t.status === "completed" &&
                 (t.id === data.turns.at(-1)?.id ? (
@@ -560,6 +696,66 @@ export default function DashboardAssistant({
           void send();
         }}
       >
+        <div className={styles.attachmentBar}>
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            accept=".pdf,.xlsx,.csv,.txt,.md,.png,.jpg,.jpeg,.webp"
+            hidden
+            aria-label="대화에 파일 첨부"
+            onChange={(e) => void uploadFiles(e.target.files)}
+          />
+          <Button
+            type="button"
+            variant="text"
+            disabled={busy || uploading || !!active}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Paperclip size={16} />
+            {uploading ? "파일을 읽고 있어요" : "파일 첨부"}
+          </Button>
+          <span>PDF·엑셀·텍스트·이미지 · 파일당 4MB</span>
+          <BrandOrb active={uploading} state="weaving" size={20} />
+        </div>
+        {!!chosenFiles.length && (
+          <div className={styles.pendingFiles}>
+            {chosenFiles.map((id) => {
+              const f = data.attachments?.find((f) => f.id === id);
+              return (
+                <div key={id}>
+                  <span>
+                    <Paperclip size={14} />
+                    {f?.name || "첨부한 자료"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={(f?.name || "첨부파일") + " 제외"}
+                    disabled={busy || uploading}
+                    onClick={() => void removePendingFile(id)}
+                  >
+                    <X size={14} />
+                  </button>
+                  {f?.note && <p>{f.note}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {data.turns.some((t) => t.proposal_status === "saved") && (
+          <div className={styles.questionActions}>
+            <Button
+              disabled={busy || uploading || !!active || !device}
+              onClick={() =>
+                void send(
+                  "방금 처리한 결과와 현재 작업 상태를 확인해서 다음에 필요한 단계 하나를 준비해줘. 실행은 하지 말고 확인 카드나 필요한 질문을 보여줘.",
+                )
+              }
+            >
+              다음 단계 준비하기
+            </Button>
+          </div>
+        )}
         <label className={styles.composerLabel} htmlFor="assistant-message">
           직접 입력하거나 추가로 요청하기
         </label>
@@ -590,13 +786,22 @@ export default function DashboardAssistant({
           <Button
             variant="primary"
             type="submit"
-            disabled={busy || !!active || !device || !message.trim()}
+            disabled={
+              busy ||
+              uploading ||
+              !!active ||
+              !device ||
+              (!message.trim() && !chosenFiles.length)
+            }
             aria-label="요청 보내기"
           >
             <ArrowUp size={19} />
           </Button>
         </div>
-        <p>저장 버튼을 누르기 전에는 고객·제품이나 캠페인을 변경하지 않아요.</p>
+        <p>
+          첨부자료는 대화에만 보관해요. 등록·유료 제작·참여자 전달은 내용을
+          확인한 뒤 실행해요.
+        </p>
       </form>
     </div>
   );
