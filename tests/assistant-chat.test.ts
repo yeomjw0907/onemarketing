@@ -127,6 +127,11 @@ test("guided questions use live catalog values and reject deleted items, foreign
     '{"kind":"quantities","title":"수량"}',
   );
   assert.ok(quantities);
+  await assert.rejects(
+    prepareAssistantQuestion(
+      '{"kind":"choice","title":"중복 선택","options":["동일","동일"]}',
+    ),
+  );
   await assert.rejects(assistantQuestionAnswer(quantities, ["100", "1"]));
   await assert.rejects(assistantQuestionAnswer(quantities, ["0", "0"]));
   assert.match(
@@ -180,11 +185,17 @@ test("guided answers are owner-bound, one-time, retry-safe and never save busine
       questionJson: '{"kind":"customer","title":"고객을 골라주세요"}',
     },
   });
-  const chosen = await answerAssistantQuestion(owner, {
+  const choiceRequest = {
     id: k.turn.id,
     requestId: randomUUID(),
     values: [customer.id],
-  });
+  };
+  const chosen = await answerAssistantQuestion(owner, choiceRequest);
+  await update(customer.id, { name: "이름 변경 후 재시도" });
+  assert.deepEqual(await answerAssistantQuestion(owner, choiceRequest), chosen);
+  await assert.rejects(
+    answerAssistantQuestion(owner, { ...choiceRequest, values: ["forged"] }),
+  );
   const visible = (await assistantStatus(owner, s.thread.id)).turns.at(-1)!;
   assert.match(visible.input, /선택 표시 검수 고객/);
   assert.equal(visible.input.includes(customer.id), false);
@@ -194,6 +205,35 @@ test("guided answers are owner-bound, one-time, retry-safe and never save busine
   );
   assert.equal(raw.input.includes(customer.id), true);
   await cancelAssistant(owner, chosen.id);
+});
+
+test("dashboard expires abandoned requests even without a connected worker and permits a fresh request", async () => {
+  const s = await setup(),
+    j = await job(s);
+  await execute("update assistant_turns set lease_until=0 where id=$1", [
+    j.turn.id,
+  ]);
+  assert.equal(
+    (await assistantStatus(owner, s.thread.id)).turns.at(-1)?.status,
+    "failed",
+  );
+  const q = await enqueueAssistant(owner, {
+    threadId: s.thread.id,
+    requestId: randomUUID(),
+    message: "오래된 대기 요청",
+  });
+  await execute("update assistant_turns set created_at=$2 where id=$1", [
+    q.id,
+    Date.now() - 301000,
+  ]);
+  assert.equal(
+    (await assistantStatus(owner, s.thread.id)).turns.find((t) => t.id === q.id)
+      ?.status,
+    "failed",
+  );
+  const next = await job(s, "새 요청");
+  assert.ok(next.job);
+  await cancelAssistant(owner, next.turn.id);
 });
 
 test("natural-language followups supersede question buttons and invalid questions fall back to text", async () => {

@@ -71,6 +71,7 @@ export async function prepareAssistantQuestion(
   if (s.kind === "choice") {
     if (!s.options) throw new Error("선택지가 없어요.");
     options = [...new Set(s.options)].map((v) => ({ value: v, label: v }));
+    if (options.length < 2) throw new Error("서로 다른 선택지가 필요해요.");
   }
   return {
     kind: s.kind,
@@ -83,6 +84,7 @@ export async function prepareAssistantQuestion(
 export async function assistantQuestionAnswer(
   q: AssistantQuestion,
   values: string[],
+  revalidate = true,
 ) {
   if (q.kind === "quantities") {
     if (values.length !== 2 || values.some((v) => !/^\d{1,3}$/.test(v)))
@@ -112,17 +114,19 @@ export async function assistantQuestionAnswer(
     (q.kind !== "channels" && values.length !== 1)
   )
     throw new Error("선택 항목을 확인해주세요.");
-  const fresh = await prepareAssistantQuestion(
-    JSON.stringify({
-      kind: q.kind,
-      title: q.title,
-      ...(q.customerId ? { customerId: q.customerId } : {}),
-      ...(q.channel ? { channel: q.channel } : {}),
-      ...(q.kind === "choice"
-        ? { options: q.options.map((o) => o.value) }
-        : {}),
-    }),
-  );
+  const fresh = revalidate
+    ? await prepareAssistantQuestion(
+        JSON.stringify({
+          kind: q.kind,
+          title: q.title,
+          ...(q.customerId ? { customerId: q.customerId } : {}),
+          ...(q.channel ? { channel: q.channel } : {}),
+          ...(q.kind === "choice"
+            ? { options: q.options.map((o) => o.value) }
+            : {}),
+        }),
+      )
+    : q;
   const labels = values.map((value) => {
     const old = q.options.find((o) => o.value === value),
       now = fresh?.options.find((o) => o.value === value);

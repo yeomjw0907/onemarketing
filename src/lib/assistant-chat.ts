@@ -26,6 +26,20 @@ const identity = (owner: string): McpIdentity => ({
   grantId: "dashboard-assistant",
   scopes: ["catalog:read", "catalog:write", "campaigns:draft"],
 });
+async function expireAssistantRequests(owner: string) {
+  await execute(
+    "update assistant_turns set status='failed',reply=$3 where owner=$1 and status='running' and lease_until<$2",
+    [owner, Date.now(), "PC 연결이 끊겼어요. 다시 연결한 뒤 요청해주세요."],
+  );
+  await execute(
+    "update assistant_turns set status='failed',reply=$3 where owner=$1 and status='queued' and created_at<$2",
+    [
+      owner,
+      Date.now() - 300000,
+      "PC에서 요청을 받지 못했어요. 연결을 확인한 뒤 다시 요청해주세요.",
+    ],
+  );
+}
 async function thread(owner: string, id: string) {
   uuid.parse(id);
   const [r] = await query<Row>(
@@ -37,6 +51,7 @@ async function thread(owner: string, id: string) {
 }
 export async function assistantStatus(owner: string, threadId?: string) {
   admin(owner);
+  await expireAssistantRequests(owner);
   const devices = await query<Row>(
     "select id,name,last_seen,status from assistant_devices where owner=$1 and revoked=false order by last_seen desc",
     [owner],
@@ -160,10 +175,7 @@ export async function enqueueAssistant(owner: string, input: unknown) {
         throw new Error("같은 요청 번호의 내용이 달라요.");
       return { id: old.id };
     }
-    await execute(
-      "update assistant_turns set status='failed',reply=$3 where owner=$1 and status='running' and lease_until<$2",
-      [owner, Date.now(), "PC 연결이 끊겼어요. 다시 연결한 뒤 요청해주세요."],
-    );
+    await expireAssistantRequests(owner);
     const [active] = await query(
       "select id from assistant_turns where owner=$1 and status in ('queued','running')",
       [owner],
@@ -220,16 +232,21 @@ export async function answerAssistantQuestion(owner: string, input: unknown) {
     );
     if (!r || r.status !== "completed" || !r.question)
       throw new Error("질문을 찾을 수 없어요.");
-    const message = await assistantQuestionAnswer(r.question, b.values);
     const [old] = await query<Row>(
       "select id,input,thread_id from assistant_turns where owner=$1 and request_id=$2",
       [owner, b.requestId],
     );
     if (old) {
+      const message = await assistantQuestionAnswer(
+        r.question,
+        b.values,
+        false,
+      );
       if (old.input !== message || old.thread_id !== r.thread_id)
         throw new Error("같은 요청 번호의 내용이 달라요.");
       return { id: old.id };
     }
+    const message = await assistantQuestionAnswer(r.question, b.values);
     const [latest] = await query<Row>(
       "select id from assistant_turns where thread_id=$1 and owner=$2 order by created_at desc,id desc limit 1",
       [r.thread_id, owner],
@@ -332,18 +349,7 @@ export async function heartbeatAssistant(
 export async function claimAssistant(device: { id: string; owner: string }) {
   return transaction(async () => {
     await lock("assistant-owner:" + device.owner);
-    await execute(
-      "update assistant_turns set status='failed',reply=$3 where owner=$1 and status='running' and lease_until<$2",
-      [device.owner, Date.now(), "PC 연결이 끊겼어요. 다시 요청해주세요."],
-    );
-    await execute(
-      "update assistant_turns set status='failed',reply=$3 where owner=$1 and status='queued' and created_at<$2",
-      [
-        device.owner,
-        Date.now() - 300000,
-        "PC에서 요청을 받지 못했어요. 연결을 확인한 뒤 다시 요청해주세요.",
-      ],
-    );
+    await expireAssistantRequests(device.owner);
     const [running] = await query(
       "select id from assistant_turns where owner=$1 and status='running'",
       [device.owner],

@@ -68,6 +68,9 @@ export default function DashboardAssistant({
   const needsLogin = data.devices.some(
     (d) => d.online && d.status === "login_required",
   );
+  const connectionError = data.devices.some(
+    (d) => d.online && d.status === "error",
+  );
   async function refresh(thread = selected) {
     const r = await fetch(
       "/api/assistant" +
@@ -182,7 +185,7 @@ export default function DashboardAssistant({
         <div className={styles.headerActions}>
           <Button onClick={() => setConnecting(!connecting)}>
             <Monitor size={16} />
-            PC 연결
+            {device ? "PC 연결 관리" : "PC 연결"}
           </Button>
           <Button
             disabled={busy || !!active}
@@ -202,7 +205,9 @@ export default function DashboardAssistant({
             ? "PC 연결됨"
             : needsLogin
               ? "ChatGPT 로그인 확인 필요"
-              : "PC 연결 필요"}
+              : connectionError
+                ? "PC 연결 확인 필요"
+                : "PC 연결 필요"}
         </strong>
         <span>
           {device
@@ -212,7 +217,11 @@ export default function DashboardAssistant({
       </div>
       {connecting && (
         <section className={styles.setup} aria-label="PC 연결 설정">
-          <h2>이 PC를 연결해주세요</h2>
+          <h2>
+            {device
+              ? "연결된 PC를 관리해요"
+              : "답변을 준비할 PC를 연결해주세요"}
+          </h2>
           <p>
             PC의 Codex 구독 로그인으로 답변을 준비해요. 모바일에서도 같은
             대시보드로 이용할 수 있어요.
@@ -265,7 +274,16 @@ export default function DashboardAssistant({
           {data.devices.map((d) => (
             <div key={d.id} className={styles.device}>
               <span>
-                {d.name} · {d.online ? "연결됨" : "오프라인"}
+                {d.name} ·{" "}
+                {!d.online
+                  ? "오프라인"
+                  : d.status === "ready"
+                    ? "연결됨"
+                    : d.status === "login_required"
+                      ? "ChatGPT 로그인 필요"
+                      : d.status === "error"
+                        ? "연결 확인 필요"
+                        : "연결 준비 중"}
               </span>
               <Button
                 variant="text"
