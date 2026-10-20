@@ -226,6 +226,8 @@ execFileSync(
 );
 const png = readFileSync(imageFile);
 test("Claude 원고 요청에 실제 참고 사진을 첨부하고 프롬프트 원문은 로그로 기록하지 않음", async () => {
+  // The provider is mocked below; enqueue must not rely on a local live key.
+  process.env.ANTHROPIC_API_KEY = "test-not-real";
   const { p, t } = await setup();
   await production(p.id, t.id);
   await saveAsset(
