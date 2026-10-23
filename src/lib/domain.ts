@@ -658,6 +658,17 @@ export function command(
       result = row;
     }
     if (
+      parent?.commerceCampaignId &&
+      [
+        "assign",
+        "work-slot-assign",
+        "work-slot-pay",
+        "posting-set-pay",
+        "payout",
+      ].includes(action)
+    )
+      throw new Error("연결된 공개 캠페인에서 배정·지급을 처리하세요.");
+    if (
       parent?.settled &&
       !["reopen-settlement", "import-source"].includes(action)
     )
@@ -990,6 +1001,8 @@ export function command(
         changed = brief !== row.brief;
       const assignment = await participantAssignment(row, input);
       const newPayout = optionalAmount.parse(input.payout);
+      if (p.commerceCampaignId && assignment.participantId)
+        throw new Error("연결된 공개 캠페인에서 참여자를 선정하세요.");
       if (
         row.workSlotId &&
         (newPayout !== row.payout ||

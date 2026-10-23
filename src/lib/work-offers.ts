@@ -33,6 +33,8 @@ export async function proposeWork(input: unknown, actor: string) {
     await lock("project-operations:" + slot.projectId);
     slot = await requireRecord(slot.id, "work_slots");
     const project = await requireRecord(String(slot.projectId), "projects");
+    if (project.commerceCampaignId)
+      throw new Error("연결된 공개 캠페인에서 참여자를 선정하세요.");
     if (
       project.hold ||
       project.settled ||

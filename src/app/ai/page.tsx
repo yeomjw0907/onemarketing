@@ -16,7 +16,7 @@ export default function Page() {
           모집까지.
         </h1>
         <p>“블로그 게시자 5명 모집해줘. 제공 원고를 게시하는 조건으로.”</p>
-        <Link className={styles.cta} href="/advertisers?tab=connections">
+        <Link className={styles.cta} href="/advertisers/connections">
           내 계정에서 AI 연결하기 →
         </Link>
       </section>

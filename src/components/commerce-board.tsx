@@ -225,7 +225,9 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                     <span className={s.badge}>
                       {o.data.status === "paid"
                         ? "입금 확인 완료"
-                        : "입금 대기"}
+                        : o.data.status === "cancelled"
+                          ? "주문 취소"
+                          : "입금 대기"}
                     </span>
                     <h3>주문 {o.id.slice(-8)}</h3>
                     <p>
@@ -239,6 +241,22 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                       이체 시 주문번호 끝 8자리를 알려주세요. 입금 확인 후
                       모집을 시작합니다.
                     </p>
+                    {o.data.status === "awaiting_payment" && (
+                      <p>
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            act({
+                              action: "cancel-order",
+                              id: o.id,
+                              version: o.version,
+                            })
+                          }
+                        >
+                          입금 전 주문 취소
+                        </button>
+                      </p>
+                    )}
                     {admin && o.data.status === "awaiting_payment" && (
                       <form
                         onSubmit={(e) => {
@@ -367,6 +385,121 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                   모집 {current.data.input.deadline} · 제출{" "}
                   {current.data.input.submissionDeadline}
                 </p>
+                {admin && (
+                  <details className={s.panel}>
+                    <summary>기존 AI 제작 프로젝트 연결</summary>
+                    <p>
+                      제작 관리에서 고객·제품·프로젝트를 준비한 뒤 연결하세요.
+                      연결된 프로젝트의 현재 제작 파일을 참여자별로 전달할 수
+                      있습니다. 기존 프로젝트에서는 별도 게시자 배정·지급을
+                      진행하지 마세요.
+                    </p>
+                    <form
+                      className={s.form}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void operation(current, "link-production", {
+                          projectId: new FormData(e.currentTarget).get(
+                            "projectId",
+                          ),
+                        });
+                      }}
+                    >
+                      <label>
+                        제작 프로젝트
+                        <select
+                          name="projectId"
+                          required
+                          defaultValue={current.data.projectId || ""}
+                        >
+                          <option value="">프로젝트 선택</option>
+                          {data.productionProjects?.map((p: Row) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button disabled={busy}>프로젝트 연결</button>
+                    </form>
+                    <Link href="/admin">제작 관리 열기 →</Link>
+                  </details>
+                )}
+                <details className={s.panel}>
+                  <summary>담당자 문의·일정 조율</summary>
+                  {(current.data.messages || []).map((m: Row, i: number) => (
+                    <p key={i}>
+                      <strong>
+                        {m.role === "admin" ? "담당자" : "광고주"}
+                      </strong>{" "}
+                      · {formatDate(m.at)}
+                      <br />
+                      {m.text}
+                    </p>
+                  ))}
+                  <form
+                    className={s.form}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void operation(current, "message", {
+                        note: new FormData(e.currentTarget).get("note"),
+                      });
+                    }}
+                  >
+                    <label className={s.wide}>
+                      문의·요청
+                      <textarea
+                        name="note"
+                        required
+                        minLength={3}
+                        maxLength={2000}
+                      />
+                    </label>
+                    <button disabled={busy}>문의 기록 남기기</button>
+                  </form>
+                  {(admin || !current.data.input.managed) && (
+                    <form
+                      className={s.form}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        void operation(current, "schedule", {
+                          deadline: f.get("deadline"),
+                          submissionDeadline: f.get("submissionDeadline"),
+                          note: f.get("note"),
+                        });
+                      }}
+                    >
+                      <p className={s.wide}>
+                        기존 마감보다 앞당길 수 없습니다. 광고주 직접 변경은
+                        1회이며, 추가 조율은 담당자에게 요청하세요.
+                      </p>
+                      <label>
+                        모집 마감
+                        <input
+                          type="date"
+                          name="deadline"
+                          defaultValue={current.data.input.deadline}
+                          required
+                        />
+                      </label>
+                      <label>
+                        제출 마감
+                        <input
+                          type="date"
+                          name="submissionDeadline"
+                          defaultValue={current.data.input.submissionDeadline}
+                          required
+                        />
+                      </label>
+                      <label>
+                        변경 근거
+                        <input name="note" required minLength={3} />
+                      </label>
+                      <button disabled={busy}>일정 연장</button>
+                    </form>
+                  )}
+                </details>
                 <details className={s.panel}>
                   <summary>확정 가이드·구매 구성</summary>
                   <p style={{ whiteSpace: "pre-wrap" }}>
@@ -502,6 +635,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                                 void operation(current, "materials", {
                                   applicationId: a.id,
                                   materials: {
+                                    assetIds: f.getAll("assetIds"),
                                     copy: String(f.get("copy") || ""),
                                     urls: String(f.get("urls") || "")
                                       .split(/\r?\n/)
@@ -511,6 +645,40 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                                 });
                               }}
                             >
+                              {admin && current.data.projectId && (
+                                <fieldset className={s.wide}>
+                                  <legend>
+                                    연결한 프로젝트의 현재 제작 파일
+                                  </legend>
+                                  {data.productionAssets
+                                    ?.filter(
+                                      (v: Row) =>
+                                        v.projectId === current.data.projectId,
+                                    )
+                                    .map((v: Row) => (
+                                      <label key={v.id}>
+                                        <span>
+                                          <input
+                                            type="checkbox"
+                                            name="assetIds"
+                                            value={v.id}
+                                            defaultChecked={a.data.materials?.assetIds?.includes(
+                                              v.id,
+                                            )}
+                                          />
+                                          {v.category} · {v.name}{" "}
+                                          <a
+                                            href={"/api/assets/" + v.id}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                          >
+                                            검토 ↗
+                                          </a>
+                                        </span>
+                                      </label>
+                                    ))}
+                                </fieldset>
+                              )}
                               <label className={s.wide}>
                                 제공 원고
                                 <textarea

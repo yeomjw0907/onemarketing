@@ -22,6 +22,8 @@ export async function assignWorkSlot(
   )
     throw new Error("유효한 판매 슬롯을 선택하세요.");
   const project = await requireRecord(String(slot.projectId), "projects");
+  if (project.commerceCampaignId)
+    throw new Error("연결된 공개 캠페인에서 참여자를 선정·지급하세요.");
   if (
     project.hold ||
     project.settled ||

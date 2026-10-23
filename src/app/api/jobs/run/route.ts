@@ -1,3 +1,4 @@
+import { commerceDeadlineTick } from "@/lib/commerce";
 import { retentionMonitorTick } from "@/lib/retention-monitor";
 import { retentionAdminAlertTick } from "@/lib/retention-admin-alert";
 import { notificationTick } from "@/lib/sens";
@@ -40,6 +41,7 @@ async function handle(request: Request, background: boolean) {
   } catch (e) {
     console.error("retention alert failed", e instanceof Error ? e.message : e);
   }
+  await commerceDeadlineTick();
   await notificationTick();
   const runnable = await hasRunnableJobs();
   if (!runnable) return Response.json({ runnable: false, results: [] });

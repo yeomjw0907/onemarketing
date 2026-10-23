@@ -1,6 +1,16 @@
 import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
-import { query, execute, transaction, lock, audit, get, create } from "./db";
+import {
+  query,
+  execute,
+  transaction,
+  lock,
+  audit,
+  get,
+  create,
+  list,
+  update,
+} from "./db";
 import {
   campaignInput,
   campaignQuote,
@@ -13,6 +23,7 @@ import {
   publicationIdentity,
   publicationMatchesAccount,
 } from "./account-identity";
+import { queueNotification } from "./sens";
 import { syncReferral } from "./referrals";
 type Data = Record<string, any>;
 export type CommerceActor = {
@@ -276,6 +287,27 @@ export async function commerceView(actor: CommerceActor) {
           actor.role === "admin" ? [] : [actor.id],
         );
   return {
+    productionProjects:
+      actor.role === "admin"
+        ? (await list("projects"))
+            .filter((p) => !p.deletedAt && p.status !== "cancelled")
+            .map((p) => ({ id: p.id, name: p.name, customerId: p.customerId }))
+        : undefined,
+    productionAssets:
+      actor.role === "admin"
+        ? (await list("assets"))
+            .filter(
+              (a) =>
+                a.current === true &&
+                ["copy", "image", "video"].includes(String(a.category)),
+            )
+            .map((a) => ({
+              id: a.id,
+              projectId: a.projectId,
+              name: a.name,
+              category: a.category,
+            }))
+        : undefined,
     campaigns: out,
     orders,
     payment:
@@ -444,9 +476,16 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         "payout",
         "end-work",
         "materials",
+        "link-production",
+        "schedule",
+        "message",
       ]),
+      projectId: uid.optional(),
+      deadline: z.string().optional(),
+      submissionDeadline: z.string().optional(),
       materials: z
         .object({
+          assetIds: z.array(uid).max(30).default([]),
           copy: z.string().max(30000),
           urls: z
             .array(
@@ -501,16 +540,127 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
       ["select", "reject", "review"].includes(b.action)
     )
       throw new Error("대행 캠페인은 담당자에게 요청해주세요.");
-    if (b.action === "materials") {
+    if (b.action === "link-production") {
+      if (!manager || !b.projectId)
+        throw new Error("관리자만 제작 프로젝트를 연결할 수 있습니다.");
+      await lock("commerce-production:" + b.projectId);
+      if (d.projectId && d.projectId !== b.projectId)
+        throw new Error(
+          "전달 이력을 보호하기 위해 연결한 프로젝트를 변경할 수 없습니다.",
+        );
+      const p = await get(b.projectId);
+      if (p?.kind !== "projects" || p.deletedAt || p.status === "cancelled")
+        throw new Error("진행 가능한 프로젝트를 선택하세요.");
+      await lock("project-operations:" + p.id);
+      if (
+        (await list("tasks")).some(
+          (t) => t.projectId === p.id && t.participantId,
+        ) ||
+        (await list("work_offers")).some(
+          (o) =>
+            o.projectId === p.id &&
+            ["proposed", "accepted"].includes(String(o.status)),
+        )
+      )
+        throw new Error("배정·제안 전 제작 프로젝트만 연결하세요.");
+      await update(p.id, { commerceCampaignId: c.id });
+      const [a] = await query<{ customer_id: string | null }>(
+        "select customer_id from advertiser_accounts where id=$1",
+        [c.advertiser_id],
+      );
+      if (a.customer_id && a.customer_id !== p.customerId)
+        throw new Error("광고주의 고객과 일치하는 프로젝트만 연결하세요.");
+      const linked = await query<Stored>(
+        "select * from commerce_campaigns where data->>'projectId'=$1 and id<>$2",
+        [p.id, c.id],
+      );
+      if (linked.length)
+        throw new Error("다른 캠페인에 연결된 프로젝트입니다.");
+      if (!a.customer_id)
+        await execute(
+          "update advertiser_accounts set customer_id=$1 where id=$2",
+          [p.customerId, c.advertiser_id],
+        );
+      d.projectId = p.id;
+    } else if (b.action === "message") {
+      d.messages = [
+        ...(d.messages || []),
+        { role: actor.role, text: note.parse(b.note), at: now() },
+      ].slice(-100);
+    } else if (b.action === "schedule") {
+      if (!manager && d.input.managed)
+        throw new Error("대행 일정은 담당자에게 조율 요청을 남겨주세요.");
+      if (["cancelled", "completed", "paused"].includes(d.status))
+        throw new Error("진행 가능한 캠페인만 조율할 수 있습니다.");
+      if (!manager && Number(d.scheduleChanges || 0) >= 1)
+        throw new Error(
+          "일정 변경 1회를 사용했습니다. 추가 조율은 담당자에게 요청하세요.",
+        );
+      const next = campaignInput.parse({
+        ...d.input,
+        deadline: b.deadline,
+        submissionDeadline: b.submissionDeadline,
+      });
+      if (
+        next.deadline < d.input.deadline ||
+        next.submissionDeadline < d.input.submissionDeadline
+      )
+        throw new Error("약정한 일정을 앞당길 수 없습니다.");
+      if (
+        next.deadline === d.input.deadline &&
+        next.submissionDeadline === d.input.submissionDeadline
+      )
+        throw new Error("변경할 일정을 입력하세요.");
+      if (Date.parse(next.submissionDeadline + "T23:59:59+09:00") <= Date.now())
+        throw new Error("제출 마감이 지났습니다.");
+      note.parse(b.note);
+      d.scheduleHistory = [
+        ...(d.scheduleHistory || []),
+        { at: now(), previous: d.input, next, note: b.note },
+      ];
+      d.input = next;
+      d.scheduleChanges = Number(d.scheduleChanges || 0) + 1;
+    } else if (b.action === "materials") {
+      if (["paused", "cancelled", "completed"].includes(d.status))
+        throw new Error("중지·종료 캠페인에는 자료를 전달할 수 없습니다.");
+      if (
+        b.materials &&
+        !b.materials.copy.trim() &&
+        !b.materials.urls.length &&
+        !b.materials.assetIds.length
+      )
+        throw new Error("전달할 자료를 입력하세요.");
       if (!b.materials || (!manager && d.input.kind === "package"))
         throw new Error("제작 담당자만 자료를 전달할 수 있습니다.");
       const a = apps.find((a) => a.id === b.applicationId);
       if (!a || !["selected", "accepted", "revision"].includes(a.data.status))
         throw new Error("참여 제안 또는 진행 중인 작업을 선택하세요.");
+      for (const id of b.materials.assetIds) {
+        if (!manager || !d.projectId)
+          throw new Error(
+            "관리자가 제작 프로젝트를 연결한 뒤 파일을 전달하세요.",
+          );
+        const asset = await get(id);
+        if (
+          asset?.kind !== "assets" ||
+          asset.current !== true ||
+          asset.projectId !== d.projectId ||
+          !["copy", "image", "video"].includes(String(asset.category))
+        )
+          throw new Error(
+            "해당 제작 프로젝트의 현재 결과물만 전달할 수 있습니다.",
+          );
+      }
       await persist("commerce_applications", a, {
         ...a.data,
         materials: { ...b.materials, deliveredAt: now() },
       });
+      await queueNotification(
+        String(a.participant_id),
+        "materials",
+        a.id + ":" + (a.version + 1),
+        { name: String(a.data.name), deadline: d.input.submissionDeadline },
+      );
     } else if (b.action === "payout" || b.action === "end-work") {
       if (!manager || !b.reference)
         throw new Error("관리자가 실제 지급 또는 종료 근거를 입력하세요.");
@@ -551,6 +701,9 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         ad.paidAt = now();
         ad.paymentReference = b.reference;
         ad.payoutRecordId = source.id;
+        await queueNotification(String(a.participant_id), "payment", a.id, {
+          name: String(a.data.name),
+        });
       }
       await persist("commerce_applications", a, ad);
     } else if (["select", "reject", "review"].includes(b.action)) {
@@ -602,8 +755,25 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
           ad.status = "verified";
           ad.verifiedAt = now();
         } else if (b.decision === "revision") {
+          if (
+            !manager &&
+            Number(ad.revisionCount || 0) >= d.terms.revisionRounds
+          )
+            throw new Error(
+              "기본 수정 범위를 초과했습니다. 담당자와 추가 범위를 합의해주세요.",
+            );
           ad.status = "revision";
           ad.revisionCount = Number(ad.revisionCount || 0) + 1;
+          await queueNotification(
+            String(a.participant_id),
+            "revision",
+            a.id + ":" + (a.version + 1),
+            {
+              name: String(ad.name),
+              deadline: d.input.submissionDeadline,
+              note: ad.note,
+            },
+          );
         } else throw new Error("승인 또는 수정 요청을 선택하세요.");
       }
       await persist("commerce_applications", a, ad);
@@ -837,4 +1007,111 @@ export async function participantCommerceAction(
     await audit("participant:" + participantId, "commerce-" + b.action, a.id);
     return persist("commerce_applications", a, d);
   });
+}
+
+export async function cancelUnpaidOrder(
+  actor: CommerceActor,
+  id: string,
+  version: number,
+) {
+  return transaction(async () => {
+    await lock("commerce-order:" + uid.parse(id));
+    const [o] = await query<Stored>(
+      "select * from commerce_orders where id=$1",
+      [id],
+    );
+    if (
+      !o ||
+      (actor.role !== "admin" &&
+        (actor.role !== "advertiser" || o.advertiser_id !== actor.id))
+    )
+      throw new Error("주문 접근 권한이 없습니다.");
+    if (o.version !== version || o.data.status !== "awaiting_payment")
+      throw new Error("입금 전 대기 주문만 취소할 수 있습니다.");
+    const campaigns = await query<Stored>(
+      "select * from commerce_campaigns where order_id=$1",
+      [id],
+    );
+    for (const c of campaigns)
+      await persist("commerce_campaigns", c, {
+        ...c.data,
+        status: "cancelled",
+      });
+    await persist("commerce_orders", o, {
+      ...o.data,
+      status: "cancelled",
+      cancelledAt: now(),
+    });
+    await audit(actor.id, "commerce-unpaid-cancel", id, {});
+    return { ok: true };
+  });
+}
+
+// The existing authenticated cron advances recruitment and releases expired proposals.
+// It never chooses a participant or accepts terms on their behalf.
+export async function commerceDeadlineTick() {
+  const rows = await query<Stored>(
+    "select * from commerce_campaigns where data->>'status' in ('recruiting','selecting','producing','review')",
+  );
+  let changed = 0;
+  for (const initial of rows)
+    await transaction(async () => {
+      await lock("commerce-campaign:" + initial.id);
+      const [c] = await query<Stored>(
+        "select * from commerce_campaigns where id=$1",
+        [initial.id],
+      );
+      if (
+        !c ||
+        !["recruiting", "selecting", "producing", "review"].includes(
+          c.data.status,
+        )
+      )
+        return;
+      const apps = await query<Stored>(
+        "select * from commerce_applications where campaign_id=$1",
+        [c.id],
+      );
+      let dirty = false;
+      for (const a of apps) {
+        if (
+          a.data.status === "selected" &&
+          Date.parse(a.data.expiresAt) <= Date.now()
+        ) {
+          await persist("commerce_applications", a, {
+            ...a.data,
+            status: "expired",
+          });
+          dirty = true;
+        }
+        const remaining =
+          Date.parse(c.data.input.submissionDeadline + "T23:59:59+09:00") -
+          Date.now();
+        if (
+          ["accepted", "revision"].includes(a.data.status) &&
+          remaining > 0 &&
+          remaining <= 48 * 3600000
+        ) {
+          await queueNotification(
+            String(a.participant_id),
+            "reminder",
+            "commerce:" + a.id + ":" + c.data.input.submissionDeadline,
+            { count: "1" },
+          );
+        }
+      }
+      const d = { ...c.data };
+      if (
+        d.status === "recruiting" &&
+        Date.parse(d.input.deadline + "T23:59:59+09:00") <= Date.now()
+      ) {
+        d.status = "selecting";
+        dirty = true;
+      }
+      if (dirty) {
+        await persist("commerce_campaigns", c, d);
+        changed++;
+      }
+    });
+  return { changed };
 }

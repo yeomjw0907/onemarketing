@@ -2,8 +2,10 @@ import { cookies } from "next/headers";
 import { actor, sameOrigin } from "@/lib/auth";
 import { advertiserSession } from "@/lib/market";
 import { portalParticipant } from "@/lib/portal";
+import { boundedBody } from "@/lib/mcp-http";
 import { ZodError } from "zod";
 import {
+  cancelUnpaidOrder,
   commerceView,
   checkout,
   paymentInstructions,
@@ -69,12 +71,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     sameOrigin(req);
-    const raw = await req.text();
+    const raw = await boundedBody(req, 100000);
     if (raw.length > 100000) throw new Error("요청 내용이 너무 큽니다.");
     const b = JSON.parse(raw);
     const who = await identity(b.role || null);
     let result;
-    if (b.action === "checkout") {
+    if (b.action === "cancel-order")
+      result = await cancelUnpaidOrder(who, b.id, b.version);
+    else if (b.action === "checkout") {
       if (who.role !== "advertiser")
         throw new Error("광고주 계정으로 주문하세요.");
       result = await checkout(who.id, b.data);

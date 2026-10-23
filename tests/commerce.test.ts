@@ -16,7 +16,10 @@ import {
   applyCommerce,
   participantCommerceAction,
   publicCommerceCampaigns,
+  commerceDeadlineTick,
+  cancelUnpaidOrder,
 } from "../src/lib/commerce";
+import { create, query, get } from "../src/lib/db";
 import { save } from "../src/lib/domain";
 const admin = { role: "admin" as const, id: "commerce@test.local" };
 const input = {
@@ -58,7 +61,7 @@ test("VAT-inclusive self fee, reward floor, package and settlement boundaries", 
   assert.throws(() => selfSettlement(input, 6));
   assert.throws(() => campaignQuote({ ...input, deadline: "2027-02-30" }));
 });
-async function setup() {
+async function setup(overrides: Record<string, unknown> = {}) {
   const a = await advertiserAuth(
     {
       action: "register",
@@ -80,8 +83,8 @@ async function setup() {
   const id = crypto.randomUUID(),
     data = {
       id,
-      campaigns: [input],
-      expectedTotal: 110000,
+      campaigns: [{ ...input, ...overrides }],
+      expectedTotal: campaignQuote({ ...input, ...overrides }).total,
       policyVersion,
       consent: true as const,
     };
@@ -250,3 +253,241 @@ test("selection capacity, participant ownership, submission, review and refund l
   );
 });
 
+async function applicant(c: any, index: number) {
+  const p = await save(
+    "participants",
+    {
+      name: "참여자" + index,
+      phone: "01012341234",
+      payment: { method: "kakaopay" },
+      accounts: [
+        {
+          id: crypto.randomUUID(),
+          channel: "blog",
+          url: "https://blog.naver.com/commerce" + index,
+          approvalStatus: "approved",
+          ownershipVerifiedAt: new Date().toISOString(),
+        },
+      ],
+    },
+    admin.id,
+  );
+  const a = await applyCommerce(p.id, {
+    campaignId: c.id,
+    blogAccountId: (p.accounts as any[])[0].id,
+    consent: true,
+  });
+  return { p, a };
+}
+test("concurrent selection reserves one seat, expired proposal releases it, cancellation blocks payment", async () => {
+  const { actor, order } = await setup({ quantity: 1 });
+  await confirmPayment(admin, order.id, order.version, "실제 입금 검증");
+  let c = (await commerceView(actor)).campaigns[0];
+  const x = await applicant(c, 11),
+    y = await applicant(c, 12);
+  const results = await Promise.allSettled(
+    [x, y].map((v) =>
+      campaignAction(actor, {
+        campaignId: c.id,
+        version: c.version,
+        action: "select",
+        applicationId: v.a.id,
+      }),
+    ),
+  );
+  assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+  const [selected] = await query<any>(
+    "select * from commerce_applications where campaign_id=$1 and data->>'status'='selected'",
+    [c.id],
+  );
+  await query(
+    "update commerce_applications set data=jsonb_set(data,'{expiresAt}',to_jsonb('2000-01-01T00:00:00Z'::text)) where id=$1",
+    [selected.id],
+  );
+  await commerceDeadlineTick();
+  c = (await commerceView(actor)).campaigns[0];
+  assert.equal(
+    (c.applications.find((a) => a.id === selected.id)!.data as any).status,
+    "expired",
+  );
+  const remaining = c.applications.find(
+    (a) => (a.data as any).status === "applied",
+  )!;
+  await campaignAction(actor, {
+    campaignId: c.id,
+    version: c.version,
+    action: "select",
+    applicationId: remaining.id,
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  await assert.rejects(() =>
+    campaignAction(admin, {
+      campaignId: c.id,
+      version: c.version,
+      action: "status",
+      status: "cancelled",
+    }),
+  );
+  const unpaid = await setup();
+  await cancelUnpaidOrder(unpaid.actor, unpaid.order.id, unpaid.order.version);
+  await assert.rejects(() =>
+    confirmPayment(
+      admin,
+      unpaid.order.id,
+      unpaid.order.version,
+      "취소 후 입금",
+    ),
+  );
+});
+test("managed campaign delegates decisions and records scope, messages and schedule changes", async () => {
+  const { actor, order } = await setup({ managed: true });
+  await confirmPayment(admin, order.id, order.version, "실제 입금 검증");
+  let c = (await commerceView(actor)).campaigns[0];
+  const { a } = await applicant(c, 13);
+  await assert.rejects(() =>
+    campaignAction(actor, {
+      campaignId: c.id,
+      version: c.version,
+      action: "select",
+      applicationId: a.id,
+    }),
+  );
+  await campaignAction(actor, {
+    campaignId: c.id,
+    version: c.version,
+    action: "message",
+    note: "일정 연장을 요청합니다.",
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  assert.equal(c.data.messages.length, 1);
+  await assert.rejects(() =>
+    campaignAction(actor, {
+      campaignId: c.id,
+      version: c.version,
+      action: "schedule",
+      deadline: "2027-11-02",
+      submissionDeadline: "2027-11-16",
+      note: "일정 변경 요청",
+    }),
+  );
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "schedule",
+    deadline: "2027-11-02",
+    submissionDeadline: "2027-11-16",
+    note: "고객 동의 일정 연장",
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  assert.equal(c.data.scheduleHistory[0].previous.deadline, "2027-11-01");
+  await campaignAction(actor, {
+    campaignId: c.id,
+    version: c.version,
+    action: "refund-request",
+    note: "모집 전 취소 요청",
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  await assert.rejects(() =>
+    campaignAction(admin, {
+      campaignId: c.id,
+      version: c.version,
+      action: "refund-decide",
+      refundId: c.data.refunds[0].id,
+      decision: "approve",
+      amount: c.data.total,
+      note: "근거 없는 전액 환불",
+    }),
+  );
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "usage",
+    used: { managed: 20000 },
+    note: "가이드 정리와 최초 일정 조율 수행",
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  await assert.rejects(() =>
+    campaignAction(admin, {
+      campaignId: c.id,
+      version: c.version,
+      action: "refund-decide",
+      refundId: c.data.refunds[0].id,
+      decision: "approve",
+      amount: c.data.total,
+      note: "사용 금액 초과 환불",
+    }),
+  );
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "refund-decide",
+    refundId: c.data.refunds[0].id,
+    decision: "approve",
+    amount: c.data.total - 20000,
+    note: "수행 내역 제외 환불",
+  });
+});
+test("production linking checks advertiser ownership, protects legacy assignment and delivers only linked assets", async () => {
+  const { actor, order } = await setup();
+  await confirmPayment(admin, order.id, order.version, "실제 입금 검증");
+  let c = (await commerceView(actor)).campaigns[0];
+  const customer = await save(
+    "customers",
+    { name: "제작 고객", brand: "브랜드" },
+    admin.id,
+  );
+  const project = await create("projects", {
+    name: "제작 전용",
+    customerId: customer.id,
+    status: "materials",
+  });
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "link-production",
+    projectId: project.id,
+  });
+  assert.equal((await get(project.id))?.commerceCampaignId, c.id);
+  c = (await commerceView(actor)).campaigns[0];
+  const { a, p } = await applicant(c, 14);
+  await campaignAction(actor, {
+    campaignId: c.id,
+    version: c.version,
+    action: "select",
+    applicationId: a.id,
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  const foreign = await create("assets", {
+    name: "타 고객 이미지",
+    projectId: crypto.randomUUID(),
+    category: "image",
+    current: true,
+  });
+  await assert.rejects(() =>
+    campaignAction(admin, {
+      campaignId: c.id,
+      version: c.version,
+      action: "materials",
+      applicationId: a.id,
+      materials: { copy: "원고", urls: [], assetIds: [foreign.id] },
+    }),
+  );
+  const file = await create("assets", {
+    name: "승인 이미지",
+    projectId: project.id,
+    category: "image",
+    current: true,
+  });
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "materials",
+    applicationId: a.id,
+    materials: { copy: "전달 원고", urls: [], assetIds: [file.id] },
+  });
+  const own = (await commerceView({ role: "participant", id: p.id }))
+    .campaigns[0];
+  assert.deepEqual((own.applications[0].data as any).materials.assetIds, [
+    file.id,
+  ]);
+});

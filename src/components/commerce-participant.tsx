@@ -231,6 +231,13 @@ export function CommerceParticipant() {
                   <p style={{ whiteSpace: "pre-wrap" }}>
                     {a.data.materials.copy}
                   </p>
+                  {a.data.materials.assetIds?.map((id: string, i: number) => (
+                    <p key={id}>
+                      <a href={"/api/commerce/files/" + id}>
+                        제작 파일 {i + 1} 다운로드
+                      </a>
+                    </p>
+                  ))}
                   {a.data.materials.urls.map((u: string, i: number) => (
                     <p key={u}>
                       <a href={u} target="_blank" rel="noreferrer">

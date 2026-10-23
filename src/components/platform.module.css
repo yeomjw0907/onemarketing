@@ -2,6 +2,8 @@
   --accent: #17634f;
   --ink: #172b28;
   --muted: #586b64;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   color: var(--ink);
   background: #fafbf8;
   min-height: 100vh;

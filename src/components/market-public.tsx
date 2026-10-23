@@ -607,7 +607,7 @@ export function CampaignMarket() {
         </h1>
         <p>
           추천받은 제안도, 직접 찾은 캠페인도 나의 작업에서 이어갈 수 있어요.
-          콘텐츠는 원마케팅이 제작합니다.
+          캠페인마다 제작 방식과 제공 자료를 확인해주세요.
         </p>
       </div>
       <CommerceOpportunities />

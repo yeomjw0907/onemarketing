@@ -112,6 +112,10 @@ export function campaignQuote(raw: unknown) {
     total: lines.reduce((n, l) => n + l.amount, 0),
     packageSupply: d.kind === "package" ? 200000 : null,
     terms: {
+      payment:
+        "계좌이체 입금 확인 후 모집 시작. 주문 접수는 결제 완료가 아닙니다.",
+      refund:
+        "셀프는 완료 인원에 따른 보수·운영비를 사용액으로 정산하고 잔액을 환불합니다. 0명 완료 시 셀프 운영비는 0원입니다. 패키지·대행은 항목별 실제 수행 금액과 근거를 확정한 뒤 미사용액을 환불합니다. 승인과 실제 송금은 별도로 기록합니다.",
       revisionRounds: 1,
       scheduleChangesPerParticipant: 1,
       campaignScheduleChanges: 1,
