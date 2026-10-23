@@ -126,13 +126,12 @@ test("검수에서 보상 제외할 수 있고 삭제 회원의 미지급 보상
       crypto.randomUUID(),
     );
     assert.equal((await bonus(a.id)).status, "cancelled");
-    await assert.rejects(
-      submitApplication({
-        ...application(),
-        data: { ...input.data, accounts: application().data.accounts },
-      }),
-      /전화번호/,
-    );
+    const rejoined = await submitApplication({
+      ...application(),
+      data: { ...input.data, accounts: application().data.accounts },
+    });
+    assert.equal((await app(rejoined.id)).data.signupBonusAmount, 0);
+    assert.equal(await bonus(rejoined.id), undefined);
   }
 });
 test("동시 중복 신청과 본인 추천은 거절된다", async () => {
@@ -415,5 +414,52 @@ test("동시에 완료한 캠페인도 최초 특별 보상은 한 번만 적립
   assert.equal(
     credits.reduce((n, c) => n + Number(c.amount), 0),
     3000,
+  );
+});
+
+test("삭제 이력은 유지하면서 같은 전화번호·계정으로 재가입하고 신규 추천 보상은 다시 만들지 않는다", async () => {
+  const r = await referrer();
+  const input = application(String(r.referralCode));
+  const first = await submitApplication(input);
+  const original = await app(first.id);
+  const member = (await get(original.participant_id!))!;
+  await command(
+    "participant-delete",
+    { id: member.id, version: member.version },
+    actor,
+    crypto.randomUUID(),
+  );
+  const deleted = (await get(member.id))!;
+  const next = {
+    ...input,
+    key: crypto.randomUUID(),
+    data: {
+      ...input.data,
+      accounts: input.data.accounts.map((a) => ({
+        ...a,
+        id: crypto.randomUUID(),
+      })),
+    },
+  };
+  const result = await submitApplication(next);
+  const joined = await app(result.id);
+  assert.equal(joined.status, "approved");
+  assert.notEqual(joined.participant_id, member.id);
+  assert.equal((await get(joined.participant_id!))!.status, "active");
+  assert.equal((await get(member.id))!.deletedAt, deleted.deletedAt);
+  assert.equal(joined.data.signupBonusAmount, 0);
+  assert.equal(await bonus(result.id), undefined);
+  assert.equal((await bonus(first.id)).status, "cancelled");
+  await assert.rejects(
+    command(
+      "participant-restore",
+      { id: member.id, version: deleted.version },
+      actor,
+      crypto.randomUUID(),
+    ),
+  );
+  await assert.rejects(
+    submitApplication({ ...next, key: crypto.randomUUID() }),
+    /계정/,
   );
 });

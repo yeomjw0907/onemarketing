@@ -32,6 +32,9 @@ export async function submitApplication(
       [envelope.key],
     );
     if (existing.length) return { id: existing[0].id };
+    await lock("save:participants");
+    const participants = await list("participants");
+    const participantsById = new Map(participants.map((p) => [p.id, p]));
     if (trustedKakaoId) {
       await lock("kakao-application:" + trustedKakaoId);
       if (
@@ -39,14 +42,15 @@ export async function submitApplication(
           (l) =>
             l.purpose === "kakao-account" &&
             l.kakaoId === trustedKakaoId &&
-            !l.revokedAt,
+            !l.revokedAt &&
+            !participantsById.get(String(l.participantId))?.deletedAt,
         )
       )
         throw new Error(
           "이미 연결된 참여자 계정이에요. 참여자 화면을 이용해주세요.",
         );
       const prior = await query<{ id: string }>(
-        "select id from participant_applications where data->>'trustedKakaoId'=$1 and status in ('new','approved') and data->>'deletedAt' is null and id<>$2",
+        "select a.id from participant_applications a where a.data->>'trustedKakaoId'=$1 and a.status in ('new','approved') and a.data->>'deletedAt' is null and a.id<>$2 and not exists (select 1 from records p where p.id=a.participant_id and p.data->>'deletedAt' is not null)",
         [trustedKakaoId, envelope.key],
       );
       if (prior.length)
@@ -54,12 +58,11 @@ export async function submitApplication(
           "이미 신청을 접수했어요. 담당자 확인 후 카카오로 다시 로그인해주세요.",
         );
     }
-    await lock("save:participants");
     await lock("application-accounts");
     const identities = envelope.data.accounts.map((a) =>
       accountIdentity(a.url),
     );
-    for (const p of await list("participants")) {
+    for (const p of participants.filter((p) => !p.deletedAt)) {
       if (
         (p.accounts as { url: string }[]).some((a) =>
           identities.includes(accountIdentity(a.url)),
@@ -81,7 +84,7 @@ export async function submitApplication(
     )
       throw new Error("검토 중인 신청에 이미 포함된 활동 계정입니다.");
     const registered = await query<ParticipantApplication>(
-      "select * from participant_applications where status='approved'",
+      "select a.* from participant_applications a where a.status='approved' and a.data->>'deletedAt' is null and not exists (select 1 from records p where p.id=a.participant_id and p.data->>'deletedAt' is not null)",
     );
     if (
       registered.some((a) =>
@@ -111,8 +114,8 @@ export async function submitApplication(
     if (registered.some((a) => a.data.phone.replace(/\D/g, "") === phone))
       throw new Error("이미 등록된 전화번호입니다. 기존 계정을 이용해주세요.");
     if (
-      (await list("participants")).some(
-        (p) => String(p.phone).replace(/\D/g, "") === phone,
+      participants.some(
+        (p) => !p.deletedAt && String(p.phone).replace(/\D/g, "") === phone,
       )
     )
       throw new Error("이미 등록된 전화번호입니다. 기존 계정을 이용해주세요.");
@@ -124,6 +127,27 @@ export async function submitApplication(
       throw new Error(
         "오늘 신청이 이미 접수되었습니다. 추가 문의는 담당자에게 연락해주세요.",
       );
+    const history = await query<{ data: ParticipantApplication["data"] }>(
+      "select data from participant_applications where status='approved'",
+    );
+    const previouslyRegistered =
+      participants.some(
+        (p) =>
+          String(p.phone).replace(/\D/g, "") === phone ||
+          (p.accounts as { url: string }[]).some((a) =>
+            identities.includes(accountIdentity(a.url)),
+          ),
+      ) ||
+      history.some(
+        (a) =>
+          a.data.phone.replace(/\D/g, "") === phone ||
+          a.data.accounts.some((account) =>
+            identities.includes(accountIdentity(account.url)),
+          ) ||
+          (!!trustedKakaoId &&
+            (a.data as { trustedKakaoId?: string }).trustedKakaoId ===
+              trustedKakaoId),
+      );
     await execute(
       "insert into participant_applications (id,data) values ($1,$2::jsonb)",
       [
@@ -132,6 +156,7 @@ export async function submitApplication(
           ...envelope.data,
           trustedKakaoId,
           referrerId,
+          previouslyRegistered,
           accounts: envelope.data.accounts.map((a) => ({
             ...a,
             approvalStatus: "pending",
@@ -147,7 +172,7 @@ export async function submitApplication(
         JSON.stringify({
           autoApproved: true,
           reviewStatus: "pending",
-          signupBonusAmount: referrerId ? 2000 : 0,
+          signupBonusAmount: referrerId && !previouslyRegistered ? 2000 : 0,
         }),
         envelope.key,
       ],
@@ -167,7 +192,7 @@ export async function submitApplication(
       },
       "system:auto-approval",
     );
-    if (referrerId)
+    if (referrerId && !previouslyRegistered)
       await create("referral_credits", {
         sourceId: envelope.key,
         participantId: referrerId,

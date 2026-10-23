@@ -499,6 +499,20 @@ async function participantLifecycle(
     await audit(actor, "participant-delete", id, { name: row.name });
   } else {
     if (!row.deletedAt) throw new Error("삭제된 참여자가 아닙니다.");
+    await validateParticipant(row, row.id);
+    if (
+      (await list("participants")).some(
+        (p) =>
+          p.id !== row.id &&
+          !p.deletedAt &&
+          !!String(row.phone || "").replace(/\D/g, "") &&
+          String(p.phone).replace(/\D/g, "") ===
+            String(row.phone).replace(/\D/g, ""),
+      )
+    )
+      throw new Error(
+        "같은 전화번호로 재가입한 회원이 있어 복구할 수 없습니다.",
+      );
     const restoredStatus = ["active", "paused", "closed"].includes(
       String(row.statusBeforeDeletion),
     )

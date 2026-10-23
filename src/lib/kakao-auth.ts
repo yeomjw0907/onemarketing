@@ -107,7 +107,7 @@ export async function completeKakao(
     (l) =>
       l.purpose === "kakao-account" && l.kakaoId === kakaoId && !l.revokedAt,
   );
-  if (binding)
+  if (binding && !(await get(String(binding.participantId)))?.deletedAt)
     return {
       session: await issueKakaoSession(String(binding.participantId)),
       identity: undefined,
@@ -182,9 +182,16 @@ export async function bindKakao(
     const p = await get(participantId);
     if (p?.kind !== "participants" || p.status !== "active" || p.deletedAt)
       throw new Error("활동 중인 참여자를 선택하세요.");
-    const bindings = (await list("portal_links")).filter(
+    const storedBindings = (await list("portal_links")).filter(
       (l) => l.purpose === "kakao-account" && !l.revokedAt,
     );
+    const bindings = [];
+    for (const link of storedBindings) {
+      if ((await get(String(link.participantId)))?.deletedAt) {
+        if (link.kakaoId === kakaoId)
+          await update(link.id, { revokedAt: new Date().toISOString() });
+      } else bindings.push(link);
+    }
     const old = bindings.find((l) => l.kakaoId === kakaoId);
     if (old && old.participantId !== participantId)
       throw new Error("이미 다른 참여자와 연결된 카카오 계정이에요.");
@@ -291,14 +298,16 @@ export async function kakaoOnboarding(identity: string) {
   );
   const application = (
     await query<{ status: string }>(
-      "select status from participant_applications where data->>'trustedKakaoId'=$1 and data->>'deletedAt' is null order by created_at desc limit 1",
+      "select a.status from participant_applications a where a.data->>'trustedKakaoId'=$1 and a.data->>'deletedAt' is null and not exists (select 1 from records p where p.id=a.participant_id and p.data->>'deletedAt' is not null) order by a.created_at desc limit 1",
       [r.kakaoId],
     )
   )[0];
-  const linked = links.some(
+  const binding = links.find(
     (l) =>
       l.purpose === "kakao-account" && l.kakaoId === r.kakaoId && !l.revokedAt,
   );
+  const linked =
+    !!binding && !(await get(String(binding.participantId)))?.deletedAt;
   return {
     nickname: r.nickname,
     hasCandidate: !!r.candidateId,

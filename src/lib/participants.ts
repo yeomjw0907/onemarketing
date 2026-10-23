@@ -96,7 +96,9 @@ export async function validateParticipant(
       accounts.length
   )
     throw new Error("같은 계정을 중복 등록할 수 없습니다.");
-  for (const p of (await list("participants")).filter((p) => p.id !== id))
+  for (const p of (await list("participants")).filter(
+    (p) => p.id !== id && !p.deletedAt,
+  ))
     if (
       (p.accounts as { url: string }[]).some((a) =>
         accounts.some(

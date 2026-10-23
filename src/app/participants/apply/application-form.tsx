@@ -454,15 +454,6 @@ export default function ApplicationForm({
             </a>
           </div>
         )}
-        {popup === "confirm" && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => dialogRef.current?.close()}
-          >
-            돌아가기
-          </button>
-        )}
         <button
           type="button"
           className="primary"
@@ -474,6 +465,16 @@ export default function ApplicationForm({
         >
           {busy ? "접수 중…" : "확인"}
         </button>
+        {popup === "confirm" && (
+          <button
+            type="button"
+            className={styles.dialogBack}
+            disabled={busy}
+            onClick={() => dialogRef.current?.close()}
+          >
+            돌아가기
+          </button>
+        )}
       </dialog>
     </main>
   );

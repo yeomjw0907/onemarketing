@@ -239,3 +239,53 @@ test("new Kakao applicant is automatically approved and can open own portal", as
   );
   assert.equal((await login(702)).session, undefined);
 });
+
+test("deleted Kakao member can onboard again without reviving the old profile or its sessions", async () => {
+  const signed = await login(703);
+  const key = crypto.randomUUID();
+  const data = {
+    name: "재가입",
+    phone: "01070307030",
+    payment: { method: "kakaopay" },
+    accounts: [
+      {
+        id: crypto.randomUUID(),
+        channel: "blog",
+        url: "https://blog.naver.com/kakao-rejoin-703",
+      },
+    ],
+  };
+  await submitApplication({ key, consent: true, data }, "703");
+  const first = (await listApplications()).find((a) => a.id === key)!;
+  const oldSession = (await login(703)).session!;
+  const deletedAt = new Date().toISOString();
+  await update(first.participant_id!, { deletedAt, status: "closed" });
+  const again = await login(703);
+  assert.ok(again.identity);
+  assert.equal(again.session, undefined);
+  assert.notEqual((await kakaoOnboarding(again.identity!)).status, "approved");
+  const secondKey = crypto.randomUUID();
+  await submitApplication(
+    {
+      key: secondKey,
+      consent: true,
+      data: {
+        ...data,
+        accounts: data.accounts.map((a) => ({ ...a, id: crypto.randomUUID() })),
+      },
+    },
+    "703",
+  );
+  const second = (await listApplications()).find((a) => a.id === secondKey)!;
+  assert.notEqual(second.participant_id, first.participant_id);
+  assert.equal(
+    (await portalParticipant((await login(703)).session!)).id,
+    second.participant_id,
+  );
+  await assert.rejects(portalParticipant(oldSession));
+  assert.equal(
+    (await list("participants")).find((p) => p.id === first.participant_id)!
+      .deletedAt,
+    deletedAt,
+  );
+});

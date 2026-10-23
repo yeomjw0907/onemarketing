@@ -215,6 +215,16 @@
   width: 100%;
   margin-top: 24px;
 }
+.dialog > .dialogBack {
+  display: block;
+  width: auto;
+  margin: 10px auto 0;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  color: #6b7684;
+  font-size: 13px;
+}
 .contactLinks {
   display: grid;
   gap: 16px;
