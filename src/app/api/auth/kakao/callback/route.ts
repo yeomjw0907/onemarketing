@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { completeKakao } from "@/lib/kakao-auth";
+import { completeKakao, kakaoOnboarding } from "@/lib/kakao-auth";
 export async function GET(request: Request) {
   const url = new URL(request.url),
     store = await cookies();
@@ -30,6 +30,14 @@ export async function GET(request: Request) {
         ...options,
         maxAge: 1800,
       });
+      const onboarding = await kakaoOnboarding(result.identity);
+      if (
+        onboarding.status !== "application_pending" &&
+        onboarding.status !== "approved"
+      ) {
+        destination.pathname = "/participants/apply";
+        destination.searchParams.set("kakao", "1");
+      }
     }
   } catch {
     if (store.get("om_kakao_silent")?.value === "1")

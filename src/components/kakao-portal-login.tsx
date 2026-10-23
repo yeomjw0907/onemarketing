@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import BrandOrb from "./brand-orb";
-import { Button, Field, Form, Feedback } from "./ui/workflow-ui";
+import { Button, Feedback } from "./ui/workflow-ui";
 type Pending = {
   nickname: string;
   hasCandidate: boolean;
@@ -20,9 +19,7 @@ export default function KakaoPortalLogin({
     [ready, setReady] = useState(false),
     [enabled, setEnabled] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [name, setName] = useState(""),
-    [phone, setPhone] = useState("");
+    [error, setError] = useState("");
   const autoAttempted = useRef(false);
   async function refresh() {
     const r = await fetch("/api/auth/kakao/account");
@@ -31,6 +28,12 @@ export default function KakaoPortalLogin({
     setPending(d.pending);
     setEnabled(d.enabled);
     setReady(true);
+    if (d.pending) {
+      if (d.pending.status === "approved") await action("continue");
+      else if (d.pending.status !== "application_pending")
+        location.replace("/participants/apply?kakao=1");
+      return;
+    }
     const params = new URL(location.href).searchParams;
     if (
       d.enabled &&
@@ -65,7 +68,7 @@ export default function KakaoPortalLogin({
     if (new URL(location.href).searchParams.has("loginError"))
       setError("카카오 로그인을 완료하지 못했어요. 다시 시도해주세요.");
   }, []);
-  async function action(type: "login" | "request" | "continue") {
+  async function action(type: "login" | "continue") {
     setBusy(true);
     setError("");
     try {
@@ -78,8 +81,6 @@ export default function KakaoPortalLogin({
             action: type,
             access: access || undefined,
             reselect: !!pending,
-            name,
-            phone,
           }),
         },
       );
@@ -90,7 +91,6 @@ export default function KakaoPortalLogin({
         sessionStorage.removeItem("om_portal_access");
         location.assign(d.url);
       } else if (type === "continue") await onAuthenticated();
-      else await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "다시 시도해주세요.");
     } finally {
@@ -100,13 +100,7 @@ export default function KakaoPortalLogin({
   return (
     <section className="portal-auth">
       {error && <Feedback tone="error">{error}</Feedback>}
-      <h2>
-        {pending?.applicationStatus
-          ? "참여 신청 확인"
-          : pending
-            ? "기존 참여자 계정 연결"
-            : "카카오로 간편하게 시작하세요"}
-      </h2>
+      <h2>{pending ? "참여 신청 확인" : "카카오로 간편하게 시작하세요"}</h2>
       {!ready ? (
         <p className="muted">
           <BrandOrb
@@ -118,28 +112,15 @@ export default function KakaoPortalLogin({
       ) : pending ? (
         <>
           <p className="muted">
-            {pending.nickname}님,{" "}
-            {pending.applicationStatus
-              ? "신청 상태를 확인하고, 승인 후 내 작업 화면으로 이동할 수 있어요."
-              : "처음 참여하신다면 체험단을 신청해주세요. 이미 등록된 참여자는 계정을 한 번 연결하면 돼요."}
+            {pending.nickname}님, 참여 신청 상태를 확인하고 있어요.
           </p>
           {pending.status === "application_pending" ? (
             <>
               <Feedback tone="info">
-                참여 신청을 접수했어요. 담당자가 신청 내용을 검토 중이에요.
+                참여 신청을 접수했어요. 신청 상태를 확인해주세요.
               </Feedback>
               <Button busy={busy} onClick={() => void action("continue")}>
                 신청 상태 확인
-              </Button>
-            </>
-          ) : pending.status === "pending" ? (
-            <>
-              <Feedback tone="info">
-                연결 요청을 접수했어요. 담당자가 등록된 연락처로 확인한 뒤
-                연결해드려요.
-              </Feedback>
-              <Button busy={busy} onClick={() => void action("continue")}>
-                연결 상태 확인
               </Button>
             </>
           ) : pending.status === "approved" ? (
@@ -151,72 +132,7 @@ export default function KakaoPortalLogin({
               내 작업으로 이동
             </Button>
           ) : (
-            <>
-              {pending.status === "rejected" && (
-                <Feedback tone="error">
-                  연결 요청을 확인하지 못했어요. 정보를 확인해 다시
-                  요청해주세요.
-                </Feedback>
-              )}
-              {!pending.hasCandidate && (
-                <p>
-                  <Link
-                    className="ui-text-link"
-                    href="/participants/apply?kakao=1"
-                  >
-                    {pending.applicationStatus === "rejected"
-                      ? "참여 신청 다시 작성하기"
-                      : "신규 체험단 신청하기"}
-                  </Link>
-                </p>
-              )}
-              {pending.applicationStatus === "rejected" && (
-                <Feedback tone="info">
-                  이번 신청은 승인되지 않았어요. 자세한 내용은 담당자에게
-                  문의해주세요.
-                </Feedback>
-              )}
-              <Form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void action("request");
-                }}
-              >
-                <Field>
-                  등록된 이름
-                  <input
-                    required
-                    maxLength={100}
-                    autoComplete="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </Field>
-                <Field>
-                  등록된 휴대폰 번호
-                  <input
-                    required
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="01012345678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </Field>
-                <Button type="submit" variant="primary" busy={busy}>
-                  기존 참여자 연결 요청
-                </Button>
-              </Form>
-              <p className="muted">
-                처음 참여하시나요?{" "}
-                <Link
-                  className="ui-text-link"
-                  href="/participants/apply?kakao=1"
-                >
-                  체험단 신청하기
-                </Link>
-              </p>
-            </>
+            <p className="muted">참여 신청 화면으로 이동하고 있어요.</p>
           )}
           <Button
             variant="text"
