@@ -1,8 +1,9 @@
-import { CampaignMarket } from "@/components/market-public";
+import CampaignBrowser from "@/components/campaign-browser";
 export const metadata = {
-  title: "모집 중인 캠페인 | 원케이션",
-  description: "내 채널에 맞는 캠페인을 찾고 참여를 신청하세요.",
+  title: "캠페인 찾기 | 원마케팅",
+  description: "업종, 채널, 지역으로 캠페인을 검색하세요.",
+  robots: { index: true, follow: true },
 };
 export default function Page() {
-  return <CampaignMarket />;
+  return <CampaignBrowser />;
 }

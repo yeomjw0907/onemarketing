@@ -491,3 +491,114 @@ test("production linking checks advertiser ownership, protects legacy assignment
     file.id,
   ]);
 });
+
+test("campaign discovery gates guides, keeps unpaid campaigns private, and restricts presentation edits", async () => {
+  const { campaignCatalog, campaignDetails } =
+    await import("../src/lib/campaign-discovery");
+  const { actor, order } = await setup({
+    category: "cafe",
+    fulfillment: "provided",
+  });
+  let c = (await commerceView(actor)).campaigns[0];
+  assert.equal(await campaignDetails(c.id, null), null);
+  await confirmPayment(admin, order.id, order.version, "discovery payment");
+  c = (await commerceView(actor)).campaigns[0];
+  const catalog = await campaignCatalog();
+  const summary = catalog.campaigns.find((x) => x.id === c.id)!;
+  assert.equal(summary.category, "cafe");
+  assert.equal(JSON.stringify(summary).includes(input.guide), false);
+  assert.equal(
+    JSON.stringify(await publicCommerceCampaigns()).includes(input.guide),
+    false,
+  );
+  const guest = await campaignDetails(c.id, null);
+  assert.equal(guest?.locked, true);
+  assert.equal(guest?.details, null);
+  assert.equal(JSON.stringify(guest).includes(input.guide), false);
+  assert.equal(
+    (await campaignDetails(c.id, actor))?.details?.guide,
+    input.guide,
+  );
+  await assert.rejects(() =>
+    campaignAction(
+      { role: "advertiser", id: crypto.randomUUID() },
+      {
+        campaignId: c.id,
+        version: c.version,
+        action: "presentation",
+        presentation: { category: "food" },
+      },
+    ),
+  );
+  await assert.rejects(() =>
+    campaignAction(actor, {
+      campaignId: c.id,
+      version: c.version,
+      action: "presentation",
+      presentation: { imageUrl: "http://unsafe.example/image.jpg" },
+    }),
+  );
+  await campaignAction(actor, {
+    campaignId: c.id,
+    version: c.version,
+    action: "presentation",
+    presentation: {
+      category: "beauty",
+      imageUrl: "https://example.com/image.jpg",
+    },
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  assert.equal((await campaignDetails(c.id, null))?.summary.category, "beauty");
+  const p = await save(
+    "participants",
+    {
+      name: "공개 검증",
+      phone: "01012341234",
+      payment: { method: "kakaopay" },
+      accounts: [
+        {
+          id: crypto.randomUUID(),
+          channel: "blog",
+          url: "https://blog.naver.com/discovery-test",
+          approvalStatus: "approved",
+          ownershipVerifiedAt: new Date().toISOString(),
+        },
+      ],
+    },
+    admin.id,
+  );
+  await applyCommerce(p.id, {
+    campaignId: c.id,
+    blogAccountId: (p.accounts as any[])[0].id,
+    consent: true,
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  await assert.rejects(
+    () =>
+      campaignAction(actor, {
+        campaignId: c.id,
+        version: c.version,
+        action: "presentation",
+        presentation: { fulfillment: "visit", region: "서울" },
+      }),
+    /지원자가/,
+  );
+  const own = await campaignDetails(c.id, { role: "participant", id: p.id });
+  assert.ok(own?.application);
+  assert.equal(
+    (
+      await campaignDetails(c.id, {
+        role: "participant",
+        id: crypto.randomUUID(),
+      })
+    )?.application,
+    null,
+  );
+  await query(
+    "update commerce_campaigns set data=jsonb_set(data,'{input,deadline}','\"2020-01-01\"'::jsonb) where id=$1",
+    [c.id],
+  );
+  const expired = (await campaignDetails(c.id, null))?.summary;
+  assert.equal(expired?.canApply, false);
+  assert.equal(expired?.status, "selecting");
+});

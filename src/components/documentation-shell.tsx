@@ -1,0 +1,63 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+import PublicShell from "./public-shell";
+type Section = { id: string; title: string; content: ReactNode };
+export default function DocumentationShell({
+  title,
+  description,
+  sections,
+  ai = false,
+}: {
+  title: string;
+  description: string;
+  sections: Section[];
+  ai?: boolean;
+}) {
+  return (
+    <PublicShell>
+      <div className="documentation">
+        <div className="docs-layout">
+          <aside className="docs-sidebar">
+            <p>원마케팅 가이드</p>
+            <Link href="/guide" aria-current={!ai ? "page" : undefined}>
+              이용 가이드
+            </Link>
+            <Link href="/ai" aria-current={ai ? "page" : undefined}>
+              AI·MCP
+            </Link>
+            <hr />
+            {sections.map((s) => (
+              <a href={"#" + s.id} key={s.id}>
+                {s.title}
+              </a>
+            ))}
+            <hr />
+            <Link href="/policy">이용·환불 안내</Link>
+            <Link href="/participants/guide">게시 방법 안내</Link>
+          </aside>
+          <article className="docs-body">
+            <div className="docs-breadcrumb">
+              가이드　/　{ai ? "AI·MCP" : "서비스 이용"}
+            </div>
+            <h1>{title}</h1>
+            <p className="docs-intro">{description}</p>
+            {sections.map((s) => (
+              <section id={s.id} key={s.id}>
+                <h2>{s.title}</h2>
+                {s.content}
+              </section>
+            ))}
+          </article>
+          <nav className="docs-toc" aria-label="페이지 목차">
+            <strong>이 페이지에서</strong>
+            {sections.map((s) => (
+              <a href={"#" + s.id} key={s.id}>
+                {s.title}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </PublicShell>
+  );
+}

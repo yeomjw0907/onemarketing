@@ -10,6 +10,7 @@ import {
   productNames,
   type CampaignInput,
 } from "@/lib/commerce-policy";
+import { campaignCategories, fulfillmentNames } from "@/lib/campaign-display";
 import s from "./platform.module.css";
 const key = "om_campaign_cart_v1";
 const future = (days: number) =>
@@ -55,6 +56,10 @@ export default function CommerceShop() {
     const f = new FormData(e.currentTarget);
     try {
       const row = campaignQuote({
+        category: f.get("category"),
+        fulfillment: kind === "package" ? "provided" : f.get("fulfillment"),
+        region: f.get("region") || "",
+        imageUrl: f.get("imageUrl") || "",
         title: f.get("title"),
         brand: f.get("brand"),
         product: f.get("product"),
@@ -117,8 +122,7 @@ export default function CommerceShop() {
   return (
     <PublicShell>
       <section className={s.section}>
-        <span className={s.eyebrow}>CAMPAIGN BUILDER</span>
-        <h1>브랜드에 맞는 구성을 담으세요.</h1>
+        <h1>캠페인 등록</h1>
         <p>캠페인별로 모집과 제작·대행을 선택하고 한 번에 주문하세요.</p>
         <div className={s.columns}>
           <article className={s.offer}>
@@ -146,9 +150,9 @@ export default function CommerceShop() {
           </article>
         </div>
         <p className={s.muted}>
-          셀프 운영비와 대행비는 VAT 포함. 패키지에는 기본 게시 보수가 포함되며
-          추가 셀프 운영비를 중복 청구하지 않습니다. 대행은 5명까지 60,000원,
-          추가 인당 10,000원입니다.
+          셀프 운영비와 대행비는 VAT 포함. 패키지에는 기본 게시 리워드가
+          포함되며 추가 셀프 운영비를 중복 청구하지 않습니다. 대행은 5명까지
+          60,000원, 추가 인당 10,000원입니다.
         </p>
         {error && (
           <p role="alert" className={s.error}>
@@ -174,6 +178,54 @@ export default function CommerceShop() {
                   ),
                 )}
               </select>
+            </label>
+            <label>
+              업종
+              <select name="category" required>
+                {Object.entries(campaignCategories)
+                  .filter(([k]) => k !== "all")
+                  .map(([k, v]) => (
+                    <option value={k} key={k}>
+                      {v}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              진행 방식
+              <select
+                key={kind}
+                name="fulfillment"
+                defaultValue="provided"
+                disabled={kind === "package"}
+              >
+                {Object.entries(fulfillmentNames).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              지역
+              <input
+                name="region"
+                maxLength={100}
+                placeholder="방문형 캠페인의 활동 지역"
+              />
+            </label>
+            <label>
+              대표 이미지 주소
+              <input
+                name="imageUrl"
+                type="url"
+                maxLength={2000}
+                placeholder="https://"
+              />
+              <small>
+                직접 사용할 권한이 있는 HTTPS 이미지 주소를 입력하세요. 없으면
+                브랜드명이 표시됩니다.
+              </small>
             </label>
             <label>
               캠페인 이름

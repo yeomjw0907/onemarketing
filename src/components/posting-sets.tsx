@@ -180,7 +180,7 @@ export default function PostingSets({
                 }
                 onClick={() => send("posting-set-pay", set, { paid: !paid })}
               >
-                {paid ? "세트 지급 취소" : "세트 보수 지급 완료"}
+                {paid ? "세트 지급 취소" : "세트 리워드 지급 완료"}
               </button>
             </div>
             {!ready && (

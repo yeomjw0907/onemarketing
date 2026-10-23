@@ -196,7 +196,7 @@ export function CommerceParticipant() {
             <div key={a.id}>
               <p>
                 <strong>{appStates[a.data.status] || a.data.status}</strong> ·
-                약정 보수 {money(a.data.amount)}
+                약정 리워드 {money(a.data.amount)}
               </p>
               {a.data.expiresAt && a.data.status === "selected" && (
                 <p>
@@ -299,7 +299,7 @@ export function CommerceParticipant() {
                 ))}
               {a.data.paidAt && (
                 <p>
-                  보수 지급 기록{" "}
+                  리워드 지급 기록{" "}
                   {new Date(a.data.paidAt).toLocaleDateString("ko-KR")} · 실제
                   수령에 문제가 있다면 담당자에게 문의하세요.
                 </p>

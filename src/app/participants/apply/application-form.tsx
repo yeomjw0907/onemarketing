@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { safeReturnPath } from "@/lib/campaign-display";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import ApplicationFields, {
   freshApplication,
@@ -16,8 +17,18 @@ export default function ApplicationForm({
 }: {
   rewards: { blog: number; clip: number; bundle: number };
 }) {
+  useEffect(() => {
+    const next = safeReturnPath(
+      new URLSearchParams(location.search).get("next"),
+    );
+    if (next) {
+      try {
+        sessionStorage.setItem("om_campaign_return", next);
+      } catch {}
+    }
+  }, []);
   const termsRef = useRef<HTMLDivElement>(null);
-  const pageRef = useRef<HTMLElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const receiptTitleRef = useRef<HTMLHeadingElement>(null);
@@ -129,7 +140,7 @@ export default function ApplicationForm({
     }
   }
   return (
-    <main
+    <div
       ref={pageRef}
       className={`${styles.page} ${stage === "terms" ? styles.termsPage : stage === "form" ? styles.writingPage : ""}`}
     >
@@ -476,6 +487,6 @@ export default function ApplicationForm({
           </button>
         )}
       </dialog>
-    </main>
+    </div>
   );
 }

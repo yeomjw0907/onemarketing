@@ -367,7 +367,7 @@ export default function WorkSlots(props: Props) {
       <h2>슬롯·체험단 배정 · 파일 전달</h2>
       <p className="notice">
         슬롯 {slots.length}개 · 미배정{" "}
-        {slots.filter((s) => !s.participantId).length}개 · 약정 보수 합계{" "}
+        {slots.filter((s) => !s.participantId).length}개 · 약정 리워드 합계{" "}
         {money(slots.reduce((n, s) => n + Number(s.amount || 0), 0))}
       </p>
       <p className="hint">

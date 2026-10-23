@@ -1,4 +1,5 @@
 "use client";
+import CampaignPresentationFields from "./campaign-presentation-fields";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { marketFetch } from "./market-public";
@@ -369,6 +370,37 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                   {current.data.input.managed ? "운영 대행" : "기본형"} ·{" "}
                   {campaignStates[current.data.status]}
                 </span>
+                {current.data.status !== "awaiting_payment" && (
+                  <details className={s.panel}>
+                    <summary>공개 캠페인 정보</summary>
+                    <p>
+                      분류와 대표 이미지는 목록에 표시돼요. 지원자가 있으면 진행
+                      방식과 지역을 바꿀 수 없어요.
+                    </p>
+                    <form
+                      key={current.id + ":" + current.version}
+                      className={s.form}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        void operation(current, "presentation", {
+                          presentation: {
+                            category: f.get("category"),
+                            fulfillment: f.get("fulfillment") || "provided",
+                            region: f.get("region") || "",
+                            imageUrl: f.get("imageUrl") || "",
+                          },
+                        });
+                      }}
+                    >
+                      <CampaignPresentationFields
+                        value={current.data.input}
+                        packageOnly={current.data.input.kind === "package"}
+                      />
+                      <button disabled={busy}>공개 정보 저장</button>
+                    </form>
+                  </details>
+                )}
                 <ol className={s.steps}>
                   {[
                     "입금 확인",
@@ -798,7 +830,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                             <div className={s.actions}>
                               <button disabled={busy}>
                                 {a.data.status === "verified"
-                                  ? "실제 보수 지급 기록"
+                                  ? "실제 리워드 지급 기록"
                                   : "작업 종료 기록"}
                               </button>
                             </div>

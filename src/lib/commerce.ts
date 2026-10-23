@@ -13,6 +13,7 @@ import {
 } from "./db";
 import {
   campaignInput,
+  campaignPresentation,
   campaignQuote,
   selfSettlement,
   policyVersion,
@@ -333,7 +334,6 @@ export async function publicCommerceCampaigns() {
           ? (c.data.participantReward ?? 7000)
           : c.data.input.reward,
       benefit: c.data.input.benefit,
-      guide: c.data.input.guide,
       deadline: c.data.input.deadline,
       submissionDeadline: c.data.input.submissionDeadline,
     }));
@@ -479,7 +479,9 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         "link-production",
         "schedule",
         "message",
+        "presentation",
       ]),
+      presentation: campaignPresentation.optional(),
       projectId: uid.optional(),
       deadline: z.string().optional(),
       submissionDeadline: z.string().optional(),
@@ -540,7 +542,25 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
       ["select", "reject", "review"].includes(b.action)
     )
       throw new Error("대행 캠페인은 담당자에게 요청해주세요.");
-    if (b.action === "link-production") {
+    if (b.action === "presentation") {
+      if (!b.presentation) throw new Error("공개 정보를 입력하세요.");
+      const next = { ...d.input, ...b.presentation };
+      if (
+        d.input.kind === "package" &&
+        (next.fulfillment || "provided") !== "provided"
+      )
+        throw new Error("제작·게시 패키지는 원고 제공형입니다.");
+      if (
+        apps.length &&
+        ((d.input.fulfillment || "provided") !==
+          (next.fulfillment || "provided") ||
+          (d.input.region || "") !== (next.region || ""))
+      )
+        throw new Error(
+          "지원자가 있는 캠페인의 진행 방식·지역은 변경할 수 없습니다. 담당자와 일정·조건을 조율하세요.",
+        );
+      d.input = campaignInput.parse(next);
+    } else if (b.action === "link-production") {
       if (!manager || !b.projectId)
         throw new Error("관리자만 제작 프로젝트를 연결할 수 있습니다.");
       await lock("commerce-production:" + b.projectId);

@@ -119,6 +119,10 @@ export async function callAdvertiserTool(
       package: 220000,
       managed: "5명까지 60,000원, 추가 인원당 10,000원",
       campaignFields: {
+        category: "food/cafe/beauty/living/fashion/travel/other",
+        fulfillment: "provided/delivery/visit",
+        region: "활동 지역, 선택",
+        imageUrl: "직접 사용할 권한이 있는 HTTPS 대표 이미지 주소, 선택",
         title: "제목",
         brand: "브랜드",
         product: "제품",

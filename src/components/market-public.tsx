@@ -180,7 +180,13 @@ function Account({
     </section>
   );
 }
-export function AdvertiserAccess({ register = false }: { register?: boolean }) {
+export function AdvertiserAccess({
+  register = false,
+  returnTo = "",
+}: {
+  register?: boolean;
+  returnTo?: string;
+}) {
   const [account, setAccount] = useState<Row | null>(null);
   useEffect(() => {
     marketFetch("/api/advertiser-auth")
@@ -191,7 +197,12 @@ export function AdvertiserAccess({ register = false }: { register?: boolean }) {
     <>
       <Account
         account={account}
-        onChange={setAccount}
+        onChange={(a) => {
+          setAccount(a);
+          window.dispatchEvent(new Event("om-auth-change"));
+          if (a && /^\/campaigns\/[a-f0-9-]{36}$/.test(returnTo))
+            location.assign(returnTo);
+        }}
         initialRegister={register}
       />
       {account && <Link href="/advertisers">광고주 마이페이지로 이동 →</Link>}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./campaign-experience.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.onemarketing.kr"),
   title: "원마케팅 | 콘텐츠와 사람을 연결하는 캠페인",

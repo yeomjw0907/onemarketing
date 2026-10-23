@@ -14,8 +14,31 @@ const day = z
     const d = new Date(s + "T00:00:00Z");
     return Number.isFinite(d.getTime()) && d.toISOString().slice(0, 10) === s;
   }, "날짜를 확인하세요.");
+export const campaignPresentation = z
+  .object({
+    category: z
+      .enum(["food", "cafe", "beauty", "living", "fashion", "travel", "other"])
+      .optional(),
+    fulfillment: z.enum(["provided", "delivery", "visit"]).optional(),
+    region: z.string().trim().max(100).optional(),
+    imageUrl: z
+      .union([
+        z.literal(""),
+        z
+          .string()
+          .url()
+          .max(2000)
+          .refine(
+            (v) => v.startsWith("https://"),
+            "HTTPS 이미지 주소를 입력하세요.",
+          ),
+      ])
+      .optional(),
+  })
+  .strict();
 export const campaignInput = z
   .object({
+    ...campaignPresentation.shape,
     title: z.string().trim().min(2).max(120),
     brand: z.string().trim().min(1).max(120),
     product: z.string().trim().min(1).max(300),
@@ -37,7 +60,8 @@ export const campaignInput = z
     )
       c.addIssue({
         code: "custom",
-        message: "패키지는 블로그·클립 5세트이며 기본 게시 보수가 포함됩니다.",
+        message:
+          "패키지는 블로그·클립 5세트이며 기본 게시 리워드가 포함됩니다.",
       });
     if (v.kind === "self_cash" && v.reward < 1000)
       c.addIssue({
@@ -47,7 +71,7 @@ export const campaignInput = z
     if (v.kind === "self_product" && (v.reward !== 0 || !v.benefit))
       c.addIssue({
         code: "custom",
-        message: "제품형은 현금 보수 0원과 제공 혜택을 입력하세요.",
+        message: "제품형은 현금 리워드 0원과 제공 혜택을 입력하세요.",
       });
     if (v.deadline >= v.submissionDeadline)
       c.addIssue({

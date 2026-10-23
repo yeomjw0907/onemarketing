@@ -1,15 +1,41 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import BrandOrb from "./brand-orb";
 import styles from "./platform.module.css";
 export default function PublicShell({ children }: { children: ReactNode }) {
-  const [advertiser, setAdvertiser] = useState(false);
+  const pathname = usePathname();
+  const [viewer, setViewer] = useState({
+    admin: false,
+    advertiser: false,
+    participant: false,
+  });
   useEffect(() => {
-    fetch("/api/advertiser-auth", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setAdvertiser(!!d?.account))
-      .catch(() => {});
-  }, []);
+    let active = true;
+    const refresh = () => {
+      fetch("/api/viewer", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((v) => {
+          if (active) setViewer(v);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("om-auth-change", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("om-auth-change", refresh);
+    };
+  }, [pathname]);
+  const nav = [
+    ["/campaigns", "캠페인 찾기"],
+    ["/marketing", "상품·가격"],
+    ["/guide", "이용 가이드"],
+    ["/ai", "AI·MCP"],
+  ];
   return (
     <div className={styles.root}>
       <a href="#public-content" className={styles.skip}>
@@ -17,34 +43,56 @@ export default function PublicShell({ children }: { children: ReactNode }) {
       </a>
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>
-          ONE<span>MARKETING</span>
+          <BrandOrb active size={20} />
+          원마케팅
         </Link>
         <nav aria-label="서비스 메뉴">
-          <Link href="/campaigns">캠페인 찾기</Link>
-          <Link href="/marketing">상품·가격</Link>
-          <Link href="/ai">AI로 모집하기</Link>
+          {nav.map(([href, label]) => (
+            <Link
+              href={href}
+              key={href}
+              aria-current={
+                (
+                  href === "/campaigns"
+                    ? pathname === "/" || pathname.startsWith(href)
+                    : pathname.startsWith(href)
+                )
+                  ? "page"
+                  : undefined
+              }
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
         <nav aria-label="계정 메뉴">
-          {advertiser ? (
+          {viewer.admin ? <Link href="/admin/platform">운영 관리</Link> : null}
+          {viewer.advertiser ? (
             <Link href="/advertisers">광고주 마이페이지</Link>
-          ) : (
+          ) : null}
+          {viewer.participant ? (
+            <Link href="/participants/portal">나의 활동</Link>
+          ) : null}
+          {!viewer.admin && !viewer.advertiser && !viewer.participant ? (
             <>
               <Link href="/login">로그인</Link>
               <Link href="/signup" className={styles.cta}>
                 회원가입
               </Link>
             </>
-          )}
-          <Link href="/participants/portal">나의 활동</Link>
+          ) : null}
         </nav>
       </header>
       <main id="public-content">{children}</main>
       <footer className={styles.footer}>
-        <Link href="/">원마케팅</Link>
-        <p>브랜드의 콘텐츠와 사람을 연결합니다.</p>
+        <div>
+          <Link href="/">원마케팅</Link>
+          <p>체험단 모집부터 게시물 확인까지</p>
+        </div>
         <nav>
           <Link href="/policy">이용·환불 안내</Link>
-          <Link href="/participants/guide">참여 안내</Link>
+          <Link href="/guide">이용 가이드</Link>
+          <Link href="/ai">AI·MCP 문서</Link>
           <Link href="/admin">관리자</Link>
         </nav>
       </footer>

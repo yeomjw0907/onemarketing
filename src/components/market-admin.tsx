@@ -1,4 +1,5 @@
 "use client";
+import CampaignPresentationFields from "./campaign-presentation-fields";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import type { DatabaseView } from "@/lib/types";
@@ -86,6 +87,10 @@ export default function MarketAdmin({
         id: campaign?.id,
         version: campaign?.version,
         data: {
+          category: f.get("category"),
+          fulfillment: f.get("fulfillment"),
+          region: f.get("region") || "",
+          imageUrl: f.get("imageUrl") || "",
           projectId: f.get("projectId"),
           title: f.get("title"),
           description: f.get("description"),
@@ -383,6 +388,7 @@ export default function MarketAdmin({
             className={styles.form}
             onSubmit={saveCampaign}
           >
+            <CampaignPresentationFields value={campaign.data} />
             <label>
               프로젝트
               <select

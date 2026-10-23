@@ -82,6 +82,8 @@ try {
   const advertiser = registered.cookie;
   const catalog = await call("/api/commerce?mode=catalog");
   const input = {
+    category: "cafe",
+    fulfillment: "provided",
     title: "격리 카페 캠페인",
     brand: "테스트 카페",
     product: "테스트 제품",
@@ -375,6 +377,20 @@ try {
     body: "{}",
   });
   assert.equal(revoked.status, 401);
+  const guestDetail = (await call("/api/campaigns?id=" + c.id)).value;
+  assert.equal(guestDetail.locked, true);
+  assert.equal(guestDetail.details, null);
+  assert.equal(JSON.stringify(guestDetail).includes(input.guide), false);
+  const memberDetail = (
+    await call("/api/campaigns?id=" + c.id, undefined, participant)
+  ).value;
+  assert.equal(memberDetail.locked, false);
+  assert.equal(memberDetail.details.guide, input.guide);
+  assert.equal((await fetch(base + "/campaigns/" + c.id)).status, 200);
+  assert.equal(
+    (await call("/api/viewer", undefined, advertiser)).value.advertiser,
+    true,
+  );
   for (const page of [
     "/",
     "/signup",
@@ -382,6 +398,9 @@ try {
     "/marketing",
     "/campaigns",
     "/ai",
+    "/guide",
+    "/participants/apply",
+    "/participants/guide",
     "/advertisers",
     "/advertisers/connections",
     "/admin",
@@ -391,9 +410,21 @@ try {
   ])
     assert.equal((await fetch(base + page)).status, 200, page);
   console.log(
-    "PASS: isolated HTTP role flow, checkout, payment, application, review, refund, MCP initialization/list/call/revoke, 12 pages.",
+    "PASS: isolated HTTP role flow, checkout, payment, application, review, refund, MCP initialization/list/call/revoke, 15 pages and login-gated campaign details.",
   );
   if (process.env.PLATFORM_KEEP_SERVER === "1") {
+    const { writeFile } = await import("node:fs/promises");
+    await writeFile(
+      "outputs/platform-browser-session.json",
+      JSON.stringify({
+        base,
+        schema: process.env.DB_SCHEMA,
+        admin,
+        advertiser,
+        participant,
+        campaignId: c.id,
+      }),
+    );
     console.log("Browser acceptance ready at " + base);
     process.once("SIGINT", () => {
       void cleanup().then(() => process.exit(0));

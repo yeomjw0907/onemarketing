@@ -6,6 +6,7 @@ import { save, requireActiveCatalog } from "./domain";
 import { saveQuote } from "./quote-workflow";
 import { campaignPriceIssue, rewardDefaults } from "./sales-cart";
 import { proposeWork } from "./work-offers";
+import { campaignPresentation } from "./commerce-policy";
 import { accountAssignable } from "./participant-account-policy";
 import type { RecordData } from "./types";
 
@@ -361,6 +362,7 @@ function openProject(p: RecordData | null | undefined) {
     !!p &&
     !p.deletedAt &&
     !p.hold &&
+    !p.commerceCampaignId &&
     !p.settled &&
     !["completed", "cancelled"].includes(String(p.status)) &&
     Date.parse(String(p.due) + "T23:59:59+09:00") > Date.now()
@@ -403,7 +405,16 @@ async function publicCampaign(row: MarketEntry) {
     types: [...new Set(slots.map((s) => String(s.type)))],
     remaining: slots.length,
     rewards: rewardDefaults,
-    guide: d.guide,
+    brand: d.brand || "원마케팅",
+    category: d.category || "other",
+    fulfillment: d.fulfillment || "provided",
+    region: d.region || "",
+    imageUrl: d.imageUrl || "",
+    benefit: d.benefit || "",
+    quantity: (await list("work_slots")).filter(
+      (s) => s.projectId === d.projectId && s.status !== "cancelled",
+    ).length,
+    createdAt: row.created_at,
   };
 }
 export async function publicCampaigns() {
@@ -577,6 +588,9 @@ export async function marketAdmin(input: unknown, actor: string) {
     if (b.action === "campaign") {
       const d = z
         .object({
+          ...campaignPresentation.shape,
+          brand: z.string().trim().max(120).optional(),
+
           projectId: z.string().uuid(),
           title: text,
           description: z.string().trim().min(1).max(500),

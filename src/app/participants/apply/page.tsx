@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PublicShell from "@/components/public-shell";
 import ApplicationForm from "./application-form";
 import { rewardDefaults } from "@/lib/sales-cart";
 export const metadata: Metadata = {
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
   description: "블로그·클립 크리에이터 참여 신청",
 };
 export default function Page() {
-  return <ApplicationForm rewards={rewardDefaults} />;
+  return (
+    <PublicShell>
+      <ApplicationForm rewards={rewardDefaults} />
+    </PublicShell>
+  );
 }
