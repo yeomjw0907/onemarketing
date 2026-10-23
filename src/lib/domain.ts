@@ -478,6 +478,20 @@ async function participantLifecycle(
       },
       version,
     );
+    for (const credit of await list("referral_credits")) {
+      if (
+        credit.type !== "signup" ||
+        (credit.referredParticipantId !== id && credit.participantId !== id)
+      )
+        continue;
+      await lock("referral-source:" + credit.sourceId);
+      if (["pending_review", "available"].includes(String(credit.status)))
+        await update(credit.id, {
+          status: "cancelled",
+          cancelledAt: new Date().toISOString(),
+          cancelledBy: actor,
+        });
+    }
     await audit(actor, "participant-delete", id, { name: row.name });
   } else {
     if (!row.deletedAt) throw new Error("삭제된 참여자가 아닙니다.");

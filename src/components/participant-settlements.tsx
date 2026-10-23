@@ -183,7 +183,11 @@ export default function ParticipantSettlements({
         className="primary"
         type="button"
         style={{ marginTop: 16 }}
-        disabled={busy || !picked.length || !payment.success}
+        disabled={
+          busy ||
+          (!picked.length && !(includeReferrals && referralCredits.length)) ||
+          !payment.success
+        }
         onClick={() => setConfirm(true)}
       >
         선택 내역 합산 지급 완료 기록

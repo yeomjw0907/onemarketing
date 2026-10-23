@@ -781,6 +781,14 @@ export default function ParticipantPortal() {
             aria-label="정산·추천"
           >
             <h2>추천 보상</h2>
+            <p>
+              신규 신청 추천 보상은 1명당 최초 1회 2,000원이며 검수 후 지급
+              가능합니다. 기존 캠페인 추천료는 단독 500원 · 묶음 1,200원입니다.
+            </p>
+            <p>
+              신규 추천 보상 검수 대기:{" "}
+              {Number(data.referral.pending || 0).toLocaleString()}원
+            </p>
             <div className="ui-amounts">
               <div>
                 <span>지급 가능</span>

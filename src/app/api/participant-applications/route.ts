@@ -72,7 +72,9 @@ export async function PATCH(request: Request) {
   try {
     const body = await read(request);
     return Response.json(
-      await (body.action === "bulk-approve" ||
+      await (body.action === "bulk-verify" ||
+      body.action === "bulk-exclude" ||
+      body.action === "bulk-approve" ||
       body.action === "bulk-reject" ||
       body.action === "bulk-reapprove" ||
       body.action === "bulk-delete" ||

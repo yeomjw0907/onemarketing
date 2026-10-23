@@ -67,6 +67,7 @@ export async function syncReferral(
 }
 export async function settleReferrals(participantId: string, actor: string) {
   return transaction(async () => {
+    await lock("save:participants");
     await lock("referral-settle:" + participantId);
     const credits = (await list("referral_credits")).filter(
       (c) => c.participantId === participantId && c.status === "available",
@@ -78,7 +79,8 @@ export async function settleReferrals(participantId: string, actor: string) {
     if (selected.some((c) => c.status !== "available"))
       throw new Error("추천료 상태가 변경되었습니다.");
     const p = await get(participantId);
-    if (!p) throw new Error("참여자를 찾을 수 없습니다.");
+    if (!p || p.deletedAt || p.status !== "active")
+      throw new Error("이용 중인 참여자만 정산할 수 있습니다.");
     const payment = participantPaymentSchema.parse(p.payment);
     const settlement = await create("participant_settlements", {
       participantId,

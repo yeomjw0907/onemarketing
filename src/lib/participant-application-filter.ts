@@ -1,6 +1,7 @@
 import type { ParticipantApplication } from "./participant-application-schema";
 export const applicationListLabels = {
-  new: "신규",
+  unreviewed: "자동 승인 · 미검수",
+  new: "기존 승인 대기",
   approved: "승인 완료",
   rejected: "반려",
   deleted: "삭제된 신청",
@@ -79,7 +80,10 @@ export function matchesApplication(
   const statusMatches =
     filter === "deleted"
       ? Boolean(i.data.deletedAt)
-      : !i.data.deletedAt && i.status === filter;
+      : !i.data.deletedAt &&
+        (filter === "unreviewed"
+          ? i.status === "approved" && i.data.reviewStatus === "pending"
+          : i.status === filter);
   return (
     statusMatches &&
     (!query ||

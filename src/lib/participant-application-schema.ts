@@ -122,6 +122,9 @@ export type ParticipantApplication = {
   data: ApplicationDraft & {
     consentAt: string;
     consentVersion: string;
+    autoApproved?: boolean;
+    reviewStatus?: "pending" | "verified" | "excluded";
+    signupBonusAmount?: number;
     reviewedBy?: string;
     deletedAt?: string | null;
     deletedBy?: string | null;

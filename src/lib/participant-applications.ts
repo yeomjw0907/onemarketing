@@ -1,6 +1,6 @@
 import { bindKakao } from "./kakao-auth";
 import { accountIdentity } from "./account-identity";
-import { list } from "./db";
+import { list, create, get, update } from "./db";
 import { z } from "zod";
 import { audit, execute, lock, query, transaction, once } from "./db";
 import { save } from "./domain";
@@ -27,6 +27,11 @@ export async function submitApplication(
     .parse(input);
   return transaction(async () => {
     await lock("application-submit:" + envelope.key);
+    const existing = await query<{ id: string }>(
+      "select id from participant_applications where id=$1",
+      [envelope.key],
+    );
+    if (existing.length) return { id: existing[0].id };
     if (trustedKakaoId) {
       await lock("kakao-application:" + trustedKakaoId);
       if (
@@ -49,11 +54,6 @@ export async function submitApplication(
           "이미 신청을 접수했어요. 담당자 확인 후 카카오로 다시 로그인해주세요.",
         );
     }
-    const existing = await query<{ id: string }>(
-      "select id from participant_applications where id=$1",
-      [envelope.key],
-    );
-    if (existing.length) return { id: existing[0].id };
     await lock("save:participants");
     await lock("application-accounts");
     const identities = envelope.data.accounts.map((a) =>
@@ -80,6 +80,17 @@ export async function submitApplication(
       )
     )
       throw new Error("검토 중인 신청에 이미 포함된 활동 계정입니다.");
+    const registered = await query<ParticipantApplication>(
+      "select * from participant_applications where status='approved'",
+    );
+    if (
+      registered.some((a) =>
+        a.data.accounts.some((account) =>
+          identities.includes(accountIdentity(account.url)),
+        ),
+      )
+    )
+      throw new Error("이미 등록된 활동 계정입니다. 기존 계정을 이용해주세요.");
     let referrerId: string | null = null;
     if (envelope.data.referralCode) {
       const referrer = (await list("participants")).find(
@@ -97,6 +108,14 @@ export async function submitApplication(
     // Shared database lock keeps simultaneous submissions for one phone within the limit.
     const phone = envelope.data.phone.replace(/\D/g, "");
     await lock("application-phone:" + phone);
+    if (registered.some((a) => a.data.phone.replace(/\D/g, "") === phone))
+      throw new Error("이미 등록된 전화번호입니다. 기존 계정을 이용해주세요.");
+    if (
+      (await list("participants")).some(
+        (p) => String(p.phone).replace(/\D/g, "") === phone,
+      )
+    )
+      throw new Error("이미 등록된 전화번호입니다. 기존 계정을 이용해주세요.");
     const recent = await query<{ count: string }>(
       "select count(*) from participant_applications where regexp_replace(data->>'phone', '[^0-9]', '', 'g')=$1 and created_at > now() - interval '1 day'",
       [phone],
@@ -122,6 +141,41 @@ export async function submitApplication(
         }),
       ],
     );
+    await execute(
+      "update participant_applications set data=data || $1::jsonb where id=$2",
+      [
+        JSON.stringify({
+          autoApproved: true,
+          reviewStatus: "pending",
+          signupBonusAmount: referrerId ? 2000 : 0,
+        }),
+        envelope.key,
+      ],
+    );
+    const approved = await reviewApplication(
+      {
+        id: envelope.key,
+        version: 1,
+        action: "approve",
+        data: {
+          ...envelope.data,
+          accounts: envelope.data.accounts.map((a) => ({
+            ...a,
+            approvalStatus: "approved",
+          })),
+        },
+      },
+      "system:auto-approval",
+    );
+    if (referrerId)
+      await create("referral_credits", {
+        sourceId: envelope.key,
+        participantId: referrerId,
+        referredParticipantId: approved.participantId,
+        amount: 2000,
+        type: "signup",
+        status: "pending_review",
+      });
     return { id: envelope.key };
   });
 }
@@ -131,6 +185,9 @@ export function listApplications() {
   );
 }
 export async function reviewApplication(input: unknown, actor: string) {
+  const action = (input as { action?: string })?.action;
+  if (action === "verify" || action === "exclude")
+    return reviewAutoApplication(input, actor);
   const body = z
     .object({
       id: z.string().uuid(),
@@ -230,6 +287,8 @@ export async function reviewApplicationsBulk(input: unknown, actor: string) {
   const body = z
     .object({
       action: z.enum([
+        "bulk-verify",
+        "bulk-exclude",
         "bulk-approve",
         "bulk-reject",
         "bulk-reapprove",
@@ -264,6 +323,18 @@ export async function reviewApplicationsBulk(input: unknown, actor: string) {
         throw new Error(
           "신청을 찾을 수 없습니다. 새로고침 후 다시 선택해주세요.",
         );
+      if (body.action === "bulk-verify" || body.action === "bulk-exclude") {
+        const result = await reviewAutoApplication(
+          {
+            id: item.id,
+            version: item.version,
+            action: body.action === "bulk-verify" ? "verify" : "exclude",
+          },
+          actor,
+        );
+        if (result.participantId) participantIds.push(result.participantId);
+        continue;
+      }
       if (body.action === "bulk-delete" || body.action === "bulk-restore") {
         const restoring = body.action === "bulk-restore";
         if (
@@ -364,5 +435,72 @@ export async function reviewApplicationsBulk(input: unknown, actor: string) {
       }
     }
     return { processedCount: body.items.length, participantIds };
+  });
+}
+
+async function reviewAutoApplication(input: unknown, actor: string) {
+  const body = z
+    .object({
+      id: z.string().uuid(),
+      version: z.number().int().positive(),
+      action: z.enum(["verify", "exclude"]),
+    })
+    .parse(input);
+  return transaction(async () => {
+    await lock("save:participants");
+    await lock("application-review:" + body.id);
+    const old = (
+      await query<ParticipantApplication>(
+        "select * from participant_applications where id=$1",
+        [body.id],
+      )
+    )[0];
+    if (
+      !old ||
+      old.status !== "approved" ||
+      !old.data.autoApproved ||
+      old.data.deletedAt
+    )
+      throw new Error("자동 승인된 신청을 선택해주세요.");
+    if (old.version !== body.version)
+      throw new Error("신청이 변경되었습니다. 새로고침해주세요.");
+    if (old.data.reviewStatus !== "pending")
+      throw new Error("이미 검수한 신청입니다.");
+    const participant = old.participant_id && (await get(old.participant_id));
+    if (
+      !participant ||
+      participant.deletedAt ||
+      participant.status !== "active"
+    )
+      throw new Error("이용 중인 참여자만 검수할 수 있습니다.");
+    const credit = (await list("referral_credits")).find(
+      (c) => c.sourceId === old.id && c.type === "signup",
+    );
+    if (credit) {
+      await lock("referral-source:" + old.id);
+      if (!["pending_review", "cancelled"].includes(String(credit.status)))
+        throw new Error("추천 보상 상태가 변경되었습니다.");
+      await update(credit.id, {
+        status:
+          body.action === "verify" && credit.status !== "cancelled"
+            ? "available"
+            : "cancelled",
+        reviewedBy: actor,
+        reviewedAt: new Date().toISOString(),
+      });
+    }
+    await execute(
+      "update participant_applications set data=data || $1::jsonb,version=version+1,updated_at=now() where id=$2",
+      [
+        JSON.stringify({
+          reviewStatus: body.action === "verify" ? "verified" : "excluded",
+          reviewedBy: actor,
+          reviewedAt: new Date().toISOString(),
+        }),
+        old.id,
+      ],
+    );
+    await audit(actor, "participant-application-" + body.action, old.id);
+    return { participantId: old.participant_id };
   });
 }

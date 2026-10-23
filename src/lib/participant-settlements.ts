@@ -22,10 +22,13 @@ export async function settleParticipant(
         .array(
           z.object({ id: z.string().uuid(), token: z.string().max(20000) }),
         )
-        .min(1)
         .max(100),
       note: z.string().trim().max(2000).default(""),
     })
+    .refine(
+      (data) => data.items.length > 0 || data.referralCreditIds.length > 0,
+      "지급할 내역을 선택하세요.",
+    )
     .parse(input);
   if (new Set(body.items.map((i) => i.id)).size !== body.items.length)
     throw new Error("정산 항목이 중복되었습니다.");
@@ -35,6 +38,8 @@ export async function settleParticipant(
   const current = await get(participant.id);
   if (!current || current.version !== body.version)
     throw new Error("담당자 정보가 변경되었습니다. 새로고침하세요.");
+  if (current.deletedAt || current.status !== "active")
+    throw new Error("이용 중인 참여자만 정산할 수 있습니다.");
   const payment = participantPaymentSchema.parse(current.payment);
   const sources = [];
   for (const item of body.items) sources.push(await get(item.id));
@@ -149,6 +154,7 @@ export async function cancelParticipantSettlement(
   if (settlement.kind !== "participant_settlements")
     throw new Error("합산 정산 기록을 선택하세요.");
   await lock("participant-settle:" + settlement.participantId);
+  await lock("save:participants");
   await lock("save:participant_history");
   const current = (await get(settlement.id))!;
   if (
@@ -162,8 +168,20 @@ export async function cancelParticipantSettlement(
       if (!c || c.settlementId !== current.id)
         throw new Error("추천료 정산 연결을 확인하세요.");
       await lock("referral-source:" + c.sourceId);
+      const recipient =
+        c.type === "signup" ? await get(String(c.participantId)) : undefined;
+      const referred =
+        c.type === "signup"
+          ? await get(String(c.referredParticipantId))
+          : undefined;
+      const excludedSignup =
+        c.type === "signup" &&
+        (!recipient || recipient.deletedAt || !referred || referred.deletedAt);
       await update(c.id, {
-        status: c.status === "recovery_required" ? "cancelled" : "available",
+        status:
+          c.status === "recovery_required" || excludedSignup
+            ? "cancelled"
+            : "available",
         settlementId: null,
         paidAt: null,
       });

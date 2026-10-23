@@ -25,7 +25,7 @@ export default function ParticipantApplications({
   refreshSignal?: object;
 }) {
   const [items, setItems] = useState<ParticipantApplication[]>([]),
-    [filter, setFilter] = useState("new"),
+    [filter, setFilter] = useState("unreviewed"),
     [search, setSearch] = useState(""),
     [order, setOrder] = useState<ApplicationSort>("newest"),
     [page, setPage] = useState(1),
@@ -42,6 +42,7 @@ export default function ParticipantApplications({
     [loading, setLoading] = useState(true),
     [exporting, setExporting] = useState(false);
   const selectable =
+    filter === "unreviewed" ||
     filter === "new" ||
     filter === "approved" ||
     filter === "rejected" ||
@@ -119,6 +120,8 @@ export default function ParticipantApplications({
   }
   async function bulkReview(
     action:
+      | "bulk-verify"
+      | "bulk-exclude"
       | "bulk-approve"
       | "bulk-reject"
       | "bulk-reapprove"
@@ -128,22 +131,26 @@ export default function ParticipantApplications({
     if (!picked.length || busy || current) return;
     const approve = action === "bulk-approve" || action === "bulk-reapprove";
     const verb =
-      action === "bulk-delete"
-        ? "삭제"
-        : action === "bulk-restore"
-          ? "복구"
-          : action === "bulk-reapprove"
-            ? "재승인"
-            : approve
-              ? "승인"
-              : "반려";
+      action === "bulk-verify"
+        ? "검수 완료 · 보상 확정"
+        : action === "bulk-exclude"
+          ? "검수 완료 · 보상 제외"
+          : action === "bulk-delete"
+            ? "삭제"
+            : action === "bulk-restore"
+              ? "복구"
+              : action === "bulk-reapprove"
+                ? "재승인"
+                : approve
+                  ? "승인"
+                  : "반려";
     const names = picked
       .slice(0, 5)
       .map((i) => i.data.name)
       .join(", ");
     if (
       !window.confirm(
-        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}${picked.length > 100 ? "\n100건씩 순서대로 처리합니다. 중간 오류가 발생하면 완료된 건은 유지하고 나머지는 중단합니다." : ""}`,
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-verify" ? "신규 추천 보상 2,000원이 지급 가능해집니다. 실제 송금은 별도 정산에서 처리합니다." : action === "bulk-exclude" ? "신규 추천 보상을 취소합니다. 회원 이용은 유지됩니다." : action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}${picked.length > 100 ? "\n100건씩 순서대로 처리합니다. 중간 오류가 발생하면 완료된 건은 유지하고 나머지는 중단합니다." : ""}`,
       )
     )
       return;
@@ -222,7 +229,9 @@ export default function ParticipantApplications({
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [refreshSignal]);
-  async function review(action: "save" | "approve" | "reject") {
+  async function review(
+    action: "save" | "approve" | "reject" | "verify" | "exclude",
+  ) {
     if (!current || !draft || busy) return;
     setBusy(true);
     setError("");
@@ -245,11 +254,15 @@ export default function ParticipantApplications({
       setDraft(null);
       setChecked({});
       setMessage(
-        action === "approve"
-          ? "승인하고 참여자로 등록했습니다."
-          : action === "reject"
-            ? "신청을 반려했습니다."
-            : "신청 내용을 저장했습니다.",
+        action === "verify"
+          ? "검수를 완료했습니다. 신규 추천 보상이 지급 가능해졌습니다."
+          : action === "exclude"
+            ? "검수를 완료하고 신규 추천 보상에서 제외했습니다."
+            : action === "approve"
+              ? "승인하고 참여자로 등록했습니다."
+              : action === "reject"
+                ? "신청을 반려했습니다."
+                : "신청 내용을 저장했습니다.",
       );
       if (body.participantId) await onApproved(body.participantId);
     } catch (e) {
@@ -276,8 +289,9 @@ export default function ParticipantApplications({
         </a>
       </div>
       <p className="hint">
-        신청 링크를 공유하세요. 내용을 수정한 뒤 승인하면 참여자로 바로
-        등록됩니다.
+        새 신청은 자동 승인됩니다. 미검수 회원을 확인한 뒤 검수를 완료하면 신규
+        추천 보상 2,000원이 지급 가능해집니다. 부적합 회원은 참여자 수정 ·
+        삭제에서 처리해주세요.
       </p>
       <div className="row" style={{ margin: "16px 0", flexWrap: "wrap" }}>
         {Object.entries(labels).map(([key, label]) => (
@@ -299,7 +313,7 @@ export default function ParticipantApplications({
               items.filter((i) =>
                 key === "deleted"
                   ? Boolean(i.data.deletedAt)
-                  : !i.data.deletedAt && i.status === key,
+                  : matchesApplication(i, key, ""),
               ).length
             }
             )
@@ -494,7 +508,7 @@ export default function ParticipantApplications({
             >
               선택한 신청 엑셀 다운로드
             </button>
-            {filter !== "approved" && (
+            {filter !== "approved" && filter !== "unreviewed" && (
               <button
                 type="button"
                 className="primary"
@@ -516,14 +530,35 @@ export default function ParticipantApplications({
                     : "선택한 신청 승인"}
               </button>
             )}
-            {filter !== "deleted" && filter !== "approved" && (
-              <button
-                type="button"
-                disabled={busy || !picked.length || !!current}
-                onClick={() => bulkReview("bulk-delete")}
-              >
-                선택한 신청 삭제
-              </button>
+            {filter !== "deleted" &&
+              filter !== "approved" &&
+              filter !== "unreviewed" && (
+                <button
+                  type="button"
+                  disabled={busy || !picked.length || !!current}
+                  onClick={() => bulkReview("bulk-delete")}
+                >
+                  선택한 신청 삭제
+                </button>
+              )}
+            {filter === "unreviewed" && (
+              <>
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={busy || !picked.length || !!current}
+                  onClick={() => bulkReview("bulk-verify")}
+                >
+                  선택한 회원 검수 완료 · 보상 확정
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || !picked.length || !!current}
+                  onClick={() => bulkReview("bulk-exclude")}
+                >
+                  선택한 회원 검수 완료 · 보상 제외
+                </button>
+              </>
             )}
             {filter === "new" && (
               <button
@@ -536,11 +571,13 @@ export default function ParticipantApplications({
             )}
           </div>
           <p className="hint">
-            {filter === "approved"
-              ? "승인 완료된 신청도 선택한 건만 엑셀로 내려받을 수 있습니다."
-              : filter === "deleted"
-                ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
-                : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
+            {filter === "unreviewed"
+              ? "등록 정보를 확인한 회원만 검수 완료해주세요. 보상 확정과 실제 지급은 별도입니다."
+              : filter === "approved"
+                ? "승인 완료된 신청도 선택한 건만 엑셀로 내려받을 수 있습니다."
+                : filter === "deleted"
+                  ? "삭제 전 신규·반려 상태로 복구합니다. 복구 후 신청 내용을 검토해주세요."
+                  : "일괄 승인 시 검토 대기 계정도 승인됩니다. 계정별로 다르게 처리하려면 ‘검토 · 수정’을 이용해주세요."}{" "}
             전체 선택은 검색·기간에 맞는 모든 페이지에 적용됩니다. 일괄 처리는
             100건씩 진행하며, 오류가 나면 완료된 건을 유지하고 나머지는
             중단합니다. 체크는 페이지를 이동해도 유지됩니다. 목록 위 엑셀
@@ -684,7 +721,9 @@ export default function ParticipantApplications({
                         setMessage("");
                       }}
                     >
-                      {!item.data.deletedAt && item.status !== "approved"
+                      {!item.data.deletedAt &&
+                      (item.status !== "approved" ||
+                        item.data.reviewStatus === "pending")
                         ? "검토 · 수정"
                         : "내용 보기"}
                     </button>
@@ -785,6 +824,31 @@ export default function ParticipantApplications({
           }}
         >
           <h3>{current.data.name} · 신청 검토</h3>
+          {current.data.reviewStatus === "pending" &&
+            !current.data.deletedAt && (
+              <div className="row">
+                <p>
+                  자동 승인 · 미검수
+                  {current.data.signupBonusAmount
+                    ? " · 신규 추천 보상 2,000원 검수 대기"
+                    : ""}
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => review("verify")}
+                >
+                  검수 완료 · 보상 확정
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => review("exclude")}
+                >
+                  검수 완료 · 보상 제외
+                </button>
+              </div>
+            )}
           <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
             <span>{draft.phone}</span>
             <CopyButton value={draft.phone} label="휴대전화" />

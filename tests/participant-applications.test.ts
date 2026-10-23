@@ -1,8 +1,8 @@
+import { submitLegacyApplication as submitApplication } from "./legacy-application-fixture";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import "./helpers";
 import {
-  submitApplication,
   reviewApplication,
   listApplications,
 } from "../src/lib/participant-applications";

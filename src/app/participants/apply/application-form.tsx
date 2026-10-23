@@ -150,16 +150,17 @@ export default function ApplicationForm({
             <div role="status">
               <span className={styles.eyebrow}>신청 완료</span>
               <h2 ref={receiptTitleRef} tabIndex={-1}>
-                신청이 접수되었습니다.
+                가입이 완료되었습니다.
               </h2>
               <p>
-                신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다.
+                자동 승인되어 바로 참여할 수 있어요. 등록 정보는 운영자가 추후
+                검수합니다.
               </p>
               <p className="hint">접수번호: {receipt}</p>
               {kakaoLinked && (
                 <p>
                   <Link className="ui-text-link" href="/participants/portal">
-                    참여자 화면에서 신청 상태 확인
+                    참여자 화면으로 이동
                   </Link>
                 </p>
               )}
@@ -440,7 +441,7 @@ export default function ApplicationForm({
           {popup === "confirm"
             ? "입력한 연락처와 정산 정보를 확인해주세요. 확인을 누르면 신청이 접수됩니다."
             : popup === "success"
-              ? "신청 내용을 확인한 후 남겨주신 연락처로 개별 연락드리겠습니다."
+              ? "자동 승인되어 바로 참여할 수 있어요. 등록 정보는 운영자가 추후 검수합니다."
               : "신청이나 협업에 궁금한 점이 있다면 아래 연락처로 문의해주세요."}
         </p>
         {popup !== "confirm" && (

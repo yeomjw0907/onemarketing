@@ -191,7 +191,7 @@ test("unlink removes login identity and invalidates browser access", async () =>
   assert.equal((await portalParticipant((await login(106)).session!)).id, p.id);
 });
 
-test("new Kakao applicant sees pending, approved, and own portal without legacy link request", async () => {
+test("new Kakao applicant is automatically approved and can open own portal", async () => {
   const signed = await login(701),
     identity = signed.identity!;
   assert.equal((await kakaoOnboarding(identity)).status, undefined);
@@ -219,8 +219,8 @@ test("new Kakao applicant sees pending, approved, and own portal without legacy 
     },
   };
   const result = await submitApplication(input, "701");
-  assert.equal((await kakaoOnboarding(identity)).status, "application_pending");
-  await assert.rejects(portalParticipant(identity));
+  assert.equal((await kakaoOnboarding(identity)).status, "approved");
+  assert.deepEqual(await submitApplication(input, "701"), result);
   assert.equal(
     (await list("portal_links")).filter(
       (l) => l.purpose === "kakao-link-request" && l.kakaoId === "701",
