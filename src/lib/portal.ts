@@ -255,7 +255,10 @@ export async function portalView(
     })),
     referral: {
       pending: credits
-        .filter((c) => c.status === "pending_review")
+        .filter(
+          (c) =>
+            c.status === "pending_review" || c.status === "pending_campaign",
+        )
         .reduce((n, c) => n + Number(c.amount), 0),
       available: credits
         .filter((c) => c.status === "available")

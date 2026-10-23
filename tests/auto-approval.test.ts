@@ -8,8 +8,13 @@ import {
   reviewApplicationsBulk,
 } from "../src/lib/participant-applications";
 import { save, command } from "../src/lib/domain";
-import { get, list } from "../src/lib/db";
-import { settleReferrals } from "../src/lib/referrals";
+import { get, list, create, transaction, execute } from "../src/lib/db";
+import {
+  settleReferrals,
+  syncReferral,
+  syncSignupBonus,
+} from "../src/lib/referrals";
+import { readFileSync } from "node:fs";
 import { referralRates } from "../src/lib/workflow-policy";
 const actor = "auto-review@test.local";
 let sequence = 0;
@@ -71,15 +76,17 @@ test("신규 신청은 자동 승인되고 재전송해도 한 번만 등록된�
     /전화번호/,
   );
 });
-test("추천 보상은 검수 전 지급 불가, 검수 후 2천 원만 최초 한 번 지급 가능", async () => {
+test("추천 보상은 회원 검수만으로 지급 불가, 첫 원고료 지급 후 최초 한 번 추가 적립", async () => {
   const r = await referrer();
   const input = application(String(r.referralCode));
   const { id } = await submitApplication(input);
-  assert.equal((await bonus(id)).status, "pending_review");
+  assert.equal((await bonus(id)).status, "pending_campaign");
   assert.equal((await bonus(id)).amount, 2000);
   await assert.rejects(settleReferrals(r.id, actor), /지급 가능한/);
   const a = await app(id);
   await reviewApplication({ id, version: a.version, action: "verify" }, actor);
+  assert.equal((await bonus(id)).status, "pending_campaign");
+  await paidCampaign(a.participant_id!);
   assert.equal((await bonus(id)).status, "available");
   await assert.rejects(
     reviewApplication({ id, version: a.version, action: "verify" }, actor),
@@ -91,7 +98,7 @@ test("추천 보상은 검수 전 지급 불가, 검수 후 2천 원만 최초 �
     1,
   );
   const settlement = await settleReferrals(r.id, actor);
-  assert.equal(settlement.total, 2000);
+  assert.equal(settlement.total, 2500);
   assert.equal((await bonus(id)).status, "paid");
   assert.deepEqual(referralRates, { blog: 500, clip: 500, bundle: 1200 });
 });
@@ -161,7 +168,7 @@ test("일괄 검수는 재요청에도 한 번만 확정하고 충돌 시 전체
     ),
     /변경/,
   );
-  assert.equal((await bonus(a.id)).status, "pending_review");
+  assert.equal((await bonus(a.id)).status, "pending_campaign");
   const input = {
     action: "bulk-verify",
     key: crypto.randomUUID(),
@@ -172,8 +179,8 @@ test("일괄 검수는 재요청에도 한 번만 확정하고 충돌 시 전체
   };
   const result = await reviewApplicationsBulk(input, actor);
   assert.deepEqual(await reviewApplicationsBulk(input, actor), result);
-  assert.equal((await bonus(a.id)).status, "available");
-  assert.equal((await bonus(b.id)).status, "available");
+  assert.equal((await bonus(a.id)).status, "pending_campaign");
+  assert.equal((await bonus(b.id)).status, "pending_campaign");
 });
 test("자동 승인은 필수 동의와 정산 정보 검사를 유지한다", async () => {
   const input = application();
@@ -207,6 +214,7 @@ test("회원 상세에서 추천 보상만 정산하고 삭제 후 취소해도 
     /추천료/,
   );
   await reviewApplication({ id, version: a.version, action: "verify" }, actor);
+  await paidCampaign(a.participant_id!);
   const settlement = await command(
     "participant-settle",
     { id: r.id, version: r.version, items: [], referralCreditIds: [credit.id] },
@@ -270,5 +278,142 @@ test("프로필의 전화번호·계정을 수정해도 최초 가입 정보로 
       data: { ...input.data, phone: application().data.phone },
     }),
     /활동 계정/,
+  );
+});
+
+async function paidCampaign(
+  participantId: string,
+  bundle = false,
+  partial = false,
+) {
+  return transaction(async () => {
+    const slot =
+      bundle || partial
+        ? await create("work_slots", {
+            participantId,
+            type: "bundle",
+            payoutStatus: partial ? "pending" : "paid",
+          })
+        : undefined;
+    const source = partial
+      ? await create("tasks", {
+          participantId,
+          channel: "blog",
+          type: "blog",
+          workSlotId: slot!.id,
+          status: "verified",
+          payoutStatus: "paid",
+        })
+      : slot ||
+        (await create("tasks", {
+          participantId,
+          channel: "blog",
+          type: "blog",
+          status: "verified",
+          payoutStatus: "paid",
+        }));
+    await syncReferral(source, true, actor);
+    return source;
+  });
+}
+test("회원 검수 전에도 첫 묶음 완료 시 3200원, 두 번째는 기존 추천료만 적립한다", async () => {
+  const r = await referrer();
+  const { id } = await submitApplication(application(String(r.referralCode)));
+  const a = await app(id);
+  await paidCampaign(a.participant_id!, true);
+  assert.equal((await bonus(id)).status, "available");
+  assert.equal((await bonus(id)).amount, 2000);
+  assert.equal((await app(id)).data.reviewStatus, "pending");
+  await paidCampaign(a.participant_id!);
+  const credits = (await list("referral_credits")).filter(
+    (c) => c.participantId === r.id && c.status === "available",
+  );
+  assert.equal(
+    credits.reduce((n, c) => n + Number(c.amount), 0),
+    3700,
+  );
+  assert.equal(credits.filter((c) => c.type === "signup").length, 1);
+});
+test("묶음 일부 지급은 특별 보상을 발생시키지 않는다", async () => {
+  const r = await referrer();
+  const { id } = await submitApplication(application(String(r.referralCode)));
+  const a = await app(id);
+  await paidCampaign(a.participant_id!, false, true);
+  assert.equal((await bonus(id)).status, "pending_campaign");
+  assert.equal(
+    (await list("referral_credits"))
+      .filter((c) => c.participantId === r.id && c.status === "available")
+      .reduce((n, c) => n + Number(c.amount), 0),
+    500,
+  );
+});
+test("원고료 지급 취소·재지급과 이미 지급한 특별 보상을 중복 적립하지 않는다", async () => {
+  const r = await referrer();
+  const { id } = await submitApplication(application(String(r.referralCode)));
+  const a = await app(id);
+  const source = await paidCampaign(a.participant_id!);
+  await transaction(() => syncReferral(source, false, actor));
+  assert.equal((await bonus(id)).status, "pending_campaign");
+  await transaction(() => syncReferral(source, true, actor));
+  const settlement = await settleReferrals(r.id, actor);
+  assert.equal(settlement.total, 2500);
+  await transaction(() => syncReferral(source, false, actor));
+  assert.equal((await bonus(id)).status, "recovery_required");
+  await transaction(() => syncReferral(source, true, actor));
+  assert.equal((await bonus(id)).status, "recovery_required");
+  await assert.rejects(settleReferrals(r.id, actor), /지급 가능한/);
+});
+
+test("기존 미지급 보상은 새 조건으로 전환하고 완료 이력만 재적립한다", async () => {
+  const r = await referrer();
+  const p = await save(
+    "participants",
+    { ...application().data, accounts: [], referrerId: r.id },
+    actor,
+  );
+  const legacy = await create("referral_credits", {
+    type: "signup",
+    sourceId: crypto.randomUUID(),
+    participantId: r.id,
+    referredParticipantId: p.id,
+    amount: 2000,
+    status: "available",
+  });
+  await assert.rejects(settleReferrals(r.id, actor), /첫 캠페인/);
+  const sql = readFileSync(
+    "supabase/migrations/20261023010000_signup_bonus_campaign_eligibility.sql",
+    "utf8",
+  );
+  await transaction(async () => {
+    await execute(sql);
+    await syncSignupBonus(p.id, actor);
+  });
+  assert.equal((await get(legacy.id))?.status, "pending_campaign");
+  await transaction(async () => {
+    await execute(sql);
+    await syncSignupBonus(p.id, actor);
+  });
+  assert.equal((await get(legacy.id))?.amount, 2000);
+  await paidCampaign(p.id);
+  assert.equal((await get(legacy.id))?.status, "available");
+  await transaction(() => execute(sql));
+  assert.equal((await get(legacy.id))?.status, "available");
+});
+
+test("동시에 완료한 캠페인도 최초 특별 보상은 한 번만 적립한다", async () => {
+  const r = await referrer();
+  const { id } = await submitApplication(application(String(r.referralCode)));
+  const a = await app(id);
+  await Promise.all([
+    paidCampaign(a.participant_id!),
+    paidCampaign(a.participant_id!),
+  ]);
+  const credits = (await list("referral_credits")).filter(
+    (c) => c.participantId === r.id && c.status === "available",
+  );
+  assert.equal(credits.filter((c) => c.type === "signup").length, 1);
+  assert.equal(
+    credits.reduce((n, c) => n + Number(c.amount), 0),
+    3000,
   );
 });

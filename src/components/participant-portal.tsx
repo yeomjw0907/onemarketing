@@ -4,6 +4,7 @@ import { ParticipantSteps } from "./public-progress";
 import styles from "./public-experience.module.css";
 import { participantNext, portalTaskMatches } from "@/lib/public-progress";
 import PostingSteps from "./posting-steps";
+import ReferralPromotion from "./referral-promotion";
 import BrandOrb from "./brand-orb";
 import { participantTaskGuide } from "@/lib/workflow-guidance";
 import guidanceStyles from "./workflow-guidance.module.css";
@@ -149,7 +150,7 @@ export default function ParticipantPortal() {
   }
   return (
     <main
-      className={`participant-portal ${styles.portalRoot}${!data ? " portal-entry" : ""}`}
+      className={`participant-portal ${styles.portalRoot} ${data?.participant.referralCode ? styles.portalWithPromotion : ""}${!data ? " portal-entry" : ""}`}
     >
       <header className="pagehead">
         <div>
@@ -782,11 +783,12 @@ export default function ParticipantPortal() {
           >
             <h2>추천 보상</h2>
             <p>
-              신규 신청 추천 보상은 1명당 최초 1회 2,000원이며 검수 후 지급
-              가능합니다. 기존 캠페인 추천료는 단독 500원 · 묶음 1,200원입니다.
+              친구가 내 추천 링크로 가입하고 첫 캠페인을 완료해 원고료를
+              지급받으면 2,000원이 최초 1회 추가 적립됩니다. 첫 캠페인부터 기존
+              추천료도 그대로 받아요. 단독 500원 · 묶음 1,200원입니다.
             </p>
             <p>
-              신규 추천 보상 검수 대기:{" "}
+              친구의 첫 캠페인 완료·원고료 지급 대기:{" "}
               {Number(data.referral.pending || 0).toLocaleString()}원
             </p>
             <div className="ui-amounts">
@@ -857,6 +859,19 @@ export default function ParticipantPortal() {
             ))}
           </section>
         </>
+      )}
+      {data?.participant.referralCode && (
+        <ReferralPromotion
+          referralCode={String(data.participant.referralCode)}
+          onShowLink={() => {
+            setTab("payments");
+            requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLInputElement>(".portal-referral input")
+                ?.focus(),
+            );
+          }}
+        />
       )}
       {dialog}
     </main>

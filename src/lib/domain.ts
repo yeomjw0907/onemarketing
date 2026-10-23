@@ -485,7 +485,11 @@ async function participantLifecycle(
       )
         continue;
       await lock("referral-source:" + credit.sourceId);
-      if (["pending_review", "available"].includes(String(credit.status)))
+      if (
+        ["pending_review", "pending_campaign", "available"].includes(
+          String(credit.status),
+        )
+      )
         await update(credit.id, {
           status: "cancelled",
           cancelledAt: new Date().toISOString(),

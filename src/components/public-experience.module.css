@@ -1051,3 +1051,70 @@
     scroll-behavior: auto !important;
   }
 }
+.portalRoot.portalWithPromotion {
+  padding-bottom: calc(170px + env(safe-area-inset-bottom));
+}
+.referralPromotion {
+  position: fixed;
+  z-index: 30;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(460px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid #d5e5ff;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 6px 28px #191f281c;
+  color: #191f28;
+}
+.referralPromotion > svg {
+  flex-shrink: 0;
+  color: #3182f6;
+}
+.referralPromotion > div {
+  flex: 1;
+  min-width: 0;
+}
+.referralPromotion strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.referralPromotion p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #6b7684;
+}
+.referralPromotion button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #3182f6;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.referralPromotion button:focus-visible {
+  outline: 3px solid #191f28;
+  outline-offset: 3px;
+}
+@media (max-width: 480px) {
+  .referralPromotion {
+    right: 16px;
+    gap: 8px;
+    padding: 12px;
+  }
+}

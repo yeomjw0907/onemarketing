@@ -65,7 +65,16 @@ export async function settleParticipant(
     return row;
   });
   const credits = [];
-  for (const id of [...new Set(body.referralCreditIds)].sort()) {
+  const requestedCredits = [];
+  for (const id of [...new Set(body.referralCreditIds)].sort())
+    requestedCredits.push({ id, credit: await get(id) });
+  requestedCredits.sort(
+    (a, b) =>
+      Number(a.credit?.type === "signup") -
+        Number(b.credit?.type === "signup") ||
+      String(a.credit?.sourceId).localeCompare(String(b.credit?.sourceId)),
+  );
+  for (const { id } of requestedCredits) {
     const credit = await get(id);
     if (
       !credit ||
@@ -74,6 +83,10 @@ export async function settleParticipant(
       credit.status !== "available"
     )
       throw new Error("추천료 내역이 변경되었습니다.");
+    if (credit.type === "signup" && !credit.qualifyingSourceId)
+      throw new Error(
+        "친구의 첫 캠페인 완료 및 원고료 지급 후 정산할 수 있습니다.",
+      );
     await lock("referral-source:" + credit.sourceId);
     const fresh = await get(id);
     if (fresh?.status !== "available")
@@ -163,7 +176,16 @@ export async function cancelParticipantSettlement(
   )
     throw new Error("정산 기록이 변경되었습니다. 새로고침하세요.");
   if (Array.isArray(current.referralCreditIds)) {
-    for (const creditId of current.referralCreditIds as string[]) {
+    const orderedCredits = [];
+    for (const creditId of current.referralCreditIds as string[])
+      orderedCredits.push({ id: creditId, credit: await get(creditId) });
+    orderedCredits.sort(
+      (a, b) =>
+        Number(a.credit?.type === "signup") -
+          Number(b.credit?.type === "signup") ||
+        String(a.credit?.sourceId).localeCompare(String(b.credit?.sourceId)),
+    );
+    for (const { id: creditId } of orderedCredits) {
       const c = await get(creditId);
       if (!c || c.settlementId !== current.id)
         throw new Error("추천료 정산 연결을 확인하세요.");

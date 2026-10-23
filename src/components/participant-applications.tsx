@@ -132,7 +132,7 @@ export default function ParticipantApplications({
     const approve = action === "bulk-approve" || action === "bulk-reapprove";
     const verb =
       action === "bulk-verify"
-        ? "검수 완료 · 보상 확정"
+        ? "회원 검수 완료"
         : action === "bulk-exclude"
           ? "검수 완료 · 보상 제외"
           : action === "bulk-delete"
@@ -150,7 +150,7 @@ export default function ParticipantApplications({
       .join(", ");
     if (
       !window.confirm(
-        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-verify" ? "신규 추천 보상 2,000원이 지급 가능해집니다. 실제 송금은 별도 정산에서 처리합니다." : action === "bulk-exclude" ? "신규 추천 보상을 취소합니다. 회원 이용은 유지됩니다." : action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}${picked.length > 100 ? "\n100건씩 순서대로 처리합니다. 중간 오류가 발생하면 완료된 건은 유지하고 나머지는 중단합니다." : ""}`,
+        `${names}${picked.length > 5 ? " 외 " + (picked.length - 5) + "명" : ""}\n선택한 ${filter === "deleted" ? "삭제된" : filter === "rejected" ? "반려" : "신규"} 신청 ${picked.length}건을 한 번에 ${verb}할까요?\n${action === "bulk-verify" ? "회원 검수를 완료합니다. 특별 보상은 친구의 첫 캠페인 완료 및 원고료 지급 후 별도로 적립됩니다." : action === "bulk-exclude" ? "신규 추천 보상을 취소합니다. 회원 이용은 유지됩니다." : action === "bulk-delete" ? "삭제된 신청 목록으로 이동하며 나중에 복구할 수 있습니다." : action === "bulk-restore" ? "삭제 전 신규·반려 상태로 복구합니다. 참여자를 등록하지 않습니다." : approve ? "검토 대기·승인 계정을 승인하고 참여자로 등록합니다. 개별 반려한 계정은 유지됩니다." : "선택한 신청을 반려하며 참여자를 등록하지 않습니다."}${picked.length > 100 ? "\n100건씩 순서대로 처리합니다. 중간 오류가 발생하면 완료된 건은 유지하고 나머지는 중단합니다." : ""}`,
       )
     )
       return;
@@ -255,7 +255,7 @@ export default function ParticipantApplications({
       setChecked({});
       setMessage(
         action === "verify"
-          ? "검수를 완료했습니다. 신규 추천 보상이 지급 가능해졌습니다."
+          ? "회원 검수를 완료했습니다. 특별 보상은 친구의 첫 캠페인 완료 및 원고료 지급 후 적립됩니다."
           : action === "exclude"
             ? "검수를 완료하고 신규 추천 보상에서 제외했습니다."
             : action === "approve"
@@ -289,9 +289,9 @@ export default function ParticipantApplications({
         </a>
       </div>
       <p className="hint">
-        새 신청은 자동 승인됩니다. 미검수 회원을 확인한 뒤 검수를 완료하면 신규
-        추천 보상 2,000원이 지급 가능해집니다. 부적합 회원은 참여자 수정 ·
-        삭제에서 처리해주세요.
+        새 신청은 자동 승인됩니다. 회원은 사후 검수하며, 특별 추천 보상
+        2,000원은 친구의 첫 캠페인 완료 및 원고료 지급 후 적립됩니다. 부적합
+        회원은 참여자 수정 · 삭제에서 처리해주세요.
       </p>
       <div className="row" style={{ margin: "16px 0", flexWrap: "wrap" }}>
         {Object.entries(labels).map(([key, label]) => (
@@ -549,7 +549,7 @@ export default function ParticipantApplications({
                   disabled={busy || !picked.length || !!current}
                   onClick={() => bulkReview("bulk-verify")}
                 >
-                  선택한 회원 검수 완료 · 보상 확정
+                  선택한 회원 검수 완료
                 </button>
                 <button
                   type="button"
@@ -572,7 +572,7 @@ export default function ParticipantApplications({
           </div>
           <p className="hint">
             {filter === "unreviewed"
-              ? "등록 정보를 확인한 회원만 검수 완료해주세요. 보상 확정과 실제 지급은 별도입니다."
+              ? "등록 정보를 확인한 회원만 검수 완료해주세요. 회원 검수는 특별 보상의 지급 조건과 별개입니다."
               : filter === "approved"
                 ? "승인 완료된 신청도 선택한 건만 엑셀로 내려받을 수 있습니다."
                 : filter === "deleted"
@@ -830,7 +830,7 @@ export default function ParticipantApplications({
                 <p>
                   자동 승인 · 미검수
                   {current.data.signupBonusAmount
-                    ? " · 신규 추천 보상 2,000원 검수 대기"
+                    ? " · 특별 보상 2,000원은 첫 캠페인 원고료 지급 후 적립"
                     : ""}
                 </p>
                 <button
@@ -838,7 +838,7 @@ export default function ParticipantApplications({
                   disabled={busy}
                   onClick={() => review("verify")}
                 >
-                  검수 완료 · 보상 확정
+                  회원 검수 완료
                 </button>
                 <button
                   type="button"

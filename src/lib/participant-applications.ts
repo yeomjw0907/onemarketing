@@ -174,7 +174,8 @@ export async function submitApplication(
         referredParticipantId: approved.participantId,
         amount: 2000,
         type: "signup",
-        status: "pending_review",
+        status: "pending_campaign",
+        eligibility: "first_campaign_paid",
       });
     return { id: envelope.key };
   });
@@ -473,18 +474,22 @@ async function reviewAutoApplication(input: unknown, actor: string) {
       participant.status !== "active"
     )
       throw new Error("이용 중인 참여자만 검수할 수 있습니다.");
-    const credit = (await list("referral_credits")).find(
+    let credit = (await list("referral_credits")).find(
       (c) => c.sourceId === old.id && c.type === "signup",
     );
     if (credit) {
       await lock("referral-source:" + old.id);
-      if (!["pending_review", "cancelled"].includes(String(credit.status)))
-        throw new Error("추천 보상 상태가 변경되었습니다.");
+      credit = (await get(credit.id))!;
       await update(credit.id, {
+        ...(body.action === "exclude"
+          ? { excludedAt: new Date().toISOString() }
+          : {}),
         status:
-          body.action === "verify" && credit.status !== "cancelled"
-            ? "available"
-            : "cancelled",
+          body.action === "verify"
+            ? credit.status
+            : credit.status === "paid" || credit.status === "recovery_required"
+              ? "recovery_required"
+              : "cancelled",
         reviewedBy: actor,
         reviewedAt: new Date().toISOString(),
       });
