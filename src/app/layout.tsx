@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.onemarketing.kr"),
-  title: "One Marketing · 운영 대시보드",
+  title: "원마케팅 | 콘텐츠와 사람을 연결하는 캠페인",
   description: "마케팅 제작과 운영을 한 곳에서",
   openGraph: {
     type: "website",

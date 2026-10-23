@@ -8,6 +8,7 @@ import {
 } from "react";
 import Link from "next/link";
 import styles from "./market.module.css";
+import PublicShell from "./public-shell";
 type Row = Record<string, any>;
 const money = (n: number) => n.toLocaleString("ko-KR") + "원";
 const labels: Record<string, string> = {
@@ -61,30 +62,21 @@ export async function marketFetch(path: string, body?: unknown) {
 }
 function Shell({ children }: { children: ReactNode }) {
   return (
-    <main className={styles.root}>
-      <header className={styles.header}>
-        <Link href="/marketing" className={styles.brand}>
-          ONE MARKETING
-        </Link>
-        <nav className={styles.nav} aria-label="서비스 메뉴">
-          <Link href="/marketing">마케팅 상품</Link>
-          <Link href="/advertisers">광고주 마이페이지</Link>
-          <Link href="/campaigns">캠페인 찾기</Link>
-          <Link href="/participants/portal">체험단 나의 작업</Link>
-        </nav>
-      </header>
+    <PublicShell>
       <div className={styles.body}>{children}</div>
-    </main>
+    </PublicShell>
   );
 }
 function Account({
   account,
   onChange,
+  initialRegister = false,
 }: {
   account: Row | null;
   onChange: (a: Row | null) => void;
+  initialRegister?: boolean;
 }) {
-  const [register, setRegister] = useState(false),
+  const [register, setRegister] = useState(initialRegister),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -198,6 +190,24 @@ function Account({
         </p>
       )}
     </section>
+  );
+}
+export function AdvertiserAccess({ register = false }: { register?: boolean }) {
+  const [account, setAccount] = useState<Row | null>(null);
+  useEffect(() => {
+    marketFetch("/api/advertiser-auth")
+      .then((d) => setAccount(d.account))
+      .catch(() => {});
+  }, []);
+  return (
+    <>
+      <Account
+        account={account}
+        onChange={setAccount}
+        initialRegister={register}
+      />
+      {account && <Link href="/advertisers">광고주 마이페이지로 이동 →</Link>}
+    </>
   );
 }
 export function MarketingShop({
