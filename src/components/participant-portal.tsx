@@ -5,6 +5,7 @@ import styles from "./public-experience.module.css";
 import { participantNext, portalTaskMatches } from "@/lib/public-progress";
 import PostingSteps from "./posting-steps";
 import ReferralPromotion from "./referral-promotion";
+import { CommerceParticipant } from "./commerce-participant";
 import { CampaignApplications } from "./market-public";
 import BrandOrb from "./brand-orb";
 import { participantTaskGuide } from "@/lib/workflow-guidance";
@@ -283,7 +284,12 @@ export default function ParticipantPortal() {
           <p>
             <Link href="/campaigns">모집 중인 캠페인 둘러보기 →</Link>
           </p>
-          {tab === "applications" && <CampaignApplications />}
+          {tab === "applications" && (
+            <>
+              <CommerceParticipant />
+              <CampaignApplications />
+            </>
+          )}
           <section
             className="ui-pane"
             hidden={tab !== "offers"}

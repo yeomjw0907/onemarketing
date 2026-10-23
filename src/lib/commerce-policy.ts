@@ -139,6 +139,7 @@ export function selfSettlement(d: CampaignInput, completed: number) {
   };
 }
 export const appStates: Record<string, string> = {
+  cancelled: "진행 종료",
   applied: "지원 완료",
   selected: "선정 · 수락 대기",
   accepted: "참여 확정",

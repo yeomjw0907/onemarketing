@@ -443,7 +443,25 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         "settle-self",
         "payout",
         "end-work",
+        "materials",
       ]),
+      materials: z
+        .object({
+          copy: z.string().max(30000),
+          urls: z
+            .array(
+              z
+                .string()
+                .url()
+                .refine(
+                  (v) => v.startsWith("https://"),
+                  "HTTPS 링크만 사용할 수 있습니다.",
+                ),
+            )
+            .max(30),
+        })
+        .strict()
+        .optional(),
       applicationId: uid.optional(),
       refundId: uid.optional(),
       decision: z.enum(["approve", "revision", "reject"]).optional(),
@@ -483,7 +501,17 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
       ["select", "reject", "review"].includes(b.action)
     )
       throw new Error("대행 캠페인은 담당자에게 요청해주세요.");
-    if (b.action === "payout" || b.action === "end-work") {
+    if (b.action === "materials") {
+      if (!b.materials || (!manager && d.input.kind === "package"))
+        throw new Error("제작 담당자만 자료를 전달할 수 있습니다.");
+      const a = apps.find((a) => a.id === b.applicationId);
+      if (!a || !["selected", "accepted", "revision"].includes(a.data.status))
+        throw new Error("참여 제안 또는 진행 중인 작업을 선택하세요.");
+      await persist("commerce_applications", a, {
+        ...a.data,
+        materials: { ...b.materials, deliveredAt: now() },
+      });
+    } else if (b.action === "payout" || b.action === "end-work") {
       if (!manager || !b.reference)
         throw new Error("관리자가 실제 지급 또는 종료 근거를 입력하세요.");
       const a = apps.find((a) => a.id === b.applicationId);
@@ -591,7 +619,7 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         throw new Error("종료된 캠페인은 재개할 수 없습니다.");
       if (!b.status) throw new Error("단계를 선택하세요.");
       if (
-        b.status === "completed" &&
+        ["completed", "cancelled"].includes(b.status) &&
         apps.some((a) =>
           ["accepted", "submitted", "revision", "selected"].includes(
             a.data.status,
@@ -686,6 +714,15 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         } else if (b.decision === "approve") {
           if (d.input.managed && !d.usageReason)
             throw new Error("대행 업무 수행 금액과 근거를 먼저 확정하세요.");
+          if (d.input.kind !== "package") {
+            const floor = selfSettlement(
+              d.input,
+              apps.filter((a) => ["verified", "paid"].includes(a.data.status))
+                .length,
+            );
+            d.used.reward = Math.max(d.used.reward || 0, floor.reward);
+            d.used.operation = Math.max(d.used.operation || 0, floor.operation);
+          }
           const max = availableRefund(d);
           if (!b.amount || b.amount > max)
             throw new Error("미사용 결제액을 초과한 환불입니다.");
@@ -710,7 +747,7 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         r.status = "paid";
         r.reference = b.reference;
         r.paidAt = now();
-        d.status = "cancelled";
+        d.status = d.status === "completed" ? "completed" : "cancelled";
       }
     }
     d.history = [

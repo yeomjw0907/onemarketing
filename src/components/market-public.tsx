@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import styles from "./market.module.css";
 import PublicShell from "./public-shell";
+import { CommerceOpportunities } from "./commerce-participant";
 type Row = Record<string, any>;
 const money = (n: number) => n.toLocaleString("ko-KR") + "원";
 const labels: Record<string, string> = {
@@ -45,21 +46,8 @@ const stage: Record<string, string> = {
   planned: "일정 준비",
   created: "접수",
 };
-export async function marketFetch(path: string, body?: unknown) {
-  const r = await fetch(path, {
-    cache: "no-store",
-    ...(body
-      ? {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      : {}),
-  });
-  const d = await r.json();
-  if (!r.ok) throw new Error(d.error || "요청에 실패했습니다.");
-  return d;
-}
+import { marketFetch } from "./public-fetch";
+export { marketFetch } from "./public-fetch";
 function Shell({ children }: { children: ReactNode }) {
   return (
     <PublicShell>
@@ -622,6 +610,7 @@ export function CampaignMarket() {
           콘텐츠는 원마케팅이 제작합니다.
         </p>
       </div>
+      <CommerceOpportunities />
       <div className={styles.row}>
         <label>
           채널{" "}

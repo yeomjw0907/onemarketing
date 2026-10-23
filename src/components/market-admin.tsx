@@ -99,6 +99,9 @@ export default function MarketAdmin({
   }
   return (
     <div className={styles.admin}>
+      <p>
+        <Link href="/admin/platform">새 주문·입금·선정·검수·환불 운영 →</Link>
+      </p>
       <div className="pagehead">
         <div>
           <h1>상품·모집 플랫폼</h1>

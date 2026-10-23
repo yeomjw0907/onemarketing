@@ -194,6 +194,33 @@ test("selection capacity, participant ownership, submission, review and refund l
     note: "가이드 충족 확인",
   });
   c = (await commerceView(actor)).campaigns[0];
+  await assert.rejects(() =>
+    campaignAction(actor, {
+      campaignId: c.id,
+      version: c.version,
+      action: "payout",
+      applicationId: av.id,
+      reference: "지급 증빙 001",
+    }),
+  );
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "payout",
+    applicationId: av.id,
+    reference: "은행 지급 증빙 001",
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  assert.equal((c.applications[0].data as any).status, "paid");
+  await assert.rejects(() =>
+    campaignAction(admin, {
+      campaignId: c.id,
+      version: c.version,
+      action: "payout",
+      applicationId: av.id,
+      reference: "은행 지급 중복",
+    }),
+  );
   await campaignAction(admin, {
     campaignId: c.id,
     version: c.version,
@@ -211,6 +238,7 @@ test("selection capacity, participant ownership, submission, review and refund l
   });
   c = (await commerceView(actor)).campaigns[0];
   assert.equal(c.data.refunds[0].status, "paid");
+  assert.equal(c.data.status, "completed");
   await assert.rejects(() =>
     campaignAction(admin, {
       campaignId: c.id,
@@ -221,3 +249,4 @@ test("selection capacity, participant ownership, submission, review and refund l
     }),
   );
 });
+
