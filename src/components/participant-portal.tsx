@@ -5,6 +5,7 @@ import styles from "./public-experience.module.css";
 import { participantNext, portalTaskMatches } from "@/lib/public-progress";
 import PostingSteps from "./posting-steps";
 import ReferralPromotion from "./referral-promotion";
+import { CampaignApplications } from "./market-public";
 import BrandOrb from "./brand-orb";
 import { participantTaskGuide } from "@/lib/workflow-guidance";
 import guidanceStyles from "./workflow-guidance.module.css";
@@ -51,6 +52,13 @@ export default function ParticipantPortal() {
     if (!r.ok) throw new Error(d.error);
     setData(d);
     if (firstLoad.current) {
+      const returnCampaign = sessionStorage.getItem("om_campaign_return");
+      if (returnCampaign && /^[a-f0-9-]{36}$/i.test(returnCampaign)) {
+        sessionStorage.removeItem("om_campaign_return");
+        location.assign(
+          "/campaigns?campaign=" + encodeURIComponent(returnCampaign),
+        );
+      }
       const pendingOffers = d.offers.some(
         (o: Row) =>
           o.status === "proposed" && Date.parse(o.expiresAt) > Date.now(),
@@ -268,9 +276,14 @@ export default function ParticipantPortal() {
                 { id: "tasks", label: "게시 작업", count: data.tasks.length },
                 { id: "availability", label: "참여 설정" },
                 { id: "payments", label: "정산·추천" },
+                { id: "applications", label: "내 캠페인 지원" },
               ]}
             />
           </div>
+          <p>
+            <Link href="/campaigns">모집 중인 캠페인 둘러보기 →</Link>
+          </p>
+          {tab === "applications" && <CampaignApplications />}
           <section
             className="ui-pane"
             hidden={tab !== "offers"}

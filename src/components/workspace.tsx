@@ -1,5 +1,6 @@
 "use client";
 import KeywordEvidence from "./keyword-evidence";
+import MarketAdmin from "./market-admin";
 import KeywordMetrics from "./keyword-metrics";
 import type { NaverKeywordMetrics } from "@/lib/naver-keyword-schema";
 import ProductUnderstandingReview, {
@@ -84,6 +85,7 @@ const menus = [
   ["assistant", "업무 도우미", MessageSquare],
   ["customers", "고객·제품", Users],
   ["participants", "체험단 관리", Users],
+  ["market", "상품·모집 플랫폼", Package],
   ["library", "자료실", FolderOpen],
   ["contracts", "계약·견적", FileText],
   ["workflow", "캠페인 운영", Layers],
@@ -1275,6 +1277,14 @@ export default function Workspace() {
               }}
             />
           </>
+        )}
+        {page === "market" && (
+          <MarketAdmin
+            data={data}
+            reload={load}
+            onQuote={() => navigate("workflow")}
+            onParticipant={(id) => navigate("participants", id)}
+          />
         )}
         {page === "participants" && (
           <Participants
