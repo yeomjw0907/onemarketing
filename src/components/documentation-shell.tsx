@@ -18,7 +18,7 @@ export default function DocumentationShell({
     <PublicShell>
       <div className="documentation">
         <div className="docs-layout">
-          <aside className="docs-sidebar">
+          <nav className="docs-sidebar" aria-label="가이드 메뉴">
             <p>원마케팅 가이드</p>
             <Link href="/guide" aria-current={!ai ? "page" : undefined}>
               이용 가이드
@@ -35,7 +35,7 @@ export default function DocumentationShell({
             <hr />
             <Link href="/policy">이용·환불 안내</Link>
             <Link href="/participants/guide">게시 방법 안내</Link>
-          </aside>
+          </nav>
           <article className="docs-body">
             <div className="docs-breadcrumb">
               가이드　/　{ai ? "AI·MCP" : "서비스 이용"}
@@ -54,14 +54,6 @@ export default function DocumentationShell({
               </section>
             ))}
           </article>
-          <nav className="docs-toc" aria-label="페이지 목차">
-            <strong>이 페이지에서</strong>
-            {sections.map((s) => (
-              <a href={"#" + s.id} key={s.id}>
-                {s.title}
-              </a>
-            ))}
-          </nav>
         </div>
       </div>
     </PublicShell>

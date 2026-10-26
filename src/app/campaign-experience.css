@@ -1474,14 +1474,21 @@
   line-height: 1.85;
 }
 .docs-layout {
-  max-width: 1240px;
+  max-width: 1120px;
   margin: auto;
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr) 160px;
+  grid-template-columns: 200px minmax(0, 1fr);
   gap: 42px;
   padding: 34px 30px 70px;
 }
 .docs-sidebar {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
   border-right: 1px solid #e9edf2;
   padding-right: 24px;
 }
@@ -1576,24 +1583,6 @@
 .docs-body code {
   font-size: 11px;
 }
-.docs-toc {
-  font-size: 11px;
-  position: sticky;
-  top: 24px;
-  align-self: start;
-  padding-left: 16px;
-  border-left: 1px solid #e9edf2;
-}
-.docs-toc strong {
-  font-weight: 500;
-  color: #4e5968;
-}
-.docs-toc a {
-  display: block;
-  color: #8b95a1;
-  text-decoration: none;
-  margin-top: 11px;
-}
 .docs-links {
   display: flex;
   gap: 20px;
@@ -1603,9 +1592,6 @@
     grid-template-columns: 170px minmax(0, 1fr);
     gap: 25px;
   }
-  .docs-toc {
-    display: none;
-  }
 }
 @media (max-width: 650px) {
   .docs-layout {
@@ -1613,6 +1599,10 @@
     padding: 25px 20px;
   }
   .docs-sidebar {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
     border-right: 0;
     border-bottom: 1px solid #e9edf2;
     margin-bottom: 25px;
