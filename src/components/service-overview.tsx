@@ -94,17 +94,47 @@ export default function ProductOverview({
   return (
     <PublicShell>
       <div className="service-page">
-        <ServiceBanner variant={about ? "about" : "products"} />
+        {about ? (
+          <ServiceBanner variant="about" />
+        ) : (
+          <header className="service-page-heading">
+            <span className="service-eyebrow">마케팅 상품</span>
+            <h1>
+              우리 브랜드에 맞는
+              <br />
+              마케팅을 골라보세요.
+            </h1>
+            <p>
+              직접 모집하거나 제작과 운영을 맡기거나, 필요한 만큼 선택하세요.
+            </p>
+          </header>
+        )}
         <section
           className="service-products"
           aria-labelledby="service-products-title"
         >
-          <h2 id="service-products-title">어떤 도움이 필요하세요?</h2>
+          <div className="service-selection">
+            <div>
+              <h2 id="service-products-title">어떤 도움이 필요하세요?</h2>
+              <p>
+                셀프 모집 또는 콘텐츠 패키지를 고르고,
+                <br />
+                필요한 경우 운영 대행을 추가하세요.
+              </p>
+            </div>
+            <div className="service-selection-art">
+              <BrandVisual
+                kind="products"
+                size="inline"
+                sizes="(max-width: 700px) 88px, 144px"
+              />
+              <span>기본 상품 + 운영 옵션</span>
+            </div>
+          </div>
           <div className="service-product-list">
             <article>
               <div className="service-product-heading">
                 <span className="service-number">01 / RECRUIT</span>
-                <BrandVisual kind="recruit" />
               </div>
               <h3>셀프 모집</h3>
               <p>
@@ -122,7 +152,6 @@ export default function ProductOverview({
             <article>
               <div className="service-product-heading">
                 <span className="service-number">02 / CONTENTS</span>
-                <BrandVisual kind="content" />
               </div>
               <h3>콘텐츠 제작·게시 패키지</h3>
               <p>
@@ -142,7 +171,6 @@ export default function ProductOverview({
             <article>
               <div className="service-product-heading">
                 <span className="service-number">03 / MANAGED</span>
-                <BrandVisual kind="managed" />
               </div>
               <h3>운영 대행 옵션</h3>
               <p>
@@ -208,7 +236,6 @@ export default function ProductOverview({
                 <Link href="/campaigns">캠페인 찾아보기 →</Link>
               </div>
               <div>
-                <BrandVisual kind="ai" size="inline" />
                 <h2>채팅으로 캠페인을 준비한다면</h2>
                 <p>
                   사용 중인 AI에 원마케팅을 연결하세요.

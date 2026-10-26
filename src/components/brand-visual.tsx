@@ -33,7 +33,7 @@ export default function BrandVisual({
           sizes ||
           (size === "point"
             ? "(max-width: 700px) 64px, 88px"
-            : "(max-width: 700px) 72px, 104px")
+            : "(max-width: 700px) 56px, 80px")
         }
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}

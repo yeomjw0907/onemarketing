@@ -6,15 +6,14 @@
 | --- | --- | --- |
 | 메인 | linked-rings-v1.webp | 브랜드와 체험단의 연결 |
 | 서비스 소개 히어로 | about-ribbon-v1.webp | 준비부터 게시까지 이어지는 흐름 |
-| 상품 안내 히어로 | product-blocks-v1.webp | 필요한 상품의 선택과 조합 |
-| 셀프 모집 설명 | recruit-orbs-v1.webp | 참여자가 모이는 모습, 작은 포인트 |
-| 콘텐츠 패키지 설명 | content-pages-v1.webp | 콘텐츠 제작, 작은 포인트 |
-| 운영 대행 설명 | managed-check-v1.webp | 진행과 완료 확인, 작은 포인트 |
-| AI 연결 안내·문서 제목 옆 | ai-connector-v1.webp | AI와 플랫폼의 도구 연결 |
+| 상품 선택 설명 | product-blocks-v1.webp | 기본 상품 선택 후 운영 옵션을 더하는 구성 안내 |
+| AI 문서 제목 옆 | ai-connector-v1.webp | 제목을 보조하는 작은 연결 포인트 |
+
+후속 편집: 상품별 구체·시트·체크는 화면에서 제외하고 제작 파일만 보관한다. 상품 안내 상단의 장식 배너도 제거해 실제 상품 설명이 빨리 보이게 했다. 블록은 상품 선택 설명과 `기본 상품 + 운영 옵션` 문구 바로 옆에서 한 번만 쓴다. 소개 하단에 중복되던 AI 커넥터도 제거했다. AI 문서의 커넥터는 데스크톱 80px, 모바일 56px로 축소했다.
 
 파일은 모두 `public/images/brand/`에 있다. 메인 링은 승인 시안을 유지한다. 새 이미지 6개는 내장 이미지 생성 도구로 투명 배경에 생성하고 WebP로 최적화했다. 히어로는 960px, 작은 포인트는 320px 원본을 사용한다. 작은 포인트는 지연 로드한다. 실제 캠페인 사진·데이터 표·작성 폼에는 장식 이미지를 넣지 않는다.
 
-검증: 프로덕션 빌드와 격리 DB의 실제 HTTP 역할·주문·지원·검수·환불·MCP 검증 통과. 320/390/768/1440px에서 메인·소개·상품·AI 문서 16개 조합의 이미지 로드, 용도별 다른 이미지 배치, 작은 상품 포인트 세 종류, 가로 넘침·문구 겹침 없음, 페이지당 h1 하나, 상품 구성 앵커 이동을 확인했다.
+최종 편집 검증: 프로덕션 빌드와 격리 DB의 실제 HTTP 역할·주문·지원·검수·환불·MCP 검증 통과. 320/390/768/1440px에서 메인·소개·상품·AI 문서 16개 조합을 확인했다. 소개 이미지는 5개에서 2개로, 상품 안내 이미지는 4개에서 1개로 줄었고 제외한 포인트의 이미지 요청도 발생하지 않는다. 이미지 로드, 가로 넘침·문구 겹침 없음, 페이지당 h1 하나, 견적 로그인 이동을 확인했다.
 
 프롬프트 공통 조건: isolated premium 3D object, transparent background, glossy brand blue #3182f6 and deep cobalt, polished mirror silver, restrained cyan reflections, soft controlled studio lighting, precise beveled edges, square centered frame with transparent padding. No text, logo, UI, people, robot, watermark or ground plane.
 
