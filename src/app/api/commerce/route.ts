@@ -54,11 +54,13 @@ function fail(e: unknown) {
 export async function GET(req: Request) {
   try {
     const p = new URL(req.url).searchParams;
-    if (p.get("mode") === "catalog")
+    if (p.get("mode") === "catalog") {
+      await identity(null);
       return Response.json(
         { policyVersion, payment: await paymentInstructions() },
         { headers },
       );
+    }
     if (p.get("mode") === "campaigns")
       return Response.json(await publicCommerceCampaigns(), { headers });
     return Response.json(await commerceView(await identity(p.get("role"))), {

@@ -59,8 +59,10 @@ export async function GET(request: Request) {
       const p = await portalParticipant();
       return Response.json(await myApplications(p.id), { headers });
     }
-    if (mode === "catalog")
+    if (mode === "catalog") {
+      await advertiser();
       return Response.json(await publicProducts(), { headers });
+    }
     if (mode === "campaigns")
       return Response.json(await publicCampaigns(), { headers });
     return Response.json(

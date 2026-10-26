@@ -1,0 +1,313 @@
+.service-page {
+  max-width: 1180px;
+  margin: auto;
+  padding: 52px 24px 64px;
+  color: #191f28;
+}
+.service-page-heading {
+  margin-bottom: 36px;
+}
+.service-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4e6c93;
+}
+.service-page-heading h1 {
+  font-size: 32px;
+  line-height: 1.5;
+  letter-spacing: -1px;
+  margin: 14px 0;
+}
+.service-page p {
+  color: #6b7684;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.service-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  background: #edf4ff;
+  border-radius: 15px;
+  padding: 30px 38px;
+  gap: 24px;
+  margin: 0 0 32px;
+}
+.service-banner h2 {
+  font-size: 24px !important;
+  line-height: 1.5 !important;
+  letter-spacing: -0.7px;
+  margin: 8px 0 !important;
+  color: #191f28;
+}
+.service-banner p {
+  font-size: 13px;
+  color: #52657d;
+  margin: 8px 0 16px;
+}
+.service-banner a {
+  font-size: 13px;
+  color: #2469cf;
+  font-weight: 600;
+  display: inline-flex;
+  gap: 24px;
+  align-items: center;
+  min-height: 44px;
+}
+.service-art {
+  position: relative;
+  flex: 0 0 225px;
+  padding: 7px 20px 18px;
+}
+.service-sheet {
+  border: 1px solid #d7e6fc;
+  border-radius: 10px;
+  background: white;
+  padding: 20px;
+  transform: rotate(6deg);
+  box-shadow: 0 12px 26px #2867bd12;
+}
+.service-sheet > span {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #3182f6;
+}
+.service-sheet strong {
+  display: block;
+  font-size: 20px;
+  line-height: 1.5;
+  margin: 10px 0;
+}
+.service-art-lines {
+  height: 18px;
+  border-top: 3px solid #e9edf2;
+  border-bottom: 3px solid #e9edf2;
+  margin: 12px 0;
+}
+.service-art-tags {
+  display: flex;
+  gap: 6px;
+}
+.service-art-tags b {
+  font-size: 10px;
+  background: #eef5ff;
+  color: #3182f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.service-stamp {
+  position: absolute;
+  bottom: 0;
+  left: -20px;
+  background: #3182f6;
+  color: white;
+  padding: 11px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  transform: rotate(-5deg);
+}
+.service-products {
+  margin: 48px 0;
+}
+.service-page h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+.service-product-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin-top: 26px;
+}
+.service-product-list article {
+  padding-top: 22px;
+  border-top: 2px solid #191f28;
+}
+.service-number {
+  font-size: 11px;
+  color: #3182f6;
+  letter-spacing: 1px;
+}
+.service-product-list h3 {
+  font-size: 19px;
+  margin: 16px 0;
+}
+.service-product-list ul {
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 2;
+  color: #4e5968;
+  margin: 22px 0;
+}
+.service-for {
+  font-size: 12px;
+  color: #8b95a1;
+}
+.service-login {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  background: #f7f8fa;
+  padding: 30px;
+  border-radius: 15px;
+}
+.service-login a {
+  background: #3182f6;
+  color: white !important;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.service-login h2 {
+  margin: 0;
+}
+.service-process {
+  margin: 56px 0;
+}
+.service-process ol {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+.service-process li {
+  border-top: 1px solid #e9edf2;
+  padding-top: 20px;
+}
+.service-process b {
+  font-size: 14px;
+}
+.service-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin: 48px 0;
+}
+.service-two > div {
+  border-top: 1px solid #e9edf2;
+  padding-top: 20px;
+}
+.service-two a,
+.service-note a {
+  color: #2469cf;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.service-note {
+  margin: 32px 0 0;
+  font-size: 12px !important;
+}
+.campaign-experience .service-banner {
+  margin-bottom: 24px;
+  padding: 22px 30px;
+}
+.campaign-experience .service-banner h2 {
+  font-size: 22px !important;
+}
+.campaign-experience .service-art {
+  flex-basis: 190px;
+}
+.campaign-experience .service-sheet {
+  padding: 14px;
+}
+.campaign-experience .service-sheet strong {
+  font-size: 17px;
+}
+@media (max-width: 700px) {
+  .service-page {
+    padding: 28px 18px 40px;
+  }
+  .service-page-heading h1 {
+    font-size: 26px;
+  }
+  .service-banner {
+    padding: 24px;
+    gap: 10px;
+  }
+  .service-banner h2 {
+    font-size: 21px !important;
+  }
+  .service-art {
+    flex-basis: 160px;
+    padding: 10px;
+  }
+  .service-sheet {
+    padding: 14px;
+  }
+  .service-sheet strong {
+    font-size: 17px;
+  }
+  .service-stamp {
+    left: -5px;
+    font-size: 10px;
+    padding: 9px;
+  }
+  .service-product-list {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .service-products {
+    margin: 36px 0;
+  }
+  .service-login {
+    display: block;
+    padding: 24px;
+  }
+  .service-login a {
+    display: inline-flex;
+    white-space: normal;
+    margin-top: 12px;
+  }
+  .service-process ol {
+    grid-template-columns: 1fr 1fr;
+  }
+  .service-two {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .campaign-experience .service-banner {
+    padding: 16px 18px;
+    margin: 0 0 18px;
+  }
+  .campaign-experience .service-banner h2 {
+    font-size: 17px !important;
+  }
+  .campaign-experience .service-banner p {
+    display: none;
+  }
+  .campaign-experience .service-banner .service-eyebrow {
+    font-size: 10px;
+  }
+  .campaign-experience .service-art {
+    flex-basis: 110px;
+    padding: 4px;
+  }
+  .campaign-experience .service-sheet {
+    padding: 10px;
+  }
+  .campaign-experience .service-sheet strong {
+    font-size: 13px;
+  }
+  .campaign-experience .service-art-lines,
+  .campaign-experience .service-art-tags {
+    display: none;
+  }
+  .campaign-experience .service-stamp {
+    font-size: 8px;
+    padding: 6px;
+    bottom: -6px;
+    left: -10px;
+  }
+  .service-page .service-banner .service-art {
+    display: none;
+  }
+}

@@ -117,7 +117,17 @@ try {
       .status,
     200,
   );
-  const catalog = await call("/api/commerce?mode=catalog");
+  assert.equal((await fetch(base + "/api/commerce?mode=catalog")).status, 401);
+  assert.equal((await fetch(base + "/api/market?mode=catalog")).status, 401);
+  const publicShop = await (await fetch(base + "/marketing")).text();
+  assert.ok(publicShop.includes("광고주 로그인 후"));
+  assert.ok(!publicShop.includes("220,000"));
+  assert.equal((await fetch(base + "/about")).status, 200);
+  const catalog = await call(
+    "/api/commerce?mode=catalog",
+    undefined,
+    advertiser,
+  );
   const input = {
     category: "cafe",
     fulfillment: "provided",
@@ -198,6 +208,35 @@ try {
     expiresAt: new Date(Date.now() + 3600000).toISOString(),
   });
   const participant = "om_participant=" + pt;
+  for (const cookie of [participant, admin]) {
+    for (const endpoint of [
+      "/api/commerce?mode=catalog",
+      "/api/market?mode=catalog",
+    ])
+      assert.equal(
+        (await fetch(base + endpoint, { headers: { Cookie: cookie } })).status,
+        401,
+      );
+    for (const page of ["/marketing", "/marketing/legacy"]) {
+      const html = await (
+        await fetch(base + page, { headers: { Cookie: cookie } })
+      ).text();
+      assert.ok(html.includes("광고주 로그인 후"));
+      assert.ok(!html.includes("220,000"));
+    }
+  }
+  assert.equal(
+    (
+      await fetch(base + "/api/market?mode=catalog", {
+        headers: { Cookie: advertiser },
+      })
+    ).status,
+    200,
+  );
+  const advertiserShop = await (
+    await fetch(base + "/marketing", { headers: { Cookie: advertiser } })
+  ).text();
+  assert.ok(advertiserShop.includes("220,000"));
   const a = (
     await call(
       "/api/commerce",

@@ -32,7 +32,8 @@ export default function PublicShell({ children }: { children: ReactNode }) {
   }, [pathname]);
   const nav = [
     ["/campaigns", "캠페인 찾기"],
-    ["/marketing", "상품·가격"],
+    ["/marketing", "마케팅 상품"],
+    ["/about", "서비스 소개"],
     ["/guide", "이용 가이드"],
     ["/ai", "AI·MCP"],
   ];
@@ -90,6 +91,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
           <p>체험단 모집부터 게시물 확인까지</p>
         </div>
         <nav>
+          <Link href="/about">서비스 소개</Link>
           <Link href="/policy">이용·환불 안내</Link>
           <Link href="/guide">이용 가이드</Link>
           <Link href="/ai">AI·MCP 문서</Link>

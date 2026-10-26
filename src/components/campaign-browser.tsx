@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import useAccountFavorites from "./use-account-favorites";
 import PublicShell from "./public-shell";
+import { ServiceBanner } from "./service-overview";
 import { marketFetch } from "./public-fetch";
 import {
   campaignCategories,
@@ -450,6 +451,7 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
         <div className="wrap">
           {home ? (
             <>
+              <ServiceBanner />
               <section className="homelead">
                 <div>
                   <h1>모집 중인 캠페인</h1>
