@@ -1,0 +1,68 @@
+.brand-visual {
+  display: block;
+  flex-shrink: 0;
+  aspect-ratio: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.brand-visual img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.brand-visual--hero {
+  width: 100%;
+}
+.brand-visual--point {
+  width: 88px;
+}
+.brand-visual--inline {
+  width: 104px;
+}
+.docs-brand-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.docs-brand-heading > div {
+  min-width: 0;
+}
+.docs-brand-heading .brand-visual {
+  margin-right: 8px;
+}
+.service-product-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 88px;
+}
+.service-two .brand-visual {
+  float: right;
+  margin: 0 0 12px 12px;
+}
+.service-product-list article h3 {
+  margin-top: 12px;
+}
+@media (max-width: 700px) {
+  .brand-visual--point {
+    width: 64px;
+  }
+  .brand-visual--inline {
+    width: 72px;
+  }
+  .service-product-heading {
+    min-height: 64px;
+  }
+  .docs-brand-heading {
+    gap: 12px;
+  }
+  .docs-brand-heading .brand-visual {
+    margin-right: 0;
+  }
+  .service-two .brand-visual {
+    margin-left: 8px;
+  }
+}

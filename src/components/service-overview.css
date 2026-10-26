@@ -228,6 +228,7 @@
     margin-bottom: 24px;
   }
   .service-banner h2,
+  .service-banner--products h1,
   .campaign-experience .service-banner h2 {
     font-size: 19px;
     line-height: 1.5;

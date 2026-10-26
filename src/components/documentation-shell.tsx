@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import PublicShell from "./public-shell";
+import BrandVisual from "./brand-visual";
 type Section = { id: string; title: string; content: ReactNode };
 export default function DocumentationShell({
   title,
@@ -39,8 +40,13 @@ export default function DocumentationShell({
             <div className="docs-breadcrumb">
               가이드　/　{ai ? "AI·MCP" : "서비스 이용"}
             </div>
-            <h1>{title}</h1>
-            <p className="docs-intro">{description}</p>
+            <div className="docs-brand-heading">
+              <div>
+                <h1>{title}</h1>
+                <p className="docs-intro">{description}</p>
+              </div>
+              {ai && <BrandVisual kind="ai" size="inline" priority />}
+            </div>
             {sections.map((s) => (
               <section id={s.id} key={s.id}>
                 <h2>{s.title}</h2>

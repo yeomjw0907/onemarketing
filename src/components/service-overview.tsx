@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import BrandVisual from "./brand-visual";
 import PublicShell from "./public-shell";
 import "./service-overview.css";
 
@@ -9,7 +9,8 @@ export function ServiceBanner({
   variant?: "home" | "about" | "products";
 }) {
   const about = variant === "about";
-  const Heading = about ? "h1" : "h2";
+  const products = variant === "products";
+  const Heading = variant === "home" ? "h2" : "h1";
   return (
     <section
       className={"service-banner service-banner--" + variant}
@@ -17,37 +18,68 @@ export function ServiceBanner({
     >
       <div className="service-banner-copy">
         <span className="service-eyebrow">
-          {about ? "원마케팅 소개" : "브랜드와 체험단을 연결하는 곳"}
+          {about
+            ? "원마케팅 소개"
+            : products
+              ? "마케팅 상품"
+              : "브랜드와 체험단을 연결하는 곳"}
         </span>
         <Heading>
-          브랜드와 체험단을
-          <br />
-          한곳에서 연결해요.
+          {about ? (
+            <>
+              캠페인의 시작부터
+              <br />
+              완료까지 함께해요.
+            </>
+          ) : products ? (
+            <>
+              우리 브랜드에 맞는
+              <br />
+              마케팅을 골라보세요.
+            </>
+          ) : (
+            <>
+              브랜드와 체험단을
+              <br />
+              한곳에서 연결해요.
+            </>
+          )}
         </Heading>
-        <p>모집부터 콘텐츠 게시 확인까지, 원마케팅에서.</p>
+        <p>
+          {products
+            ? "직접 모집하거나 제작과 운영을 맡기거나, 필요한 만큼 선택하세요."
+            : about
+              ? "모집, 콘텐츠 제작, 게시 확인까지 하나의 흐름으로."
+              : "모집부터 콘텐츠 게시 확인까지, 원마케팅에서."}
+        </p>
         <Link
           className="service-banner-cta"
-          href={about || variant === "products" ? "/campaigns" : "/about"}
+          href={
+            products
+              ? "#service-products-title"
+              : about
+                ? "/campaigns"
+                : "/about"
+          }
         >
-          {about || variant === "products"
-            ? "캠페인 둘러보기"
-            : "서비스 알아보기"}{" "}
+          {products
+            ? "상품 구성 살펴보기"
+            : about
+              ? "캠페인 둘러보기"
+              : "서비스 알아보기"}{" "}
           <span aria-hidden="true">↗</span>
         </Link>
       </div>
       <div className="service-art" aria-hidden="true">
-        <Image
-          src="/images/brand/linked-rings-v1.webp"
-          alt=""
-          width={960}
-          height={960}
+        <BrandVisual
+          kind={about ? "flow" : products ? "products" : "connection"}
+          size="hero"
           sizes={
             about
               ? "(max-width: 700px) 160px, 380px"
               : "(max-width: 700px) 132px, 260px"
           }
-          loading="eager"
-          fetchPriority="high"
+          priority
         />
       </div>
     </section>
@@ -62,21 +94,6 @@ export default function ProductOverview({
   return (
     <PublicShell>
       <div className="service-page">
-        {!about && (
-          <div className="service-page-heading">
-            <span className="service-eyebrow">마케팅 상품</span>
-            <h1>
-              우리 브랜드에 맞는
-              <br />
-              마케팅을 골라보세요.
-            </h1>
-            <p>
-              직접 모집하거나, 콘텐츠 제작과 운영을 맡기거나.
-              <br />
-              목적에 맞는 구성으로 캠페인을 시작하세요.
-            </p>
-          </div>
-        )}
         <ServiceBanner variant={about ? "about" : "products"} />
         <section
           className="service-products"
@@ -85,7 +102,10 @@ export default function ProductOverview({
           <h2 id="service-products-title">어떤 도움이 필요하세요?</h2>
           <div className="service-product-list">
             <article>
-              <span className="service-number">01 / RECRUIT</span>
+              <div className="service-product-heading">
+                <span className="service-number">01 / RECRUIT</span>
+                <BrandVisual kind="recruit" />
+              </div>
               <h3>셀프 모집</h3>
               <p>
                 캠페인을 직접 만들고,
@@ -100,7 +120,10 @@ export default function ProductOverview({
               <span className="service-for">직접 운영하고 싶은 광고주에게</span>
             </article>
             <article>
-              <span className="service-number">02 / CONTENTS</span>
+              <div className="service-product-heading">
+                <span className="service-number">02 / CONTENTS</span>
+                <BrandVisual kind="content" />
+              </div>
               <h3>콘텐츠 제작·게시 패키지</h3>
               <p>
                 AI로 소재를 만들고,
@@ -117,7 +140,10 @@ export default function ProductOverview({
               </span>
             </article>
             <article>
-              <span className="service-number">03 / MANAGED</span>
+              <div className="service-product-heading">
+                <span className="service-number">03 / MANAGED</span>
+                <BrandVisual kind="managed" />
+              </div>
               <h3>운영 대행 옵션</h3>
               <p>
                 모집 이후의 진행도,
@@ -182,6 +208,7 @@ export default function ProductOverview({
                 <Link href="/campaigns">캠페인 찾아보기 →</Link>
               </div>
               <div>
+                <BrandVisual kind="ai" size="inline" />
                 <h2>채팅으로 캠페인을 준비한다면</h2>
                 <p>
                   사용 중인 AI에 원마케팅을 연결하세요.
