@@ -1,4 +1,5 @@
 "use client";
+import OperationQueue from "./operation-queue";
 import CampaignPresentationFields from "./campaign-presentation-fields";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -15,7 +16,9 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [selected, setSelected] = useState(""),
-    [tab, setTab] = useState("overview");
+    [tab, setTab] = useState("overview"),
+    [appFilter, setAppFilter] = useState("all"),
+    [appQuery, setAppQuery] = useState("");
   const load = useCallback(async () => {
     setData(await marketFetch("/api/commerce" + (admin ? "?role=admin" : "")));
   }, [admin]);
@@ -46,6 +49,35 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
       data: { campaignId: c.id, version: c.version, action, ...extra },
     });
   }
+  const openQueue = (item: {
+    campaignId?: string;
+    orderId?: string;
+    kind: string;
+  }) => {
+    setAppFilter(
+      item.kind === "review"
+        ? "submitted"
+        : item.kind === "selection"
+          ? "applied"
+          : "all",
+    );
+    setAppQuery("");
+    setTab(item.orderId ? "orders" : "overview");
+    setSelected(item.campaignId || "");
+    setTimeout(
+      () =>
+        document
+          .getElementById(
+            item.orderId
+              ? "order-" + item.orderId
+              : item.kind === "refund"
+                ? "campaign-refunds"
+                : "campaign-applicants",
+          )
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      60,
+    );
+  };
   const current = data?.campaigns.find((c: Row) => c.id === selected);
   function exportApplicants(c: Row) {
     const cells = (v: unknown) =>
@@ -222,7 +254,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                 <h2>주문·입금 확인</h2>
                 {!data.orders.length && <p>아직 주문이 없습니다.</p>}
                 {data.orders.map((o: Row) => (
-                  <article className={s.panel} key={o.id}>
+                  <article className={s.panel} key={o.id} id={"order-" + o.id}>
                     <span className={s.badge}>
                       {o.data.status === "paid"
                         ? "입금 확인 완료"
@@ -296,45 +328,11 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
             )}
             {tab === "overview" && !current && (
               <>
-                <section className={s.panel}>
-                  <h2>지금 확인할 일</h2>
-                  {!data.campaigns.length ? (
-                    <p>
-                      아직 캠페인이 없습니다. 상품을 골라 첫 캠페인을
-                      준비하세요.
-                    </p>
-                  ) : (
-                    data.campaigns.map((c: Row) => (
-                      <div className={s.list} key={c.id}>
-                        <div className={s.row}>
-                          <strong>{c.data.input.title}</strong>
-                          <button onClick={() => setSelected(c.id)}>
-                            캠페인 열기 →
-                          </button>
-                        </div>
-                        <p>
-                          {c.data.status === "awaiting_payment"
-                            ? "입금 확인 대기"
-                            : c.data.status === "paused"
-                              ? "환불·변경 검토 중"
-                              : c.data.input.managed && !admin
-                                ? "담당자가 선정·일정·검수를 진행합니다. 조건 변경과 문의는 캠페인 상세에서 확인하세요."
-                                : c.applications.some(
-                                      (a: Row) => a.data.status === "submitted",
-                                    )
-                                  ? "제출된 콘텐츠를 검수해주세요."
-                                  : c.counts.applied
-                                    ? "지원자를 확인하고 참여를 제안해주세요."
-                                    : "모집·참여 현황을 확인하세요."}
-                        </p>
-                        <small>
-                          모집 {c.data.input.deadline} · 제출{" "}
-                          {c.data.input.submissionDeadline}
-                        </small>
-                      </div>
-                    ))
-                  )}
-                </section>
+                <OperationQueue data={data} admin={admin} onOpen={openQueue} />
+                <h2>전체 캠페인 · {data.campaigns.length}</h2>
+                {!data.campaigns.length && (
+                  <p>아직 캠페인이 없어요. 새 캠페인을 등록해주세요.</p>
+                )}
                 <div className={s.columns}>
                   {data.campaigns.map((c: Row) => (
                     <article className={s.offer} key={c.id}>
@@ -351,7 +349,13 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                       </p>
                       <strong>{money(c.data.total)}</strong>
                       <p>
-                        <button onClick={() => setSelected(c.id)}>
+                        <button
+                          onClick={() => {
+                            setSelected(c.id);
+                            setAppFilter("all");
+                            setAppQuery("");
+                          }}
+                        >
                           상세 보기
                         </button>
                       </p>
@@ -385,6 +389,9 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                         const f = new FormData(e.currentTarget);
                         void operation(current, "presentation", {
                           presentation: {
+                            ...(admin
+                              ? { visibility: f.get("visibility") }
+                              : {}),
                             category: f.get("category"),
                             fulfillment: f.get("fulfillment") || "provided",
                             region: f.get("region") || "",
@@ -394,6 +401,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                       }}
                     >
                       <CampaignPresentationFields
+                        admin={admin}
                         value={current.data.input}
                         packageOnly={current.data.input.kind === "package"}
                       />
@@ -588,7 +596,9 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                 )}
                 <section className={s.panel}>
                   <div className={s.row}>
-                    <h3>지원자·참여자 {current.applications.length}명</h3>
+                    <h3 id="campaign-applicants">
+                      지원자·참여자 {current.applications.length}명
+                    </h3>
                     <button onClick={() => exportApplicants(current)}>
                       비교용 CSV 다운로드
                     </button>
@@ -599,248 +609,297 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                   {!current.applications.length && (
                     <p>아직 지원자가 없습니다.</p>
                   )}
-                  {current.applications.map((a: Row) => (
-                    <article className={s.list} key={a.id}>
-                      <div className={s.row}>
-                        <strong>{a.data.name}</strong>
-                        <span className={s.badge}>
-                          {appStates[a.data.status] || a.data.status}
-                        </span>
-                      </div>
-                      <p>{a.data.message}</p>
-                      <div className={s.actions}>
-                        {Object.entries(a.data.accounts || {}).map(
-                          ([channel, url]) => (
-                            <a
-                              key={channel}
-                              href={String(url)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {channel === "blog" ? "블로그" : "클립"} 활동 채널
-                              ↗
-                            </a>
-                          ),
+                  <div className="applicant-toolbar">
+                    <label>
+                      지원자 검색
+                      <input
+                        aria-label="지원자 검색"
+                        value={appQuery}
+                        onChange={(e) => setAppQuery(e.target.value)}
+                        placeholder="활동명 또는 지원 내용"
+                      />
+                    </label>
+                    <label>
+                      지원 상태
+                      <select
+                        aria-label="지원 상태"
+                        value={appFilter}
+                        onChange={(e) => setAppFilter(e.target.value)}
+                      >
+                        <option value="all">상태 전체</option>
+                        {Object.entries(appStates).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {current.applications.length > 0 &&
+                    !current.applications.some(
+                      (a: Row) =>
+                        (appFilter === "all" || a.data.status === appFilter) &&
+                        [a.data.name, a.data.message]
+                          .join(" ")
+                          .toLowerCase()
+                          .includes(appQuery.trim().toLowerCase()),
+                    ) && <p>조건에 맞는 지원자가 없어요.</p>}
+                  {current.applications
+                    .filter(
+                      (a: Row) =>
+                        (appFilter === "all" || a.data.status === appFilter) &&
+                        [a.data.name, a.data.message]
+                          .join(" ")
+                          .toLowerCase()
+                          .includes(appQuery.trim().toLowerCase()),
+                    )
+                    .map((a: Row) => (
+                      <article className={s.list} key={a.id}>
+                        <div className={s.row}>
+                          <strong>{a.data.name}</strong>
+                          <span className={s.badge}>
+                            {appStates[a.data.status] || a.data.status}
+                          </span>
+                        </div>
+                        <p>{a.data.message}</p>
+                        <div className={s.actions}>
+                          {Object.entries(a.data.accounts || {}).map(
+                            ([channel, url]) => (
+                              <a
+                                key={channel}
+                                href={String(url)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {channel === "blog" ? "블로그" : "클립"} 활동
+                                채널 ↗
+                              </a>
+                            ),
+                          )}
+                        </div>
+                        {a.data.expiresAt && (
+                          <p>수락 기한 {formatDate(a.data.expiresAt)}</p>
                         )}
-                      </div>
-                      {a.data.expiresAt && (
-                        <p>수락 기한 {formatDate(a.data.expiresAt)}</p>
-                      )}
-                      {(admin || !current.data.input.managed) &&
-                        a.data.status === "applied" && (
-                          <div className={s.actions}>
-                            <button
-                              className={s.primary}
-                              disabled={busy}
-                              onClick={() =>
-                                operation(current, "select", {
-                                  applicationId: a.id,
-                                })
-                              }
-                            >
-                              선정·참여 제안
-                            </button>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                operation(current, "reject", {
-                                  applicationId: a.id,
-                                  note: "캠페인 조건에 따른 미선정",
-                                })
-                              }
-                            >
-                              미선정
-                            </button>
-                          </div>
+                        {(admin || !current.data.input.managed) &&
+                          a.data.status === "applied" && (
+                            <div className={s.actions}>
+                              <button
+                                className={s.primary}
+                                disabled={busy}
+                                onClick={() =>
+                                  operation(current, "select", {
+                                    applicationId: a.id,
+                                  })
+                                }
+                              >
+                                선정·참여 제안
+                              </button>
+                              <button
+                                disabled={busy}
+                                onClick={() =>
+                                  operation(current, "reject", {
+                                    applicationId: a.id,
+                                    note: "캠페인 조건에 따른 미선정",
+                                  })
+                                }
+                              >
+                                미선정
+                              </button>
+                            </div>
+                          )}
+                        {(admin || current.data.input.kind !== "package") &&
+                          ["selected", "accepted", "revision"].includes(
+                            a.data.status,
+                          ) && (
+                            <details>
+                              <summary>원고·이미지·영상 전달</summary>
+                              <form
+                                className={s.form}
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const f = new FormData(e.currentTarget);
+                                  void operation(current, "materials", {
+                                    applicationId: a.id,
+                                    materials: {
+                                      assetIds: f.getAll("assetIds"),
+                                      copy: String(f.get("copy") || ""),
+                                      urls: String(f.get("urls") || "")
+                                        .split(/\r?\n/)
+                                        .map((x) => x.trim())
+                                        .filter(Boolean),
+                                    },
+                                  });
+                                }}
+                              >
+                                {admin && current.data.projectId && (
+                                  <fieldset className={s.wide}>
+                                    <legend>
+                                      연결한 프로젝트의 현재 제작 파일
+                                    </legend>
+                                    {data.productionAssets
+                                      ?.filter(
+                                        (v: Row) =>
+                                          v.projectId ===
+                                          current.data.projectId,
+                                      )
+                                      .map((v: Row) => (
+                                        <label key={v.id}>
+                                          <span>
+                                            <input
+                                              type="checkbox"
+                                              name="assetIds"
+                                              value={v.id}
+                                              defaultChecked={a.data.materials?.assetIds?.includes(
+                                                v.id,
+                                              )}
+                                            />
+                                            {v.category} · {v.name}{" "}
+                                            <a
+                                              href={"/api/assets/" + v.id}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                            >
+                                              검토 ↗
+                                            </a>
+                                          </span>
+                                        </label>
+                                      ))}
+                                  </fieldset>
+                                )}
+                                <label className={s.wide}>
+                                  제공 원고
+                                  <textarea
+                                    name="copy"
+                                    defaultValue={a.data.materials?.copy}
+                                    maxLength={30000}
+                                  />
+                                </label>
+                                <label className={s.wide}>
+                                  자료 HTTPS 링크 (줄마다 하나)
+                                  <textarea
+                                    name="urls"
+                                    defaultValue={a.data.materials?.urls?.join(
+                                      "\n",
+                                    )}
+                                  />
+                                </label>
+                                <button disabled={busy}>
+                                  이 참여자에게 전달
+                                </button>
+                              </form>
+                            </details>
+                          )}
+                        {a.data.links && (
+                          <>
+                            <h4>제출 콘텐츠</h4>
+                            {Object.entries(a.data.links).map(
+                              ([channel, url]) => (
+                                <p key={channel}>
+                                  <a
+                                    href={String(url)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    {channel} 게시물 확인 ↗
+                                  </a>
+                                </p>
+                              ),
+                            )}
+                            <p>
+                              제출 {formatDate(a.data.submittedAt)} · 링크
+                              접근과 가이드 준수 여부를 직접 확인하세요.
+                            </p>
+                          </>
                         )}
-                      {(admin || current.data.input.kind !== "package") &&
-                        ["selected", "accepted", "revision"].includes(
-                          a.data.status,
-                        ) && (
-                          <details>
-                            <summary>원고·이미지·영상 전달</summary>
+                        {(admin || !current.data.input.managed) &&
+                          a.data.status === "submitted" && (
                             <form
-                              className={s.form}
                               onSubmit={(e) => {
                                 e.preventDefault();
                                 const f = new FormData(e.currentTarget);
-                                void operation(current, "materials", {
+                                void operation(current, "review", {
                                   applicationId: a.id,
-                                  materials: {
-                                    assetIds: f.getAll("assetIds"),
-                                    copy: String(f.get("copy") || ""),
-                                    urls: String(f.get("urls") || "")
-                                      .split(/\r?\n/)
-                                      .map((x) => x.trim())
-                                      .filter(Boolean),
-                                  },
+                                  decision: f.get("decision"),
+                                  note: f.get("note"),
                                 });
                               }}
                             >
-                              {admin && current.data.projectId && (
-                                <fieldset className={s.wide}>
-                                  <legend>
-                                    연결한 프로젝트의 현재 제작 파일
-                                  </legend>
-                                  {data.productionAssets
-                                    ?.filter(
-                                      (v: Row) =>
-                                        v.projectId === current.data.projectId,
-                                    )
-                                    .map((v: Row) => (
-                                      <label key={v.id}>
-                                        <span>
-                                          <input
-                                            type="checkbox"
-                                            name="assetIds"
-                                            value={v.id}
-                                            defaultChecked={a.data.materials?.assetIds?.includes(
-                                              v.id,
-                                            )}
-                                          />
-                                          {v.category} · {v.name}{" "}
-                                          <a
-                                            href={"/api/assets/" + v.id}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                          >
-                                            검토 ↗
-                                          </a>
-                                        </span>
-                                      </label>
-                                    ))}
-                                </fieldset>
-                              )}
-                              <label className={s.wide}>
-                                제공 원고
-                                <textarea
-                                  name="copy"
-                                  defaultValue={a.data.materials?.copy}
-                                  maxLength={30000}
-                                />
-                              </label>
-                              <label className={s.wide}>
-                                자료 HTTPS 링크 (줄마다 하나)
-                                <textarea
-                                  name="urls"
-                                  defaultValue={a.data.materials?.urls?.join(
-                                    "\n",
-                                  )}
-                                />
-                              </label>
-                              <button disabled={busy}>
-                                이 참여자에게 전달
-                              </button>
+                              <div className={s.form}>
+                                <label>
+                                  검수 결과
+                                  <select name="decision">
+                                    <option value="approve">
+                                      가이드 충족 · 승인
+                                    </option>
+                                    <option value="revision">수정 요청</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  확인 결과·수정할 항목
+                                  <input
+                                    name="note"
+                                    required
+                                    minLength={3}
+                                    maxLength={2000}
+                                  />
+                                </label>
+                              </div>
+                              <div className={s.actions}>
+                                <button className={s.primary} disabled={busy}>
+                                  검수 결과 저장
+                                </button>
+                              </div>
                             </form>
-                          </details>
-                        )}
-                      {a.data.links && (
-                        <>
-                          <h4>제출 콘텐츠</h4>
-                          {Object.entries(a.data.links).map(
-                            ([channel, url]) => (
-                              <p key={channel}>
-                                <a
-                                  href={String(url)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {channel} 게시물 확인 ↗
-                                </a>
-                              </p>
-                            ),
                           )}
-                          <p>
-                            제출 {formatDate(a.data.submittedAt)} · 링크 접근과
-                            가이드 준수 여부를 직접 확인하세요.
-                          </p>
-                        </>
-                      )}
-                      {(admin || !current.data.input.managed) &&
-                        a.data.status === "submitted" && (
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              const f = new FormData(e.currentTarget);
-                              void operation(current, "review", {
-                                applicationId: a.id,
-                                decision: f.get("decision"),
-                                note: f.get("note"),
-                              });
-                            }}
-                          >
-                            <div className={s.form}>
+                        {a.data.note && <p>안내: {a.data.note}</p>}
+                        {admin &&
+                          [
+                            "selected",
+                            "accepted",
+                            "submitted",
+                            "revision",
+                            "verified",
+                          ].includes(a.data.status) && (
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const f = new FormData(e.currentTarget);
+                                void operation(
+                                  current,
+                                  a.data.status === "verified"
+                                    ? "payout"
+                                    : "end-work",
+                                  {
+                                    applicationId: a.id,
+                                    reference: f.get("reference"),
+                                  },
+                                );
+                              }}
+                            >
                               <label>
-                                검수 결과
-                                <select name="decision">
-                                  <option value="approve">
-                                    가이드 충족 · 승인
-                                  </option>
-                                  <option value="revision">수정 요청</option>
-                                </select>
-                              </label>
-                              <label>
-                                확인 결과·수정할 항목
+                                {a.data.status === "verified"
+                                  ? `보수 ${money(a.data.amount)} 실제 지급 후 증빙`
+                                  : "보수 의무가 없는 종료·취소 합의 근거"}
                                 <input
-                                  name="note"
+                                  name="reference"
                                   required
                                   minLength={3}
-                                  maxLength={2000}
                                 />
                               </label>
-                            </div>
-                            <div className={s.actions}>
-                              <button className={s.primary} disabled={busy}>
-                                검수 결과 저장
-                              </button>
-                            </div>
-                          </form>
-                        )}
-                      {a.data.note && <p>안내: {a.data.note}</p>}
-                      {admin &&
-                        [
-                          "selected",
-                          "accepted",
-                          "submitted",
-                          "revision",
-                          "verified",
-                        ].includes(a.data.status) && (
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              const f = new FormData(e.currentTarget);
-                              void operation(
-                                current,
-                                a.data.status === "verified"
-                                  ? "payout"
-                                  : "end-work",
-                                {
-                                  applicationId: a.id,
-                                  reference: f.get("reference"),
-                                },
-                              );
-                            }}
-                          >
-                            <label>
-                              {a.data.status === "verified"
-                                ? `보수 ${money(a.data.amount)} 실제 지급 후 증빙`
-                                : "보수 의무가 없는 종료·취소 합의 근거"}
-                              <input name="reference" required minLength={3} />
-                            </label>
-                            <div className={s.actions}>
-                              <button disabled={busy}>
-                                {a.data.status === "verified"
-                                  ? "실제 리워드 지급 기록"
-                                  : "작업 종료 기록"}
-                              </button>
-                            </div>
-                          </form>
-                        )}
-                    </article>
-                  ))}
+                              <div className={s.actions}>
+                                <button disabled={busy}>
+                                  {a.data.status === "verified"
+                                    ? "실제 리워드 지급 기록"
+                                    : "작업 종료 기록"}
+                                </button>
+                              </div>
+                            </form>
+                          )}
+                      </article>
+                    ))}
                 </section>
                 <section className={s.panel}>
-                  <h3>비용·환불</h3>
+                  <h3 id="campaign-refunds">비용·환불</h3>
                   <p>
                     이 캠페인 결제액{" "}
                     <strong>{money(current.data.total)}</strong>

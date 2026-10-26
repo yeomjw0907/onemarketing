@@ -16,6 +16,7 @@ const day = z
   }, "날짜를 확인하세요.");
 export const campaignPresentation = z
   .object({
+    visibility: z.enum(["public", "preview"]).optional(),
     category: z
       .enum(["food", "cafe", "beauty", "living", "fashion", "travel", "other"])
       .optional(),
@@ -24,6 +25,7 @@ export const campaignPresentation = z
     imageUrl: z
       .union([
         z.literal(""),
+        z.string().regex(/^\/api\/campaign-media\/[a-f0-9-]{36}$/i),
         z
           .string()
           .url()

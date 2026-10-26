@@ -13,6 +13,7 @@ import { participantTaskGuide } from "@/lib/workflow-guidance";
 import guidanceStyles from "./workflow-guidance.module.css";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import ParticipantCampaignQueue from "./participant-campaign-queue";
 import PublicShell from "./public-shell";
 import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
 import KakaoPortalLogin from "./kakao-portal-login";
@@ -45,6 +46,7 @@ export default function ParticipantPortal() {
     [selected, setSelected] = useState<string[]>([]),
     [tab, setTab] = useState("offers"),
     [notice, setNotice] = useState("");
+  const [campaignFocus, setCampaignFocus] = useState("");
   const [access, setAccess] = useState("");
   const [taskFilter, setTaskFilter] = useState("all");
   const { ask, dialog } = useDecisionDialog();
@@ -74,7 +76,23 @@ export default function ParticipantPortal() {
         (o: Row) =>
           o.status === "proposed" && Date.parse(o.expiresAt) > Date.now(),
       );
-      setTab(pendingOffers ? "offers" : d.tasks.length ? "tasks" : "offers");
+      const requested = new URL(location.href).searchParams.get("tab");
+      setTab(
+        requested &&
+          [
+            "offers",
+            "tasks",
+            "availability",
+            "payments",
+            "applications",
+          ].includes(requested)
+          ? requested
+          : pendingOffers
+            ? "offers"
+            : d.tasks.length
+              ? "tasks"
+              : "offers",
+      );
       firstLoad.current = false;
     }
   }
@@ -212,6 +230,7 @@ export default function ParticipantPortal() {
 
                 setNotice("");
                 sessionStorage.removeItem("om_portal_access");
+                window.dispatchEvent(new Event("om-auth-change"));
               } catch (e) {
                 setError(e instanceof Error ? e.message : "다시 시도해주세요.");
               } finally {
@@ -288,6 +307,50 @@ export default function ParticipantPortal() {
                 </strong>
               </div>
             </div>
+            <ParticipantCampaignQueue
+              onOpen={(id) => {
+                setCampaignFocus(id);
+                setTab("applications");
+                requestAnimationFrame(() =>
+                  document
+                    .getElementById("portal-menu")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                );
+              }}
+            />
+            <div className="portal-shortcuts">
+              <button
+                onClick={() => {
+                  setTab("offers");
+                  document
+                    .getElementById("portal-menu")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                참여 제안 확인
+              </button>
+              <button
+                onClick={() => {
+                  setTab("tasks");
+                  setTaskFilter("all");
+                  document
+                    .getElementById("portal-menu")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                게시 작업 확인
+              </button>
+              <button
+                onClick={() => {
+                  setTab("payments");
+                  document
+                    .getElementById("portal-menu")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                리워드 내역
+              </button>
+            </div>
             <div id="portal-menu">
               <Tabs
                 label="나의 작업 메뉴"
@@ -311,7 +374,7 @@ export default function ParticipantPortal() {
             </p>
             {tab === "applications" && (
               <>
-                <CommerceParticipant />
+                <CommerceParticipant focusId={campaignFocus} />
                 <CampaignApplications />
               </>
             )}

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Grid2X2,
@@ -12,7 +12,7 @@ import {
   Plane,
   Ellipsis,
   ArrowRight,
-  ImageOff,
+  SlidersHorizontal,
 } from "lucide-react";
 import PublicShell from "./public-shell";
 import { marketFetch } from "./public-fetch";
@@ -42,6 +42,7 @@ export function CampaignImage({
   cover?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [campaign.imageUrl]);
   return campaign.imageUrl && !failed ? (
     <img
       className={cover ? "cover" : undefined}
@@ -52,7 +53,9 @@ export function CampaignImage({
     />
   ) : (
     <div className={cover ? "cover placeholder" : "placeholder"}>
-      <ImageOff size={28} />
+      <span className="brand-initial" aria-hidden="true">
+        {campaign.brand.slice(0, 1)}
+      </span>
       <span>{campaign.brand}</span>
       <small>
         {campaignCategories[
@@ -68,7 +71,20 @@ export function CampaignCard({ c }: { c: CampaignSummary }) {
     (Date.parse(c.deadline) - Date.parse(today)) / 86400000,
   );
   return (
-    <article className="campaign">
+    <article
+      className="campaign"
+      onClick={() => {
+        try {
+          sessionStorage.setItem(
+            "om_campaign_scroll",
+            JSON.stringify({
+              url: location.pathname + location.search,
+              y: scrollY,
+            }),
+          );
+        } catch {}
+      }}
+    >
       <Link className="thumb" href={"/campaigns/" + c.id}>
         <CampaignImage campaign={c} />
         <span className={"badge " + (c.canApply && days <= 3 ? "urgent" : "")}>
@@ -130,7 +146,57 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
     [sort, setSort] = useState("deadline"),
     [page, setPage] = useState(1),
     [savedOnly, setSavedOnly] = useState(false),
-    [savedIds, setSavedIds] = useState<string[]>([]);
+    [savedIds, setSavedIds] = useState<string[]>([]),
+    [filtersOpen, setFiltersOpen] = useState(false),
+    [ready, setReady] = useState(false);
+  const restored = useRef(false),
+    fromHistory = useRef(true),
+    previousFilters = useRef("");
+  function readLocation() {
+    const p = new URLSearchParams(location.search);
+    setQ((p.get("q") || "").slice(0, 120));
+    setCategory(
+      Object.keys(campaignCategories).includes(p.get("category") || "")
+        ? p.get("category")!
+        : "all",
+    );
+    setChannel(
+      ["all", ...Object.keys(channelNames)].includes(p.get("channel") || "")
+        ? p.get("channel")!
+        : "all",
+    );
+    setFulfillment(
+      ["all", ...Object.keys(fulfillmentNames)].includes(
+        p.get("fulfillment") || "",
+      )
+        ? p.get("fulfillment")!
+        : "all",
+    );
+    setRegion((p.get("region") || "").slice(0, 100));
+    setReward(
+      ["all", "cash", "product"].includes(p.get("reward") || "")
+        ? p.get("reward")!
+        : "all",
+    );
+    setStatus(
+      ["all", "recruiting", "selecting", "active", "completed"].includes(
+        p.get("status") || "",
+      )
+        ? p.get("status")!
+        : "recruiting",
+    );
+    setSort(
+      ["deadline", "new", "reward"].includes(p.get("sort") || "")
+        ? p.get("sort")!
+        : "deadline",
+    );
+    setSavedOnly(p.get("saved") === "1");
+    setPage(
+      Math.max(1, Math.min(10000, Math.floor(Number(p.get("page"))) || 1)),
+    );
+    fromHistory.current = true;
+    setReady(true);
+  }
   function load() {
     setError("");
     marketFetch("/api/campaigns")
@@ -149,11 +215,66 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
       );
       if (Array.isArray(ids)) setSavedIds(ids);
     } catch {}
+    readLocation();
     load();
+    window.addEventListener("popstate", readLocation);
+    return () => window.removeEventListener("popstate", readLocation);
   }, []);
   useEffect(() => {
-    setPage(1);
+    if (!ready) return;
+    const signature = JSON.stringify([
+      q,
+      category,
+      channel,
+      fulfillment,
+      region,
+      reward,
+      status,
+      sort,
+      savedOnly,
+    ]);
+    if (
+      !fromHistory.current &&
+      previousFilters.current &&
+      previousFilters.current !== signature &&
+      page !== 1
+    ) {
+      setPage(1);
+      return;
+    }
+    previousFilters.current = signature;
+    fromHistory.current = false;
+    const p = new URLSearchParams();
+    Object.entries({
+      q,
+      category,
+      channel,
+      fulfillment,
+      region,
+      reward,
+      status,
+      sort,
+      saved: savedOnly ? "1" : "",
+      page: String(page),
+    }).forEach(([k, v]) => {
+      const defaults: Record<string, string> = {
+        category: "all",
+        channel: "all",
+        fulfillment: "all",
+        reward: "all",
+        status: "recruiting",
+        sort: "deadline",
+        page: "1",
+      };
+      if (v && v !== defaults[k]) p.set(k, v);
+    });
+    history.replaceState(
+      history.state,
+      "",
+      location.pathname + (p.size ? "?" + p.toString() : ""),
+    );
   }, [
+    ready,
     q,
     category,
     channel,
@@ -163,7 +284,20 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
     status,
     sort,
     savedOnly,
+    page,
   ]);
+  useEffect(() => {
+    if (!data || !ready || restored.current) return;
+    restored.current = true;
+    try {
+      const saved = JSON.parse(
+        sessionStorage.getItem("om_campaign_scroll") || "null",
+      );
+      if (saved?.url === location.pathname + location.search)
+        requestAnimationFrame(() => scrollTo(0, saved.y));
+      sessionStorage.removeItem("om_campaign_scroll");
+    } catch {}
+  }, [data, ready]);
   const rows = useMemo(() => {
     const text = q.trim().toLocaleLowerCase();
     return (data?.campaigns || [])
@@ -230,7 +364,44 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
   );
   const categories = Object.entries(campaignCategories);
   const filters = (
-    <div className="filters">
+    <div
+      className={"filters " + (filtersOpen ? "filters-open" : "")}
+      id="campaign-filters"
+    >
+      <div className="mobile-filter-options">
+        <label>
+          모집 상태
+          <select
+            aria-label="모집 상태 필터"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            {[
+              ["all", "상태 전체"],
+              ["recruiting", "모집 중"],
+              ["selecting", "선정 중"],
+              ["active", "활동 중"],
+              ["completed", "완료"],
+            ].map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          정렬
+          <select
+            aria-label="정렬 필터"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
+            <option value="deadline">마감 임박순</option>
+            <option value="new">최신순</option>
+            <option value="reward">리워드 높은 순</option>
+          </select>
+        </label>
+      </div>
       <label className="saved-filter">
         <input
           type="checkbox"
@@ -400,7 +571,6 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
                       </select>
                     </label>
                   </div>
-                  {filters}
                 </>
               )}
               <div className="toolbar">
@@ -440,8 +610,25 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
                     <option value="reward">리워드 높은 순</option>
                   </select>
                 </div>
+                <button
+                  className="mobile-filter-toggle"
+                  aria-expanded={filtersOpen}
+                  aria-controls="campaign-filters"
+                  onClick={() => setFiltersOpen(!filtersOpen)}
+                >
+                  <SlidersHorizontal size={17} />
+                  필터
+                  {[
+                    fulfillment !== "all",
+                    !!region,
+                    reward !== "all",
+                    savedOnly,
+                  ].filter(Boolean).length
+                    ? " · 적용됨"
+                    : ""}
+                </button>
               </div>
-              {home && filters}
+              {filters}
               <div className="sectiontitle">
                 <h2>
                   {home ? "전체 캠페인" : "검색 결과"}{" "}

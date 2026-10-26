@@ -569,6 +569,56 @@ export default function CampaignDetail({ id }: { id: string }) {
             </div>
           )}
         </div>
+        {c && (
+          <div className="mobile-action-bar">
+            <div>
+              <small>{c.reward ? "1인 리워드" : "제공 혜택"}</small>
+              <strong>{c.reward ? money(c.reward) : "제품·서비스"}</strong>
+            </div>
+            {data?.locked ? (
+              <Link className="btn primary" href={login}>
+                로그인 후 상세 보기
+              </Link>
+            ) : data?.viewerRole !== "participant" ? (
+              <Link
+                className="btn primary"
+                href={data?.isOwner ? "/advertisers" : "/participants/portal"}
+              >
+                {data?.isOwner ? "캠페인 관리" : "체험단 로그인"}
+              </Link>
+            ) : data.application &&
+              !["withdrawn", "declined", "rejected", "expired"].includes(
+                data.application.status,
+              ) ? (
+              <Link
+                className="btn primary"
+                href="/participants/portal?tab=applications"
+              >
+                나의 활동 확인
+              </Link>
+            ) : (
+              <button
+                className="primary"
+                disabled={!c.canApply || busy}
+                onClick={() => {
+                  setApplying(true);
+                  setTimeout(
+                    () =>
+                      document
+                        .getElementById("application-form")
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        }),
+                    50,
+                  );
+                }}
+              >
+                {c.canApply ? "지원하기" : "모집 마감"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </PublicShell>
   );

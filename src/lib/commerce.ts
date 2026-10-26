@@ -1,3 +1,4 @@
+import { checkCampaignMedia } from "./campaign-media";
 import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
 import {
@@ -142,6 +143,8 @@ export async function checkout(advertiserId: string, raw: unknown) {
       throw new Error(
         "같은 브랜드·캠페인이 중복되어 있습니다. 하나의 구성으로 합쳐주세요.",
       );
+    for (const q of quotes)
+      await checkCampaignMedia(q.input.imageUrl, advertiserId);
     const bank = await paymentInstructions();
     const data = {
       status: "awaiting_payment",
@@ -317,7 +320,7 @@ export async function commerceView(actor: CommerceActor) {
 }
 export async function publicCommerceCampaigns() {
   const rows = await query<Stored>(
-    "select c.* from commerce_campaigns c join commerce_orders o on o.id=c.order_id where o.data->>'status'='paid' and c.data->>'status'='recruiting'",
+    "select c.* from commerce_campaigns c join commerce_orders o on o.id=c.order_id where o.data->>'status'='paid' and coalesce(c.data->'input'->>'visibility','public')='public' and c.data->>'status'='recruiting'",
   );
   return rows
     .filter(
@@ -544,6 +547,12 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
       throw new Error("대행 캠페인은 담당자에게 요청해주세요.");
     if (b.action === "presentation") {
       if (!b.presentation) throw new Error("공개 정보를 입력하세요.");
+      if (
+        !manager &&
+        b.presentation.visibility !== undefined &&
+        b.presentation.visibility !== (d.input.visibility || "public")
+      )
+        throw Error("공개 범위는 관리자만 변경할 수 있어요.");
       const next = { ...d.input, ...b.presentation };
       if (
         d.input.kind === "package" &&
@@ -559,6 +568,7 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         throw new Error(
           "지원자가 있는 캠페인의 진행 방식·지역은 변경할 수 없습니다. 담당자와 일정·조건을 조율하세요.",
         );
+      await checkCampaignMedia(next.imageUrl, actor.id, manager);
       d.input = campaignInput.parse(next);
     } else if (b.action === "link-production") {
       if (!manager || !b.projectId)

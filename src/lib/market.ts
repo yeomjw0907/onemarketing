@@ -390,6 +390,7 @@ async function publicCampaign(row: MarketEntry) {
   const d = row.data,
     p = await get(String(d.projectId));
   if (
+    d.visibility === "preview" ||
     !d.published ||
     !openProject(p) ||
     Date.parse(d.deadline + "T23:59:59+09:00") <= Date.now()

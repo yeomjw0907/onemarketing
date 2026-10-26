@@ -48,7 +48,8 @@ export type CampaignSummary = {
   types: string[];
 };
 export function safeReturnPath(value: unknown) {
-  return typeof value === "string" && /^\/campaigns\/[a-f0-9-]{36}$/.test(value)
+  return typeof value === "string" &&
+    (value === "/marketing" || /^\/campaigns\/[a-f0-9-]{36}$/.test(value))
     ? value
     : "";
 }

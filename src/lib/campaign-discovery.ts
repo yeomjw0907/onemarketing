@@ -5,7 +5,7 @@ import { type CampaignSummary } from "./campaign-display";
 type Row = Record<string, any>;
 export async function campaignCatalog() {
   const rows = await query<Row>(
-    "select c.id,c.data,c.created_at,count(a.id) filter(where a.data->>'status'<>'withdrawn')::int as applications from commerce_campaigns c join commerce_orders o on o.id=c.order_id left join commerce_applications a on a.campaign_id=c.id where o.data->>'status'='paid' and c.data->>'status' in ('recruiting','selecting','producing','review','completed') group by c.id order by c.created_at desc",
+    "select c.id,c.data,c.created_at,count(a.id) filter(where a.data->>'status'<>'withdrawn')::int as applications from commerce_campaigns c join commerce_orders o on o.id=c.order_id left join commerce_applications a on a.campaign_id=c.id where o.data->>'status'='paid' and coalesce(c.data->'input'->>'visibility','public')='public' and c.data->>'status' in ('recruiting','selecting','producing','review','completed') group by c.id order by c.created_at desc",
   );
   const now = Date.now();
   const campaigns: CampaignSummary[] = rows.map((c) => {

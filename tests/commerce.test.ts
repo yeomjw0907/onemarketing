@@ -602,3 +602,40 @@ test("campaign discovery gates guides, keeps unpaid campaigns private, and restr
   assert.equal(expired?.canApply, false);
   assert.equal(expired?.status, "selecting");
 });
+
+test("admin can exclude test campaigns without changing their paid workflow, advertiser cannot publish them", async () => {
+  const { campaignDetails } = await import("../src/lib/campaign-discovery");
+  const { actor, order } = await setup();
+  await confirmPayment(admin, order.id, order.version, "test visibility");
+  let c = (await commerceView(actor)).campaigns[0];
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "presentation",
+    presentation: { visibility: "preview" },
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  assert.equal(c.data.status, "recruiting");
+  assert.equal(await campaignDetails(c.id, null), null);
+  assert.equal(
+    (await publicCommerceCampaigns()).some((x) => x.id === c.id),
+    false,
+  );
+  await assert.rejects(
+    () =>
+      campaignAction(actor, {
+        campaignId: c.id,
+        version: c.version,
+        action: "presentation",
+        presentation: { visibility: "public" },
+      }),
+    /관리자/,
+  );
+  await campaignAction(admin, {
+    campaignId: c.id,
+    version: c.version,
+    action: "presentation",
+    presentation: { visibility: "public" },
+  });
+  assert.ok(await campaignDetails(c.id, null));
+});

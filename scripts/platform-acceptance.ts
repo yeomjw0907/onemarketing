@@ -25,6 +25,9 @@ async function cleanup() {
     await new Promise<void>((r) => server!.close(() => r()));
   }
   await app.close();
+  const { listObjects, removeObjects } = await import("../src/lib/storage");
+  const objects = await listObjects();
+  if (objects.length) await removeObjects(objects);
   await dropSchema();
   await closeDb();
 }
@@ -80,10 +83,45 @@ try {
     consent: true,
   });
   const advertiser = registered.cookie;
+  const sharp = (await import("sharp")).default;
+  const cover = await sharp({
+    create: { width: 120, height: 90, channels: 3, background: "#3182f6" },
+  })
+    .png()
+    .toBuffer();
+  const form = new FormData();
+  form.set(
+    "file",
+    new File([new Uint8Array(cover)], "cover.png", { type: "image/png" }),
+  );
+  assert.equal(
+    (
+      await fetch(base + "/api/campaign-media", {
+        method: "POST",
+        headers: { Origin: base },
+        body: form,
+      })
+    ).status,
+    401,
+  );
+  const upload = await fetch(base + "/api/campaign-media", {
+    method: "POST",
+    headers: { Origin: base, Cookie: advertiser },
+    body: form,
+  });
+  assert.equal(upload.status, 200);
+  const uploaded = await upload.json();
+  assert.equal((await fetch(base + uploaded.url)).status, 404);
+  assert.equal(
+    (await fetch(base + uploaded.url, { headers: { Cookie: advertiser } }))
+      .status,
+    200,
+  );
   const catalog = await call("/api/commerce?mode=catalog");
   const input = {
     category: "cafe",
     fulfillment: "provided",
+    imageUrl: uploaded.url,
     title: "격리 카페 캠페인",
     brand: "테스트 카페",
     product: "테스트 제품",
@@ -124,6 +162,7 @@ try {
     },
     admin,
   );
+  assert.equal((await fetch(base + uploaded.url)).status, 200);
   let c = (await call("/api/commerce", undefined, advertiser)).value
     .campaigns[0];
   const p = await save(
@@ -377,6 +416,42 @@ try {
     body: "{}",
   });
   assert.equal(revoked.status, 401);
+  let visibilityCampaign = (
+    await call("/api/commerce", undefined, advertiser)
+  ).value.campaigns.find((r: any) => r.id === c.id);
+  await call(
+    "/api/commerce",
+    {
+      role: "admin",
+      action: "campaign",
+      data: {
+        campaignId: c.id,
+        version: visibilityCampaign.version,
+        action: "presentation",
+        presentation: { visibility: "preview" },
+      },
+    },
+    admin,
+  );
+  assert.equal((await fetch(base + "/api/campaigns?id=" + c.id)).status, 404);
+  assert.equal((await fetch(base + uploaded.url)).status, 404);
+  visibilityCampaign = (
+    await call("/api/commerce", undefined, advertiser)
+  ).value.campaigns.find((r: any) => r.id === c.id);
+  await call(
+    "/api/commerce",
+    {
+      role: "admin",
+      action: "campaign",
+      data: {
+        campaignId: c.id,
+        version: visibilityCampaign.version,
+        action: "presentation",
+        presentation: { visibility: "public" },
+      },
+    },
+    admin,
+  );
   const guestDetail = (await call("/api/campaigns?id=" + c.id)).value;
   assert.equal(guestDetail.locked, true);
   assert.equal(guestDetail.details, null);

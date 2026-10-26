@@ -200,7 +200,11 @@ export function AdvertiserAccess({
         onChange={(a) => {
           setAccount(a);
           window.dispatchEvent(new Event("om-auth-change"));
-          if (a && /^\/campaigns\/[a-f0-9-]{36}$/.test(returnTo))
+          if (
+            a &&
+            (returnTo === "/marketing" ||
+              /^\/campaigns\/[a-f0-9-]{36}$/.test(returnTo))
+          )
             location.assign(returnTo);
         }}
         initialRegister={register}
