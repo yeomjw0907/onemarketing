@@ -23,89 +23,87 @@
   font-size: 14px;
   line-height: 1.8;
 }
+/* Shared brand visual: compact on discovery, larger on service introduction. */
 .service-banner {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
   align-items: center;
   overflow: hidden;
-  background: #edf4ff;
+  background: linear-gradient(115deg, #f1f6ff 0%, #edf4ff 60%, #dceaff 100%);
   border-radius: 15px;
-  padding: 30px 38px;
+  padding: 24px 38px;
   gap: 24px;
   margin: 0 0 32px;
 }
+.service-banner-copy {
+  position: relative;
+  z-index: 1;
+}
+.service-banner h1,
 .service-banner h2 {
-  font-size: 24px !important;
-  line-height: 1.5 !important;
-  letter-spacing: -0.7px;
-  margin: 8px 0 !important;
+  font-size: 28px;
+  line-height: 1.45;
+  letter-spacing: -0.8px;
+  margin: 10px 0;
   color: #191f28;
 }
 .service-banner p {
   font-size: 13px;
   color: #52657d;
-  margin: 8px 0 16px;
+  margin: 12px 0 20px;
+  line-height: 1.7;
 }
-.service-banner a {
+.service-banner a.service-banner-cta {
   font-size: 13px;
-  color: #2469cf;
+  color: white;
+  background: #3182f6;
+  border-radius: 8px;
+  padding: 0 16px;
   font-weight: 600;
   display: inline-flex;
-  gap: 24px;
+  gap: 22px;
   align-items: center;
   min-height: 44px;
+  text-decoration: none;
+}
+.service-banner a.service-banner-cta:hover {
+  background: #2272eb;
+}
+.service-banner a.service-banner-cta:focus-visible {
+  outline: 3px solid #191f28;
+  outline-offset: 4px;
 }
 .service-art {
   position: relative;
-  flex: 0 0 225px;
-  padding: 7px 20px 18px;
+  width: 100%;
+  aspect-ratio: 1;
 }
-.service-sheet {
-  border: 1px solid #d7e6fc;
-  border-radius: 10px;
-  background: white;
-  padding: 20px;
-  transform: rotate(6deg);
-  box-shadow: 0 12px 26px #2867bd12;
-}
-.service-sheet > span {
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: #3182f6;
-}
-.service-sheet strong {
-  display: block;
-  font-size: 20px;
-  line-height: 1.5;
-  margin: 10px 0;
-}
-.service-art-lines {
-  height: 18px;
-  border-top: 3px solid #e9edf2;
-  border-bottom: 3px solid #e9edf2;
-  margin: 12px 0;
-}
-.service-art-tags {
-  display: flex;
-  gap: 6px;
-}
-.service-art-tags b {
-  font-size: 10px;
-  background: #eef5ff;
-  color: #3182f6;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-.service-stamp {
+.service-art::before {
+  content: "";
   position: absolute;
-  bottom: 0;
-  left: -20px;
-  background: #3182f6;
-  color: white;
-  padding: 11px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 8px;
+  inset: 72% 10% 8%;
+  background: #3182f61a;
+  border-radius: 50%;
+  filter: blur(18px);
+}
+.service-art img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 15px #2459a41a);
+}
+.service-banner--about {
+  grid-template-columns: minmax(0, 1fr) 380px;
+  padding: 32px 48px;
+}
+.service-banner--about h1 {
+  font-size: 34px;
+}
+.service-banner--about .service-art {
   transform: rotate(-5deg);
 }
 .service-products {
@@ -208,19 +206,12 @@
 }
 .campaign-experience .service-banner {
   margin-bottom: 24px;
-  padding: 22px 30px;
+  padding: 20px 30px;
+  grid-template-columns: minmax(0, 1fr) 240px;
 }
 .campaign-experience .service-banner h2 {
-  font-size: 22px !important;
-}
-.campaign-experience .service-art {
-  flex-basis: 190px;
-}
-.campaign-experience .service-sheet {
-  padding: 14px;
-}
-.campaign-experience .service-sheet strong {
-  font-size: 17px;
+  font-size: 26px;
+  line-height: 1.45;
 }
 @media (max-width: 700px) {
   .service-page {
@@ -229,27 +220,45 @@
   .service-page-heading h1 {
     font-size: 26px;
   }
-  .service-banner {
-    padding: 24px;
-    gap: 10px;
+  .service-banner,
+  .campaign-experience .service-banner {
+    padding: 22px 18px;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    margin-bottom: 24px;
   }
-  .service-banner h2 {
-    font-size: 21px !important;
+  .service-banner h2,
+  .campaign-experience .service-banner h2 {
+    font-size: 19px;
+    line-height: 1.5;
+    letter-spacing: -0.6px;
+    margin: 8px 0 12px;
   }
-  .service-art {
-    flex-basis: 160px;
-    padding: 10px;
-  }
-  .service-sheet {
-    padding: 14px;
-  }
-  .service-sheet strong {
-    font-size: 17px;
-  }
-  .service-stamp {
-    left: -5px;
+  .service-banner .service-eyebrow {
     font-size: 10px;
-    padding: 9px;
+  }
+  .service-banner p {
+    display: none;
+  }
+  .service-banner a.service-banner-cta {
+    font-size: 12px;
+    padding: 0 12px;
+    gap: 12px;
+  }
+  .service-banner--about {
+    grid-template-columns: minmax(0, 1fr) 110px;
+    padding: 32px 20px;
+    min-height: 248px;
+  }
+  .service-banner--about h1 {
+    font-size: 21px;
+    line-height: 1.5;
+    letter-spacing: -0.7px;
+  }
+  .service-banner--about .service-art {
+    width: 110px;
+    margin-left: 0;
+    transform: none;
   }
   .service-product-list {
     grid-template-columns: 1fr;
@@ -274,40 +283,21 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
+}
+@media (max-width: 360px) {
+  .service-banner,
   .campaign-experience .service-banner {
-    padding: 16px 18px;
-    margin: 0 0 18px;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 4px;
+    padding: 20px 14px;
   }
-  .campaign-experience .service-banner h2 {
-    font-size: 17px !important;
+  .service-banner--about {
+    grid-template-columns: minmax(0, 1fr) 96px;
   }
-  .campaign-experience .service-banner p {
-    display: none;
+  .service-banner--about .service-art {
+    width: 96px;
   }
-  .campaign-experience .service-banner .service-eyebrow {
-    font-size: 10px;
-  }
-  .campaign-experience .service-art {
-    flex-basis: 110px;
-    padding: 4px;
-  }
-  .campaign-experience .service-sheet {
-    padding: 10px;
-  }
-  .campaign-experience .service-sheet strong {
-    font-size: 13px;
-  }
-  .campaign-experience .service-art-lines,
-  .campaign-experience .service-art-tags {
-    display: none;
-  }
-  .campaign-experience .service-stamp {
-    font-size: 8px;
-    padding: 6px;
-    bottom: -6px;
-    left: -10px;
-  }
-  .service-page .service-banner .service-art {
-    display: none;
+  .service-banner--about h1 {
+    font-size: 19px;
   }
 }

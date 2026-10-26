@@ -1,37 +1,54 @@
 import Link from "next/link";
+import Image from "next/image";
 import PublicShell from "./public-shell";
 import "./service-overview.css";
 
-export function ServiceBanner() {
+export function ServiceBanner({
+  variant = "home",
+}: {
+  variant?: "home" | "about" | "products";
+}) {
+  const about = variant === "about";
+  const Heading = about ? "h1" : "h2";
   return (
-    <section className="service-banner" aria-label="원마케팅 서비스 안내">
-      <div>
-        <span className="service-eyebrow">브랜드와 체험단을 연결하는 곳</span>
-        <h2>
-          알리고 싶은 제품이 있다면,
+    <section
+      className={"service-banner service-banner--" + variant}
+      aria-label="원마케팅 서비스 안내"
+    >
+      <div className="service-banner-copy">
+        <span className="service-eyebrow">
+          {about ? "원마케팅 소개" : "브랜드와 체험단을 연결하는 곳"}
+        </span>
+        <Heading>
+          브랜드와 체험단을
           <br />
-          함께할 사람부터 만나세요.
-        </h2>
+          한곳에서 연결해요.
+        </Heading>
         <p>모집부터 콘텐츠 게시 확인까지, 원마케팅에서.</p>
-        <Link href="/about">
-          서비스 알아보기 <span aria-hidden="true">↗</span>
+        <Link
+          className="service-banner-cta"
+          href={about || variant === "products" ? "/campaigns" : "/about"}
+        >
+          {about || variant === "products"
+            ? "캠페인 둘러보기"
+            : "서비스 알아보기"}{" "}
+          <span aria-hidden="true">↗</span>
         </Link>
       </div>
       <div className="service-art" aria-hidden="true">
-        <div className="service-sheet">
-          <span>CAMPAIGN</span>
-          <strong>
-            우리 브랜드의
-            <br />
-            다음 이야기
-          </strong>
-          <div className="service-art-lines" />
-          <div className="service-art-tags">
-            <b>블로그</b>
-            <b>클립</b>
-          </div>
-        </div>
-        <div className="service-stamp">모집 → 선정 → 게시</div>
+        <Image
+          src="/images/brand/linked-rings-v1.webp"
+          alt=""
+          width={960}
+          height={960}
+          sizes={
+            about
+              ? "(max-width: 700px) 160px, 380px"
+              : "(max-width: 700px) 132px, 260px"
+          }
+          loading="eager"
+          fetchPriority="high"
+        />
       </div>
     </section>
   );
@@ -45,32 +62,22 @@ export default function ProductOverview({
   return (
     <PublicShell>
       <div className="service-page">
-        <div className="service-page-heading">
-          <span className="service-eyebrow">
-            {about ? "원마케팅 소개" : "마케팅 상품"}
-          </span>
-          <h1>
-            {about ? (
-              <>
-                만드는 일부터 알리는 일까지,
-                <br />
-                필요한 만큼 함께해요.
-              </>
-            ) : (
-              <>
-                우리 브랜드에 맞는
-                <br />
-                마케팅을 골라보세요.
-              </>
-            )}
-          </h1>
-          <p>
-            직접 모집하거나, 콘텐츠 제작과 운영을 맡기거나.
-            <br />
-            목적에 맞는 구성으로 캠페인을 시작하세요.
-          </p>
-        </div>
-        <ServiceBanner />
+        {!about && (
+          <div className="service-page-heading">
+            <span className="service-eyebrow">마케팅 상품</span>
+            <h1>
+              우리 브랜드에 맞는
+              <br />
+              마케팅을 골라보세요.
+            </h1>
+            <p>
+              직접 모집하거나, 콘텐츠 제작과 운영을 맡기거나.
+              <br />
+              목적에 맞는 구성으로 캠페인을 시작하세요.
+            </p>
+          </div>
+        )}
+        <ServiceBanner variant={about ? "about" : "products"} />
         <section
           className="service-products"
           aria-labelledby="service-products-title"
