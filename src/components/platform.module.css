@@ -378,7 +378,7 @@
   color: #3182f6;
   font-weight: 700;
 }
-.header nav a[aria-current="page"]:after {
+.header nav:first-of-type a:after {
   content: "";
   height: 3px;
   background: #3182f6;
@@ -386,6 +386,12 @@
   bottom: 0;
   left: 0;
   right: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+.header nav:first-of-type a[aria-current="page"]:after {
+  transform: scaleX(1);
 }
 .header nav .cta {
   height: auto;
@@ -488,6 +494,24 @@
   border-bottom: 1px solid #e9edf2;
   padding-bottom: 14px;
   gap: 10px;
+}
+.tabs button[aria-pressed="true"] {
+  color: #2469cf;
+  background: #edf4ff;
+  border-color: #cfe1fc;
+  font-weight: 600;
+}
+.table th {
+  background: #f7f8fa;
+  color: #6b7684;
+  font-size: 12px;
+  font-weight: 500;
+}
+.table tbody tr:hover {
+  background: #fbfcfe;
+}
+.root .panel > h2:first-child {
+  margin-top: 0;
 }
 .badge {
   color: #226bd7;

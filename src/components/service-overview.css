@@ -55,26 +55,6 @@
   margin: 12px 0 20px;
   line-height: 1.7;
 }
-.service-banner a.service-banner-cta {
-  font-size: 13px;
-  color: white;
-  background: #3182f6;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-weight: 600;
-  display: inline-flex;
-  gap: 22px;
-  align-items: center;
-  min-height: 44px;
-  text-decoration: none;
-}
-.service-banner a.service-banner-cta:hover {
-  background: #2272eb;
-}
-.service-banner a.service-banner-cta:focus-visible {
-  outline: 3px solid #191f28;
-  outline-offset: 4px;
-}
 .service-art {
   position: relative;
   width: 100%;
@@ -152,14 +132,6 @@
   background: #f7f8fa;
   padding: 30px;
   border-radius: 15px;
-}
-.service-login a {
-  background: #3182f6;
-  color: white !important;
-  border-radius: 8px;
-  padding: 14px 18px;
-  font-size: 13px;
-  white-space: nowrap;
 }
 .service-login h2 {
   margin: 0;
@@ -240,11 +212,6 @@
   }
   .service-banner p {
     display: none;
-  }
-  .service-banner a.service-banner-cta {
-    font-size: 12px;
-    padding: 0 12px;
-    gap: 12px;
   }
   .service-banner--about {
     grid-template-columns: minmax(0, 1fr) 110px;

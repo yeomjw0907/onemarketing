@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BrandVisual from "./brand-visual";
+import DiscoverButton from "./discover-button";
 import PublicShell from "./public-shell";
 import "./service-overview.css";
 
@@ -52,8 +53,7 @@ export function ServiceBanner({
               ? "모집, 콘텐츠 제작, 게시 확인까지 하나의 흐름으로."
               : "모집부터 콘텐츠 게시 확인까지, 원마케팅에서."}
         </p>
-        <Link
-          className="service-banner-cta"
+        <DiscoverButton
           href={
             products
               ? "#service-products-title"
@@ -61,14 +61,14 @@ export function ServiceBanner({
                 ? "/campaigns"
                 : "/about"
           }
-        >
-          {products
-            ? "상품 구성 살펴보기"
-            : about
-              ? "캠페인 둘러보기"
-              : "서비스 알아보기"}{" "}
-          <span aria-hidden="true">↗</span>
-        </Link>
+          label={
+            products
+              ? "상품 구성 살펴보기"
+              : about
+                ? "캠페인 둘러보기"
+                : "서비스 알아보기"
+          }
+        />
       </div>
       <div className="service-art" aria-hidden="true">
         <BrandVisual
@@ -198,9 +198,10 @@ export default function ProductOverview({
               인원과 옵션을 고르고, 결제 전에 항목별 금액을 확인하세요.
             </p>
           </div>
-          <Link href="/login?next=%2Fmarketing">
-            광고주 로그인 후 견적 보기 →
-          </Link>
+          <DiscoverButton
+            href="/login?next=%2Fmarketing"
+            label="광고주 로그인 후 견적 보기"
+          />
         </section>
         {about && (
           <>

@@ -1,0 +1,76 @@
+/* Adapted from ObsidianUI, MIT; see THIRD_PARTY_NOTICES.md. */
+.obsidian-discover-button.obsidian-discover-button {
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  max-width: 100%;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid #cfe1fc;
+  border-radius: 8px;
+  background: #edf4ff;
+  color: #2469cf;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: normal;
+  text-align: left;
+  flex-shrink: 0;
+}
+.obsidian-discover-button__fill {
+  position: absolute;
+  inset: 3px auto 3px 3px;
+  width: 36px;
+  border-radius: 5px;
+  background: #3182f6;
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.obsidian-discover-button__icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 42px;
+  min-height: 42px;
+  flex: none;
+  place-items: center;
+  color: white;
+  transition: transform 240ms ease;
+}
+.obsidian-discover-button__text {
+  position: relative;
+  z-index: 1;
+  padding: 9px 14px 9px 7px;
+  transition: color 180ms ease;
+}
+@media (hover: hover) {
+  .obsidian-discover-button:hover .obsidian-discover-button__fill {
+    width: calc(100% - 6px);
+  }
+  .obsidian-discover-button:hover .obsidian-discover-button__text {
+    color: white;
+  }
+  .obsidian-discover-button:hover .obsidian-discover-button__icon {
+    transform: translateX(2px);
+  }
+}
+.obsidian-discover-button:focus-visible .obsidian-discover-button__fill {
+  width: calc(100% - 6px);
+}
+.obsidian-discover-button:focus-visible .obsidian-discover-button__text {
+  color: white;
+}
+.obsidian-discover-button:focus-visible {
+  outline: 3px solid #3182f6;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .obsidian-discover-button__fill,
+  .obsidian-discover-button__icon,
+  .obsidian-discover-button__text {
+    transition: none !important;
+    transform: none !important;
+  }
+}

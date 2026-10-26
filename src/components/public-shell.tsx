@@ -1,11 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
+import usePublicMotion from "./use-public-motion";
 import BrandOrb from "./brand-orb";
 import styles from "./platform.module.css";
 export default function PublicShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const root = useRef<HTMLDivElement>(null);
+  usePublicMotion(root, pathname);
   const [viewer, setViewer] = useState({
     admin: false,
     advertiser: false,
@@ -38,7 +41,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
     ["/ai", "AI·MCP"],
   ];
   return (
-    <div className={styles.root}>
+    <div ref={root} className={styles.root + " om-public-ui"}>
       <a href="#public-content" className={styles.skip}>
         본문 바로가기
       </a>

@@ -1,0 +1,112 @@
+.om-public-ui {
+  --ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ui-speed: 160ms;
+}
+.om-public-ui :where(button, input, textarea, select) {
+  transition:
+    border-color var(--ui-speed) ease,
+    background-color var(--ui-speed) ease,
+    box-shadow var(--ui-speed) ease,
+    transform var(--ui-speed) ease;
+}
+.om-public-ui button:not(:disabled):active {
+  transform: scale(0.985);
+}
+.om-public-ui :where(input, textarea, select):focus {
+  border-color: #8ab8f8;
+  box-shadow: 0 0 0 3px #3182f60d;
+}
+.om-public-ui
+  .campaign-experience
+  :where(.pills button, .category, .summarybar button),
+.om-public-ui .docs-sidebar a {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+.om-public-ui .service-banner-copy {
+  animation: om-rise 540ms var(--ui-ease) both;
+}
+.om-public-ui .service-art img {
+  animation: om-object-settle 800ms var(--ui-ease) 70ms both;
+}
+.om-public-ui .campaign-experience .campaign .thumb {
+  transition: box-shadow 200ms ease;
+}
+.om-public-ui .product-choices > button[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 1px #3182f6,
+    0 4px 14px #3182f60a;
+}
+.om-public-ui .queue-filters {
+  gap: 6px;
+  padding: 6px;
+  background: #f7f8fa;
+  border: 1px solid #eef0f3;
+  border-radius: 11px;
+}
+.om-public-ui .queue-filters button {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.om-public-ui .queue-filters button[aria-pressed="true"] {
+  background: white;
+  color: #2469cf;
+  border-color: #e4eaf3;
+  box-shadow: 0 1px 3px #191f2808;
+}
+.om-public-ui .queue-list li {
+  border-bottom-color: #edf0f4;
+}
+.om-public-ui .queue-list li > div > span {
+  line-height: 1.7;
+}
+@media (hover: hover) {
+  .om-public-ui .docs-sidebar a:hover {
+    background: #f4f7fb;
+  }
+  .om-public-ui .campaign-experience .campaign:hover .thumb {
+    box-shadow: 0 6px 18px #191f2810;
+  }
+  .om-public-ui .queue-list li:hover {
+    background: #fbfcfe;
+  }
+  .om-public-ui .product-choices > button:not([aria-pressed="true"]):hover {
+    border-color: #aacbf9;
+    background: #fbfdff;
+  }
+}
+@keyframes om-rise {
+  from {
+    opacity: 0.3;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes om-object-settle {
+  from {
+    opacity: 0.3;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .om-public-ui *,
+  .om-public-ui *::before,
+  .om-public-ui *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .om-public-ui button:not(:disabled):active {
+    transform: none;
+  }
+}

@@ -154,6 +154,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
           <>
             <nav className={s.tabs} aria-label="마이페이지 메뉴">
               <button
+                aria-pressed={tab === "overview"}
                 onClick={() => {
                   setSelected("");
                   setTab("overview");
@@ -162,6 +163,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                 캠페인·할 일
               </button>
               <button
+                aria-pressed={tab === "orders"}
                 onClick={() => {
                   setSelected("");
                   setTab("orders");
@@ -175,6 +177,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
               {admin && (
                 <>
                   <button
+                    aria-pressed={tab === "settings"}
                     onClick={() => {
                       setSelected("");
                       setTab("settings");
