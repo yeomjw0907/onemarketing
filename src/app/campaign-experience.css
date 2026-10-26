@@ -2399,3 +2399,46 @@
     display: none;
   }
 }
+
+.workspace-sync {
+  margin: 20px 0;
+  padding: 16px 0;
+  border-top: 1px solid #e9edf2;
+  border-bottom: 1px solid #e9edf2;
+  line-height: 1.7;
+}
+.workspace-sync > strong {
+  font-size: 14px;
+  color: #3182f6;
+}
+.workspace-sync p {
+  margin: 6px 0 12px;
+}
+.workspace-sync button,
+.favorite-import button {
+  margin: 4px 8px 4px 0;
+  min-height: 44px;
+}
+.workspace-sync [role="alert"] {
+  padding: 12px 0;
+  color: #b54625;
+}
+.favorite-import {
+  margin: 14px 0;
+  padding: 14px;
+  background: #f7f8fa;
+  border-radius: 10px;
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .workspace-sync {
+    padding: 14px 0;
+  }
+  .workspace-sync button {
+    width: 100%;
+    margin: 4px 0;
+  }
+  .campaign-experience .favorite-import button {
+    font-size: 14px;
+  }
+}

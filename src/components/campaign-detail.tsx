@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Lock, Heart, Share2, Check, ArrowLeft } from "lucide-react";
+import useAccountFavorites from "./use-account-favorites";
 import PublicShell from "./public-shell";
 import { CampaignImage } from "./campaign-browser";
 import { marketFetch } from "./public-fetch";
@@ -22,8 +23,9 @@ export default function CampaignDetail({ id }: { id: string }) {
     [notice, setNotice] = useState(""),
     [applying, setApplying] = useState(false),
     [busy, setBusy] = useState(false),
-    [saved, setSaved] = useState(false),
     [type, setType] = useState("");
+  const favorites = useAccountFavorites(),
+    saved = favorites.ids.includes(id);
   const requestId = useRef(0);
   const returnTo = "/campaigns/" + id,
     login = "/login?next=" + encodeURIComponent(returnTo);
@@ -45,19 +47,25 @@ export default function CampaignDetail({ id }: { id: string }) {
     setApplying(false);
     setNotice("");
     load().catch((e) => setError(e.message));
-    try {
-      setSaved(
-        (
-          JSON.parse(
-            localStorage.getItem("om_saved_campaigns") || "[]",
-          ) as string[]
-        ).includes(id),
-      );
-    } catch {}
     return () => {
       requestId.current++;
     };
   }, [id]);
+  const previousIdentity = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!favorites.ready) return;
+    if (previousIdentity.current === undefined) {
+      previousIdentity.current = favorites.owner;
+      return;
+    }
+    if (previousIdentity.current === favorites.owner) return;
+    previousIdentity.current = favorites.owner;
+    setData(null);
+    setMember(null);
+    setApplying(false);
+    setNotice("");
+    load().catch((e) => setError(e.message));
+  }, [favorites.owner, favorites.ready]);
   async function share() {
     try {
       await navigator.clipboard.writeText(location.href);
@@ -66,32 +74,17 @@ export default function CampaignDetail({ id }: { id: string }) {
       setNotice("주소창의 캠페인 주소를 복사해주세요.");
     }
   }
-  function favorite() {
-    if (data?.locked) {
+  async function favorite() {
+    if (data?.locked || !favorites.owner) {
       location.assign(login);
       return;
     }
-    try {
-      const old = JSON.parse(
-        localStorage.getItem("om_saved_campaigns") || "[]",
-      ) as string[];
-      localStorage.setItem(
-        "om_saved_campaigns",
-        JSON.stringify(
-          saved
-            ? old.filter((x) => x !== id)
-            : Array.from(new Set([...old, id])),
-        ),
-      );
-      setSaved(!saved);
+    if (await favorites.toggle(id, !saved))
       setNotice(
         saved
           ? "관심 캠페인에서 해제했어요."
-          : "이 브라우저의 관심 캠페인에 저장했어요.",
+          : "계정의 관심 캠페인에 저장했어요.",
       );
-    } catch {
-      setError("브라우저 저장 공간을 사용할 수 없습니다.");
-    }
   }
   async function apply(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -166,6 +159,11 @@ export default function CampaignDetail({ id }: { id: string }) {
                 다시 불러오기
               </button>
             </div>
+          )}
+          {favorites.error && (
+            <p role="alert" className="feedback">
+              {favorites.error}
+            </p>
           )}
           {notice && (
             <p role="status" className="feedback success">
@@ -545,7 +543,11 @@ export default function CampaignDetail({ id }: { id: string }) {
                     </>
                   )}
                   <div className="side-actions">
-                    <button aria-pressed={saved} onClick={favorite}>
+                    <button
+                      aria-pressed={saved}
+                      disabled={favorites.busy}
+                      onClick={() => void favorite()}
+                    >
                       <Heart size={15} fill={saved ? "currentColor" : "none"} />
                       {saved ? "관심 해제" : "관심 캠페인"}
                     </button>
@@ -555,7 +557,8 @@ export default function CampaignDetail({ id }: { id: string }) {
                     </button>
                   </div>
                   <p className="smallhelp">
-                    관심 캠페인은 이 브라우저에 저장돼요.
+                    로그인한 계정의 관심 캠페인은 다른 기기에서도 확인할 수
+                    있어요.
                   </p>
                 </section>
                 <section className="panel support">

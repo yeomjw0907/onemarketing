@@ -1,19 +1,18 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import useAccountBuilder from "./use-account-builder";
+import type { Dispatch, SetStateAction } from "react";
 import PublicShell from "./public-shell";
 import { marketFetch } from "./public-fetch";
 import {
   campaignQuote,
   money,
-  policyVersion,
   productNames,
   type CampaignInput,
 } from "@/lib/commerce-policy";
 import { campaignCategories, fulfillmentNames } from "@/lib/campaign-display";
 import s from "./platform.module.css";
-const cartKey = "om_campaign_cart_v1",
-  draftKey = "om_campaign_draft_v2";
 const future = (days: number) =>
   new Date(Date.now() + days * 86400000 + 9 * 3600000)
     .toISOString()
@@ -49,82 +48,66 @@ function normalized(d: CampaignInput) {
 }
 const steps = ["상품 선택", "기본 정보", "인원·일정·가이드", "확인"];
 export default function CommerceShop() {
-  const [draft, setDraft] = useState<CampaignInput>(fresh),
-    [cart, setCart] = useState<CampaignInput[]>([]),
-    [step, setStep] = useState(0),
-    [editing, setEditing] = useState<number | null>(null),
-    [loaded, setLoaded] = useState(false),
-    [saved, setSaved] = useState(false),
-    [payment, setPayment] = useState<any>(null),
+  const workspace = useAccountBuilder(() => ({
+    draft: fresh(),
+    cart: [],
+    step: 0,
+    editing: null,
+  }));
+  const { draft, cart, step, editing } = workspace.value;
+  const loaded = workspace.ready,
+    saved = ["saved", "local"].includes(workspace.status);
+  const setDraft: Dispatch<SetStateAction<CampaignInput>> = (v) =>
+    workspace.setValue((p) => ({
+      ...p,
+      draft: typeof v === "function" ? v(p.draft) : v,
+    }));
+  const setCart: Dispatch<SetStateAction<CampaignInput[]>> = (v) =>
+    workspace.setValue((p) => ({
+      ...p,
+      cart: typeof v === "function" ? v(p.cart) : v,
+    }));
+  const setStep: Dispatch<SetStateAction<number>> = (v) =>
+    workspace.setValue((p) => ({
+      ...p,
+      step: typeof v === "function" ? v(p.step) : v,
+    }));
+  const setEditing: Dispatch<SetStateAction<number | null>> = (v) =>
+    workspace.setValue((p) => ({
+      ...p,
+      editing: typeof v === "function" ? v(p.editing) : v,
+    }));
+  const [payment, setPayment] = useState<any>(null),
     [account, setAccount] = useState<any>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [uploading, setUploading] = useState(false),
     [receipt, setReceipt] = useState<any>(null);
-  const request = useRef(""),
-    heading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    let restoredCart: CampaignInput[] = [];
-    try {
-      const old = JSON.parse(localStorage.getItem(cartKey) || "[]");
-      if (Array.isArray(old))
-        restoredCart = old.slice(0, 10).map((x) => campaignQuote(x).input);
-      setCart(restoredCart);
-    } catch {}
-    try {
-      const old = JSON.parse(localStorage.getItem(draftKey) || "null");
-      if (old?.draft) {
-        const base = fresh();
-        for (const k of Object.keys(base) as (keyof CampaignInput)[])
-          if (typeof old.draft[k] === typeof base[k])
-            (base as any)[k] = old.draft[k];
-        if (!["self_cash", "self_product", "package"].includes(base.kind))
-          base.kind = "self_cash";
-        setDraft(base);
-        setStep(Math.max(0, Math.min(3, Number(old.step) || 0)));
-        setEditing(
-          Number.isInteger(old.editing) && restoredCart[old.editing]
-            ? old.editing
-            : null,
-        );
-        setNotice("이 브라우저에 저장된 작성 내용을 불러왔어요.");
-      }
-    } catch {}
-    setLoaded(true);
+    let active = true;
+    setReceipt(null);
+    setNotice("");
+    setError("");
+    setAccount(null);
+    setPayment(null);
     Promise.all([
       marketFetch("/api/commerce?mode=catalog"),
       marketFetch("/api/advertiser-auth"),
     ])
       .then(([p, a]) => {
+        if (!active) return;
         setPayment(p.payment);
         setAccount(a.account);
       })
-      .catch((e) => setError(e.message));
-  }, []);
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      localStorage.setItem(cartKey, JSON.stringify(cart));
-      request.current = "";
-    } catch {
-      setError(
-        "장바구니를 저장할 수 없어요. 브라우저 저장 공간을 확인해주세요.",
-      );
-    }
-  }, [cart, loaded]);
-  useEffect(() => {
-    if (!loaded) return;
-    setSaved(false);
-    try {
-      localStorage.setItem(draftKey, JSON.stringify({ draft, step, editing }));
-      setSaved(true);
-    } catch {
-      setError(
-        "초안을 저장하지 못했어요. 이 화면을 닫기 전에 내용을 보관해주세요.",
-      );
-    }
-  }, [draft, step, editing, loaded]);
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [workspace.owner]);
   function update<K extends keyof CampaignInput>(
     key: K,
     value: CampaignInput[K],
@@ -232,23 +215,10 @@ export default function CommerceShop() {
     if (busy || editing !== null) return;
     setBusy(true);
     setError("");
-    request.current ||= crypto.randomUUID();
     try {
-      const r = await marketFetch("/api/commerce", {
-        action: "checkout",
-        data: {
-          id: request.current,
-          campaigns: cart,
-          expectedTotal: total,
-          policyVersion,
-          consent: true,
-        },
-      });
+      const r = await workspace.checkout(total);
       setReceipt(r);
-      setCart([]);
-      setDraft(fresh());
-      setEditing(null);
-      setStep(0);
+
       setNotice(
         "주문을 접수했어요. 안내 계좌로 입금한 뒤 확인을 기다려주세요.",
       );
@@ -291,6 +261,67 @@ export default function CommerceShop() {
             장바구니 {cart.length}
           </a>
         </div>
+        <div className="workspace-sync" aria-live="polite">
+          <strong>{workspace.owner ? "계정 연동" : "로그인 전 작성"}</strong>
+          <p>
+            {workspace.owner
+              ? "초안과 장바구니를 계정에 저장해 다른 기기에서도 이어서 작성할 수 있어요."
+              : "지금은 이 브라우저에 저장돼요. 로그인 후 계정으로 가져올 수 있어요."}
+          </p>
+          {workspace.legacy && workspace.owner && (
+            <div>
+              <p>
+                이 브라우저에 이전 작성 내용이 있어요. 가져오면 계정의 현재
+                초안과 장바구니를 대체해요.
+              </p>
+              <button onClick={workspace.importLegacy}>
+                브라우저 내용을 계정으로 가져오기
+              </button>
+              <button onClick={workspace.dismissLegacy}>계정 내용 유지</button>
+            </div>
+          )}
+          {workspace.conflict && (
+            <div role="alert">
+              <p>
+                다른 기기에서 변경한 내용이 있어요. 현재 작성 내용은 이
+                브라우저에 보관했어요.
+              </p>
+              <button
+                onClick={() =>
+                  void workspace.reload().catch((e) => setError(e.message))
+                }
+              >
+                계정 내용 불러오기
+              </button>
+              <button
+                onClick={() =>
+                  void workspace.overwrite().catch((e) => setError(e.message))
+                }
+              >
+                현재 내용으로 계정 저장
+              </button>
+            </div>
+          )}
+          {workspace.error && !workspace.conflict && (
+            <div role="alert">
+              <p>{workspace.error}</p>
+              <button
+                onClick={() =>
+                  void workspace.retry().catch((e) => setError(e.message))
+                }
+              >
+                저장 다시 시도
+              </button>
+              <button
+                onClick={() =>
+                  void workspace.reload().catch((e) => setError(e.message))
+                }
+              >
+                계정 내용 불러오기
+              </button>
+            </div>
+          )}
+        </div>
         <div className="builder-layout">
           <section
             className={s.panel + " builder-main"}
@@ -316,11 +347,19 @@ export default function CommerceShop() {
                 {steps[step]}
               </h2>
               <small role="status">
-                {loaded
-                  ? saved
-                    ? "이 브라우저에 자동 저장됨"
-                    : "저장 중…"
-                  : "불러오는 중…"}
+                {!loaded
+                  ? "불러오는 중…"
+                  : workspace.owner
+                    ? saved
+                      ? "계정에 저장됨"
+                      : workspace.status === "conflict"
+                        ? "변경 내용 확인 필요"
+                        : workspace.status === "error"
+                          ? "저장 실패 · 다시 시도"
+                          : "계정에 저장 중…"
+                    : saved
+                      ? "이 브라우저에 저장됨"
+                      : "저장 중…"}
               </small>
             </div>
             {error && (
@@ -441,7 +480,7 @@ export default function CommerceShop() {
                         <Link href="/login?role=advertiser&next=%2Fmarketing">
                           광고주 로그인 후 이미지 올리기
                         </Link>{" "}
-                        · 초안은 보관돼요.
+                        · 초안은 보관되며 로그인 후 가져올 수 있어요.
                       </p>
                     )}
                     <details>
@@ -696,7 +735,7 @@ export default function CommerceShop() {
                   <Link href="/login?role=advertiser&next=%2Fmarketing">
                     광고주 로그인 후 주문하기
                   </Link>{" "}
-                  · 작성 내용과 장바구니는 이 브라우저에 보관돼요.
+                  · 작성 내용과 장바구니를 로그인 후 계정에 가져올 수 있어요.
                 </p>
               ) : !payment?.enabled ? (
                 <p>
@@ -722,7 +761,10 @@ export default function CommerceShop() {
                     을 확인하고 주문에 동의합니다.
                   </label>
                   <div className={s.actions}>
-                    <button className={s.primary} disabled={busy}>
+                    <button
+                      className={s.primary}
+                      disabled={busy || !!workspace.conflict}
+                    >
                       {busy ? "접수 중…" : `${money(total)} 계좌이체 주문하기`}
                     </button>
                   </div>

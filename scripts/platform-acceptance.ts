@@ -466,6 +466,173 @@ try {
     (await call("/api/viewer", undefined, advertiser)).value.advertiser,
     true,
   );
+  assert.equal(
+    (await fetch(base + "/api/account-state?section=builder")).status,
+    401,
+  );
+  const builder = (
+    await call("/api/account-state?section=builder", undefined, advertiser)
+  ).value;
+  const builderState = {
+    draft: { ...input, title: "초" },
+    cart: [input],
+    step: 2,
+    editing: 0,
+  };
+  let savedBuilder = (
+    await call(
+      "/api/account-state",
+      {
+        action: "save-builder",
+        owner: builder.owner,
+        version: builder.version,
+        state: builderState,
+      },
+      advertiser,
+    )
+  ).value;
+  const largeBuilderState = {
+    ...builderState,
+    cart: Array.from({ length: 10 }, (_, i) => ({
+      ...input,
+      title: "계정 장바구니 " + i,
+      guide: "가".repeat(5000),
+    })),
+  };
+  assert.ok(Buffer.byteLength(JSON.stringify(largeBuilderState)) > 100000);
+  const largeSaved = (
+    await call(
+      "/api/account-state",
+      {
+        action: "save-builder",
+        owner: builder.owner,
+        version: savedBuilder.version,
+        state: largeBuilderState,
+      },
+      advertiser,
+    )
+  ).value;
+  assert.equal(largeSaved.state.cart.length, 10);
+  savedBuilder = (
+    await call(
+      "/api/account-state",
+      {
+        action: "save-builder",
+        owner: builder.owner,
+        version: largeSaved.version,
+        state: builderState,
+      },
+      advertiser,
+    )
+  ).value;
+  const secondDevice = (
+    await call("/api/account-state?section=builder", undefined, advertiser)
+  ).value;
+  assert.equal(secondDevice.state.draft.title, "초");
+  assert.equal(secondDevice.state.cart.length, 1);
+  const stale = await fetch(base + "/api/account-state", {
+    method: "POST",
+    headers: {
+      Origin: base,
+      Cookie: advertiser,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "save-builder",
+      owner: builder.owner,
+      version: builder.version,
+      state: builderState,
+    }),
+  });
+  assert.equal(stale.status, 409);
+  const wrongOwner = await fetch(base + "/api/account-state", {
+    method: "POST",
+    headers: {
+      Origin: base,
+      Cookie: advertiser,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "save-builder",
+      owner: "advertiser:" + randomUUID(),
+      version: savedBuilder.version,
+      state: builderState,
+    }),
+  });
+  assert.equal(wrongOwner.status, 401);
+  const favoriteState = (
+    await call("/api/account-state?section=favorites", undefined, advertiser)
+  ).value;
+  await call(
+    "/api/account-state",
+    { action: "favorite", owner: favoriteState.owner, id: c.id, saved: true },
+    advertiser,
+  );
+  assert.deepEqual(
+    (await call("/api/account-state?section=favorites", undefined, advertiser))
+      .value.state.ids,
+    [c.id],
+  );
+  assert.deepEqual(
+    (await call("/api/account-state?section=favorites", undefined, participant))
+      .value.state.ids,
+    [],
+  );
+  const participantFavorites = (
+    await call("/api/account-state?section=favorites", undefined, participant)
+  ).value;
+  await call(
+    "/api/account-state",
+    {
+      action: "favorite",
+      owner: participantFavorites.owner,
+      id: c.id,
+      saved: true,
+    },
+    participant,
+  );
+  assert.deepEqual(
+    (await call("/api/account-state?section=favorites", undefined, participant))
+      .value.state.ids,
+    [c.id],
+  );
+  await call(
+    "/api/account-state",
+    {
+      action: "favorite",
+      owner: participantFavorites.owner,
+      id: c.id,
+      saved: false,
+    },
+    participant,
+  );
+  assert.deepEqual(
+    (await call("/api/account-state?section=favorites", undefined, advertiser))
+      .value.state.ids,
+    [c.id],
+  );
+  const synchronizedCheckout = {
+    action: "checkout",
+    owner: builder.owner,
+    id: randomUUID(),
+    version: savedBuilder.version,
+    expectedTotal: 110000,
+    consent: true,
+  };
+  const synchronizedOrder = (
+    await call("/api/account-state", synchronizedCheckout, advertiser)
+  ).value;
+  assert.equal(synchronizedOrder.workspace.state.cart.length, 0);
+  assert.equal(
+    (await call("/api/account-state", synchronizedCheckout, advertiser)).value
+      .order.id,
+    synchronizedOrder.order.id,
+  );
+  assert.equal(
+    (await call("/api/account-state?section=builder", undefined, advertiser))
+      .value.state.cart.length,
+    0,
+  );
   for (const page of [
     "/",
     "/signup",

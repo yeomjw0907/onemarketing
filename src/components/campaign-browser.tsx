@@ -14,6 +14,7 @@ import {
   ArrowRight,
   SlidersHorizontal,
 } from "lucide-react";
+import useAccountFavorites from "./use-account-favorites";
 import PublicShell from "./public-shell";
 import { marketFetch } from "./public-fetch";
 import {
@@ -146,9 +147,10 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
     [sort, setSort] = useState("deadline"),
     [page, setPage] = useState(1),
     [savedOnly, setSavedOnly] = useState(false),
-    [savedIds, setSavedIds] = useState<string[]>([]),
     [filtersOpen, setFiltersOpen] = useState(false),
     [ready, setReady] = useState(false);
+  const favorites = useAccountFavorites(),
+    savedIds = favorites.ids;
   const restored = useRef(false),
     fromHistory = useRef(true),
     previousFilters = useRef("");
@@ -209,12 +211,6 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
       location.replace("/campaigns/" + old);
       return;
     }
-    try {
-      const ids = JSON.parse(
-        localStorage.getItem("om_saved_campaigns") || "[]",
-      );
-      if (Array.isArray(ids)) setSavedIds(ids);
-    } catch {}
     readLocation();
     load();
     window.addEventListener("popstate", readLocation);
@@ -629,6 +625,37 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
                 </button>
               </div>
               {filters}
+              {favorites.owner && favorites.legacy.length > 0 && (
+                <div className="favorite-import">
+                  <p>
+                    이 브라우저에 이전 관심 캠페인 {favorites.legacy.length}개가
+                    있어요.
+                  </p>
+                  <button
+                    disabled={favorites.busy}
+                    onClick={() => void favorites.importLegacy()}
+                  >
+                    계정으로 가져오기
+                  </button>
+                  <button onClick={favorites.dismissLegacy}>
+                    계정 내용 유지
+                  </button>
+                </div>
+              )}
+              {favorites.error && (
+                <p className="feedback" role="alert">
+                  {favorites.error}
+                  <button onClick={() => void favorites.refresh()}>
+                    다시 확인
+                  </button>
+                </p>
+              )}
+              {savedOnly && !favorites.owner && (
+                <p className="feedback">
+                  관심 캠페인은 로그인 후 다른 기기에서도 확인할 수 있어요.{" "}
+                  <Link href="/login">로그인</Link>
+                </p>
+              )}
               <div className="sectiontitle">
                 <h2>
                   {home ? "전체 캠페인" : "검색 결과"}{" "}
