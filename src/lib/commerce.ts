@@ -1,3 +1,4 @@
+import type { RecordData } from "./types";
 import { checkCampaignMedia } from "./campaign-media";
 import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";

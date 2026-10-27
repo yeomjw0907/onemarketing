@@ -1,4 +1,5 @@
 "use client";
+import { requestJSON } from "@/lib/request-json";
 import { FolderOpen, Layers3, CircleCheck, ArrowRight } from "lucide-react";
 import { workspaceVisualStyles } from "./workspace-visuals";
 import { useState } from "react";
@@ -30,7 +31,7 @@ export default function CustomerDocuments({
   const owner = customerId || selected;
   const files = assets.filter((a) => a.customerId === owner && !a.projectId);
   async function send(body: FormData | { assetId: string; projectId: string }) {
-    const response = await fetch(
+    await requestJSON(
       "/api/customer-files",
       body instanceof FormData
         ? { method: "POST", body }
@@ -39,9 +40,8 @@ export default function CustomerDocuments({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           },
+      { timeoutMs: 60_000 },
     );
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "저장 실패");
   }
   async function upload(files: FileList | null) {
     if (!files?.length) return;
@@ -51,6 +51,7 @@ export default function CustomerDocuments({
     let count = 0;
     try {
       for (const file of Array.from(files)) {
+        setMessage(`${count + 1}/${files.length}번째 자료를 등록하고 있어요…`);
         if (file.size > 4 * 1024 * 1024)
           throw new Error(`${file.name}: 파일당 최대 4MB입니다.`);
         const form = new FormData();
@@ -68,7 +69,7 @@ export default function CustomerDocuments({
       );
     } finally {
       try {
-        await onReload();
+        if (count) await onReload();
       } catch {
         setFailed(true);
         setMessage(

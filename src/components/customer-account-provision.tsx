@@ -9,16 +9,37 @@ export default function CustomerAccountProvision({
   const [accounts, setAccounts] = useState<{ email: string }[] | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true),
+    [failed, setFailed] = useState(false),
+    [reload, setReload] = useState(0);
   useEffect(() => {
+    let active = true;
     setAccounts(null);
+    setLoading(true);
+    setFailed(false);
+    setMessage("");
     marketFetch("/api/customer-account?customerId=" + customerId)
-      .then((d) => setAccounts(d.accounts))
-      .catch((e) => setMessage(e.message));
-  }, [customerId]);
+      .then((d) => {
+        if (active) setAccounts(d.accounts);
+      })
+      .catch((e) => {
+        if (active) {
+          setMessage(e.message);
+          setFailed(true);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [customerId, reload]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     setBusy(true);
+    setFailed(false);
     setMessage("");
     try {
       const data = Object.fromEntries(new FormData(form));
@@ -32,6 +53,7 @@ export default function CustomerAccountProvision({
         "계정을 발급했습니다. 고객에게 아이디와 초기 비밀번호를 직접 전달해주세요.",
       );
     } catch (e) {
+      setFailed(true);
       setMessage((e as Error).message);
     } finally {
       setBusy(false);
@@ -40,8 +62,12 @@ export default function CustomerAccountProvision({
   return (
     <div>
       <h2>광고주 로그인 계정</h2>
-      {accounts === null ? (
-        <p>계정 정보를 확인 중입니다.</p>
+      {loading ? (
+        <p role="status">계정 정보를 확인 중입니다.</p>
+      ) : accounts === null ? (
+        <button type="button" onClick={() => setReload((v) => v + 1)}>
+          계정 정보 다시 불러오기
+        </button>
       ) : accounts.length ? (
         accounts.map((a) => <p key={a.email}>로그인 아이디: {a.email}</p>)
       ) : (
@@ -80,7 +106,7 @@ export default function CustomerAccountProvision({
           </button>
         </form>
       )}
-      {message && <p role="status">{message}</p>}
+      {message && <p role={failed ? "alert" : "status"}>{message}</p>}
     </div>
   );
 }

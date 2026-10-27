@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Circle } from "lucide-react";
 import s from "./question-flow.module.css";
 import ApplicationEmail from "./application-email";
 import { formatMobilePhone } from "@/lib/participant-payment";
@@ -167,7 +167,11 @@ export default function QuestionFlow({
                         <strong>{option.label}</strong>
                         {option.detail && <small>{option.detail}</small>}
                       </span>
-                      <Check size={22} />
+                      {values[q.key] === option.value ? (
+                        <Check size={22} />
+                      ) : (
+                        <Circle size={22} />
+                      )}
                     </button>
                   ))}
                   {q.custom && (

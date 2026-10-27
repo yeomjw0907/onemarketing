@@ -1,4 +1,5 @@
 "use client";
+import { requestJSON } from "@/lib/request-json";
 import CustomerIntakeAdmin from "./customer-intake-admin";
 import CustomerAccountProvision from "./customer-account-provision";
 import KeywordEvidence from "./keyword-evidence";
@@ -260,10 +261,7 @@ export default function Workspace() {
     [config, setConfig] = useState<Draft>({}),
     [recommendations, setRecommendations] = useState<Draft[]>([]);
   async function api(url: string, options?: RequestInit) {
-    const response = await fetch(url, options);
-    const body = await response.json();
-    if (!response.ok) throw new Error(body.error || "요청에 실패했습니다.");
-    return body;
+    return requestJSON(url, options);
   }
   async function load() {
     try {
