@@ -90,7 +90,7 @@ export async function issueIntake(
     };
   });
 }
-async function access(token: string) {
+async function access(token: string, expectedId?: string) {
   if (!/^[a-f0-9]{64}$/.test(token))
     throw new WorkflowError("유효한 접수 링크로 접속해주세요.", 401);
   const [row] = await query<WorkflowItem<IntakeData>>(
@@ -105,6 +105,11 @@ async function access(token: string) {
     throw new WorkflowError(
       "접수 링크가 만료되었습니다. 담당자에게 새 링크를 요청해주세요.",
       401,
+    );
+  if (expectedId && row.id !== expectedId)
+    throw new WorkflowError(
+      "다른 캠페인 링크가 열렸습니다. 현재 링크로 다시 접속해주세요.",
+      409,
     );
   const p = await get(row.project_id!);
   if (
@@ -148,12 +153,13 @@ export async function saveIntake(
   version: number,
   input: unknown,
   submit: boolean,
+  expectedId?: string,
 ) {
   const incoming = intakeFields.parse(input);
   return transaction(async () => {
-    const initial = await access(token);
+    const initial = await access(token, expectedId);
     await lock("intake:" + initial.id);
-    const row = await access(token);
+    const row = await access(token, expectedId);
     if (row.version !== version) throw new WorkflowConflict();
     if (["submitted", "accepted"].includes(row.data.status))
       throw new WorkflowError(
@@ -227,6 +233,7 @@ export async function uploadIntake(
   version: number,
   name: string,
   buffer: Buffer,
+  expectedId?: string,
 ) {
   const ext = name.split(".").pop()?.toLowerCase() || "";
   if (
@@ -254,9 +261,9 @@ export async function uploadIntake(
     );
   detectMime(buffer, ext);
   return transaction(async () => {
-    const initial = await access(token);
+    const initial = await access(token, expectedId);
     await lock("intake:" + initial.id);
-    const row = await access(token);
+    const row = await access(token, expectedId);
     if (row.version !== version) throw new WorkflowConflict();
     if (
       !row.data.requested.includes("files") ||
@@ -296,6 +303,7 @@ export async function prepareIntakeUpload(
   token: string,
   name: string,
   size: number,
+  expectedId?: string,
 ) {
   const ext = name.split(".").pop()?.toLowerCase() || "";
   if (
@@ -322,9 +330,9 @@ export async function prepareIntakeUpload(
       413,
     );
   return transaction(async () => {
-    const initial = await access(token);
+    const initial = await access(token, expectedId);
     await lock("intake:" + initial.id);
-    const row = await access(token);
+    const row = await access(token, expectedId);
     if (
       !row.data.requested.includes("files") ||
       !["draft", "changes"].includes(row.data.status)
@@ -370,12 +378,16 @@ export async function prepareIntakeUpload(
     };
   });
 }
-export async function completeIntakeUpload(token: string, id: string) {
+export async function completeIntakeUpload(
+  token: string,
+  id: string,
+  expectedId?: string,
+) {
   let cleanup: string | undefined;
   const result = await transaction(async () => {
-    const initial = await access(token);
+    const initial = await access(token, expectedId);
     await lock("intake:" + initial.id);
-    const row = await access(token),
+    const row = await access(token, expectedId),
       upload = await workflowGet<UploadData>(id, "intake_upload");
     if (!upload || upload.owner_id !== row.id)
       throw new WorkflowError("업로드 요청을 찾을 수 없습니다.", 404);
@@ -441,11 +453,15 @@ export async function cleanupIntakeUploads() {
   }
   return count;
 }
-export async function cancelIntakeUpload(token: string, id: string) {
+export async function cancelIntakeUpload(
+  token: string,
+  id: string,
+  expectedId?: string,
+) {
   return transaction(async () => {
-    const initial = await access(token);
+    const initial = await access(token, expectedId);
     await lock("intake:" + initial.id);
-    const row = await access(token),
+    const row = await access(token, expectedId),
       upload = await workflowGet<UploadData>(id, "intake_upload");
     if (!upload || upload.owner_id !== row.id)
       throw new WorkflowError("업로드 요청을 찾을 수 없습니다.", 404);

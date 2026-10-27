@@ -143,7 +143,8 @@ export default function CustomerIntakeAdmin({
                 <div key={q.key}>
                   <dt>{q.title}</dt>
                   <dd style={{ whiteSpace: "pre-wrap" }}>
-                    {String(item.data.fields[q.key] || "미입력")}
+                    {q.options?.find((o) => o.value === item.data.fields[q.key])
+                      ?.label || String(item.data.fields[q.key] || "미입력")}
                   </dd>
                 </div>
               ))}

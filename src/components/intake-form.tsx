@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import { requestJSON } from "@/lib/request-json";
 import QuestionFlow from "./question-flow";
 import { intakeQuestions } from "@/lib/intake-question-plan";
 import { workflowApi } from "./workflow-client";
-import {
-  intakeFields,
-  type IntakeFields,
-} from "@/lib/intake-schema";
+import { intakeFields, type IntakeFields } from "@/lib/intake-schema";
 import styles from "./intake-form.module.css";
 type IntakeView = {
   id: string;
@@ -20,43 +18,65 @@ type IntakeView = {
 };
 export default function IntakeForm() {
   const initialToken = useRef<string | null>(null);
+  const savedDraft = useRef("");
+  const loadGeneration = useRef(0);
+  const serialize = (value: object) =>
+    JSON.stringify(
+      Object.entries(value).sort(([a], [b]) => a.localeCompare(b)),
+    );
   const [view, setView] = useState<IntakeView | null>(null),
     [fields, setFields] = useState(intakeFields.parse({})),
     [links, setLinks] = useState(""),
     [busy, setBusy] = useState(true),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
-    [progress, setProgress] = useState<number | null>(null);
+    [progress, setProgress] = useState<number | null>(null),
+    [uploadPhase, setUploadPhase] = useState("");
+  async function load() {
+    const request = ++loadGeneration.current;
+    setBusy(true);
+    setError("");
+    try {
+      const token = initialToken.current;
+      const v = await workflowApi<IntakeView>(
+        "/api/intake",
+        token ? { action: "open", token } : undefined,
+      );
+      if (request !== loadGeneration.current) return;
+      const normalized = intakeFields.parse(v.fields);
+      setView({ ...v, fields: normalized });
+      setFields(normalized);
+      setLinks(normalized.links.join("\n"));
+      savedDraft.current = serialize(normalized);
+    } catch (e) {
+      if (request === loadGeneration.current) setError((e as Error).message);
+    } finally {
+      if (request === loadGeneration.current) setBusy(false);
+    }
+  }
   useEffect(() => {
-    let active = true;
     if (initialToken.current === null)
       initialToken.current = location.hash.slice(1);
-    const token = initialToken.current;
     history.replaceState(null, "", location.pathname);
-    workflowApi<IntakeView>(
-      "/api/intake",
-      token ? { action: "open", token } : undefined,
-    )
-      .then((v) => {
-        if (active) {
-          setView(v);
-          setFields(v.fields);
-          setLinks(v.fields.links.join("\n"));
-        }
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
-      })
-      .finally(() => {
-        if (active) setBusy(false);
-      });
+    void load();
     return () => {
-      active = false;
+      loadGeneration.current++;
     };
   }, []);
   const locked = !!view && ["submitted", "accepted"].includes(view.status);
-  async function save(submit: boolean) {
+  async function save(submit: boolean, quiet = false) {
     if (!view || busy) return false;
+    const draft = {
+      ...fields,
+      links: links
+        .split("\n")
+        .map((x) => x.trim())
+        .filter(Boolean),
+    };
+    if (!submit && serialize(draft) === savedDraft.current) {
+      if (!quiet) setNotice("작성한 내용이 저장돼 있어요.");
+      return true;
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -65,21 +85,17 @@ export default function IntakeForm() {
         action: submit ? "submit" : "save",
         intakeId: view.id,
         version: view.version,
-        fields: {
-          ...fields,
-          links: links
-            .split("\n")
-            .map((x) => x.trim())
-            .filter(Boolean),
-        },
+        fields: draft,
       });
       setView(v);
       setFields(v.fields);
-      setNotice(
-        submit
-          ? "자료를 전달했습니다. 검토 후 필요한 내용을 안내해드릴게요."
-          : "작성한 내용을 저장했습니다.",
-      );
+      savedDraft.current = serialize(v.fields);
+      if (!quiet)
+        setNotice(
+          submit
+            ? "자료를 전달했습니다. 검토 후 필요한 내용을 안내해드릴게요."
+            : "작성한 내용을 저장했습니다.",
+        );
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "저장하지 못했습니다.");
@@ -90,10 +106,40 @@ export default function IntakeForm() {
   }
   async function upload(file: File) {
     if (!view || busy) return;
+    const video = /\.mp4$/i.test(file.name);
+    if (!file.size || file.size > (video ? 40 : 4) * 1024 * 1024) {
+      setError(
+        video
+          ? "MP4 영상은 40MB 이하로 등록해주세요."
+          : "자료는 4MB 이하로 등록해주세요.",
+      );
+      return;
+    }
     setBusy(true);
     setError("");
     let uploadId: string | undefined;
+    let transferred = false;
+    setUploadPhase("업로드를 준비하고 있어요…");
     try {
+      if (file.size <= 4 * 1024 * 1024) {
+        const form = new FormData();
+        form.set("file", file);
+        form.set("version", String(view.version));
+        form.set("intakeId", view.id);
+        setUploadPhase("자료를 등록하고 있어요…");
+        const result = await requestJSON<{ version: number }>(
+          "/api/intake",
+          { method: "POST", body: form },
+          { timeoutMs: 60_000 },
+        );
+        setView({
+          ...view,
+          version: result.version,
+          fileCount: view.fileCount + 1,
+        });
+        setNotice(file.name + "을 등록했습니다.");
+        return;
+      }
       const upload = await workflowApi<{ id: string; signedUrl: string }>(
         "/api/intake",
         {
@@ -104,6 +150,7 @@ export default function IntakeForm() {
         },
       );
       uploadId = upload.id;
+      setUploadPhase("파일을 전송하고 있어요…");
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", upload.signedUrl);
@@ -125,6 +172,8 @@ export default function IntakeForm() {
         xhr.timeout = 180000;
         xhr.send(file);
       });
+      transferred = true;
+      setUploadPhase("전송한 자료를 등록하고 있어요…");
       setProgress(null);
       const b = await workflowApi<{ version: number; fileCount: number }>(
         "/api/intake",
@@ -133,24 +182,32 @@ export default function IntakeForm() {
       setView({ ...view, version: b.version, fileCount: b.fileCount });
       setNotice(file.name + "을 등록했습니다.");
     } catch (e) {
-      if (uploadId)
+      if (uploadId && !transferred)
         await workflowApi("/api/intake", {
           action: "cancel-upload",
           intakeId: view.id,
           id: uploadId,
         }).catch(() => {});
       setError(e instanceof Error ? e.message : "등록하지 못했습니다.");
+      try {
+        const current = await workflowApi<IntakeView>("/api/intake");
+        if (current.id === view.id) setView(current);
+      } catch {}
     } finally {
       setBusy(false);
       setProgress(null);
+      setUploadPhase("");
     }
   }
-  const values = Object.fromEntries(
-    Object.entries(fields).map(([k, v]) => [
-      k,
-      Array.isArray(v) ? links : String(v),
-    ]),
-  );
+  const values: Record<string, string> = {
+    ...Object.fromEntries(
+      Object.entries(fields).map(([k, v]) => [
+        k,
+        Array.isArray(v) ? links : String(v),
+      ]),
+    ),
+    files: `${view?.fileCount || 0}개 자료`,
+  };
   const uploadField = (
     <div>
       <label>
@@ -167,6 +224,7 @@ export default function IntakeForm() {
         />
       </label>
       <p>등록된 자료 {view?.fileCount || 0}개</p>
+      {uploadPhase && <p role="status">{uploadPhase}</p>}
       {progress !== null && (
         <label>
           파일 전송 {progress}%<progress value={progress} max={100} />
@@ -175,6 +233,39 @@ export default function IntakeForm() {
       {view?.pendingUploads?.map((u) => (
         <p key={u.id}>
           전송 미완료: {u.name}{" "}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                const r = await workflowApi<{
+                  version: number;
+                  fileCount: number;
+                }>("/api/intake", {
+                  action: "complete-upload",
+                  intakeId: view.id,
+                  id: u.id,
+                });
+                setView({
+                  ...view,
+                  version: r.version,
+                  fileCount: r.fileCount,
+                  pendingUploads: view.pendingUploads?.filter(
+                    (x) => x.id !== u.id,
+                  ),
+                });
+                setNotice(u.name + "을 등록했습니다.");
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            등록 마무리
+          </button>
           <button
             type="button"
             disabled={busy}
@@ -215,7 +306,14 @@ export default function IntakeForm() {
         {!view && busy && (
           <p role="status">자료 요청 내용을 불러오고 있어요…</p>
         )}
-        {!view && error && <p role="alert">{error}</p>}
+        {!view && error && (
+          <div role="alert">
+            <p>{error}</p>
+            <button type="button" disabled={busy} onClick={() => void load()}>
+              다시 불러오기
+            </button>
+          </div>
+        )}
         {notice && <p role="status">{notice}</p>}
         {view && (
           <>
@@ -239,7 +337,10 @@ export default function IntakeForm() {
                         <dd>
                           {q.key === "files"
                             ? `${view.fileCount}개 자료`
-                            : values[q.key] || "미입력"}
+                            : q.options?.find((o) => o.value === values[q.key])
+                                ?.label ||
+                              values[q.key] ||
+                              "미입력"}
                         </dd>
                       </div>
                     ))}
@@ -259,7 +360,7 @@ export default function IntakeForm() {
                 busy={busy}
                 error={error}
                 onSave={() => save(false)}
-                onAdvance={() => save(false)}
+                onAdvance={() => save(false, true)}
                 onComplete={() => save(true)}
                 completeLabel="자료 전달하기"
               />

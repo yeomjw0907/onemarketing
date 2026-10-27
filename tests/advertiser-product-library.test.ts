@@ -130,6 +130,10 @@ test("링크는 요청한 질문만 저장하고 임시 저장·보완·제출�
   const token = issued.url.split("#")[1];
   let view: Awaited<ReturnType<typeof saveIntake>> = await intakeView(token);
   assert.equal(view.fields.productName, "링크 제품");
+  await assert.rejects(
+    saveIntake(token, view.version, view.fields, false, randomUUID()),
+    /다른 캠페인/,
+  );
   view = await saveIntake(
     token,
     view.version,

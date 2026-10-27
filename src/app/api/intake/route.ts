@@ -68,6 +68,7 @@ export async function POST(request: Request) {
           z.coerce.number().int().positive().parse(form.get("version")),
           file.name,
           Buffer.from(await file.arrayBuffer()),
+          z.uuid().parse(form.get("intakeId")),
         ),
         { headers: privateHeaders },
       );
@@ -125,24 +126,25 @@ export async function POST(request: Request) {
       });
       return Response.json(view, { headers: privateHeaders });
     }
-    if ("intakeId" in b && (await intakeView(await token())).id !== b.intakeId)
-      throw new WorkflowError(
-        "다른 캠페인 링크가 열렸습니다. 현재 링크로 다시 접속해주세요.",
-        409,
-      );
     if (b.action === "prepare-upload")
       return Response.json(
-        await prepareIntakeUpload(await token(), b.name, b.size),
+        await prepareIntakeUpload(await token(), b.name, b.size, b.intakeId),
         { headers: privateHeaders },
       );
     if (b.action === "complete-upload")
-      return Response.json(await completeIntakeUpload(await token(), b.id), {
-        headers: privateHeaders,
-      });
+      return Response.json(
+        await completeIntakeUpload(await token(), b.id, b.intakeId),
+        {
+          headers: privateHeaders,
+        },
+      );
     if (b.action === "cancel-upload")
-      return Response.json(await cancelIntakeUpload(await token(), b.id), {
-        headers: privateHeaders,
-      });
+      return Response.json(
+        await cancelIntakeUpload(await token(), b.id, b.intakeId),
+        {
+          headers: privateHeaders,
+        },
+      );
     const result =
       b.action === "issue"
         ? await issueIntake(
@@ -157,6 +159,7 @@ export async function POST(request: Request) {
               b.version,
               b.fields,
               b.action === "submit",
+              b.intakeId,
             )
           : await reviewIntake(
               b.id,
