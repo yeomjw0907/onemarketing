@@ -1,0 +1,27 @@
+.root {
+  min-height: 100dvh;
+  background: #fff;
+  color: #191f28;
+  padding: 24px 20px;
+}
+.brand {
+  display: block;
+  max-width: 680px;
+  margin: 0 auto 12px;
+  font-weight: 800;
+  font-size: 18px;
+  text-decoration: none;
+  color: #191f28;
+}
+.root :global(.auth-page) {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0;
+}
+.root :global(.auth-roles) {
+  margin: 16px 0;
+}
+.root :global(.auth-admin) {
+  font-size: 12px;
+  color: #8b95a1;
+}

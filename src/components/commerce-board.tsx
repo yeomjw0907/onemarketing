@@ -1,4 +1,5 @@
 "use client";
+import AdvertiserProducts from "./advertiser-products";
 import OperationQueue from "./operation-queue";
 import CampaignPresentationFields from "./campaign-presentation-fields";
 import Link from "next/link";
@@ -172,6 +173,17 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                 주문·결제
               </button>
               {!admin && (
+                <button
+                  aria-pressed={tab === "products"}
+                  onClick={() => {
+                    setSelected("");
+                    setTab("products");
+                  }}
+                >
+                  내 제품·서비스
+                </button>
+              )}
+              {!admin && (
                 <Link href="/advertisers/connections">AI 연결 관리</Link>
               )}
               {admin && (
@@ -189,6 +201,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                 </>
               )}
             </nav>
+            {tab === "products" && !admin && <AdvertiserProducts />}
             {tab === "settings" && admin && (
               <section className={s.panel}>
                 <h2>계좌이체 결제 설정</h2>

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import AdvertiserSignup from "./advertiser-signup";
 import styles from "./market.module.css";
 import PublicShell from "./public-shell";
 import { CommerceOpportunities } from "./commerce-participant";
@@ -66,62 +67,30 @@ function Account({
 }) {
   const [register, setRegister] = useState(initialRegister),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  const [kakaoEnabled, setKakaoEnabled] = useState(false);
-  const [social, setSocial] = useState(false);
+    [busy, setBusy] = useState(false),
+    [social, setSocial] = useState(false),
+    [kakaoEnabled, setKakaoEnabled] = useState(false);
   useEffect(() => {
     if (new URLSearchParams(location.search).has("loginError"))
-      setError(
-        "카카오 로그인이 취소되었거나 만료되었습니다. 다시 시도해주세요.",
-      );
+      setError("카카오 로그인이 취소되었거나 만료됐어요. 다시 시도해주세요.");
     marketFetch("/api/advertiser-auth")
       .then((d) => {
-        setKakaoEnabled(d.kakaoEnabled);
         setSocial(d.kakaoPending);
+        setKakaoEnabled(d.kakaoEnabled);
         if (d.kakaoPending) setRegister(true);
       })
-      .catch(() => {});
+      .catch((e) => setError(e.message));
   }, []);
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function kakaoLogin() {
     setBusy(true);
     setError("");
-    const f = new FormData(e.currentTarget);
     try {
-      const d = await marketFetch("/api/advertiser-auth", {
-        action: social
-          ? register
-            ? "social-register"
-            : "social-link"
-          : register
-            ? "register"
-            : "login",
-        email: f.get("email"),
-        password: f.get("password"),
-        ...(register
-          ? {
-              ...Object.fromEntries(
-                [
-                  "companyName",
-                  "brand",
-                  "industry",
-                  "businessType",
-                  "businessNumber",
-                  "address",
-                  "website",
-                  "description",
-                ].map((k) => [k, f.get(k)]),
-              ),
-              consent: f.get("consent") === "on",
-              name: f.get("name"),
-              phone: String(f.get("phone")).replace(/\D/g, ""),
-            }
-          : {}),
+      const d = await marketFetch("/api/auth/kakao/start", {
+        role: "advertiser",
       });
-      onChange(d.account);
+      location.assign(d.url);
     } catch (e) {
       setError((e as Error).message);
-    } finally {
       setBusy(false);
     }
   }
@@ -132,12 +101,17 @@ function Account({
           {account.name}님 · {account.email}
         </p>
         <button
+          disabled={busy}
           onClick={async () => {
+            setBusy(true);
             try {
               await marketFetch("/api/advertiser-auth", { action: "logout" });
               onChange(null);
+              setSocial(false);
             } catch (e) {
               setError((e as Error).message);
+            } finally {
+              setBusy(false);
             }
           }}
         >
@@ -146,170 +120,94 @@ function Account({
         {error && <p role="alert">{error}</p>}
       </div>
     );
+  const kakao =
+    kakaoEnabled && !social ? (
+      <button
+        type="button"
+        className={styles.kakao}
+        disabled={busy}
+        onClick={() => void kakaoLogin()}
+      >
+        카카오로 가입·로그인
+      </button>
+    ) : null;
+  if (register)
+    return (
+      <AdvertiserSignup
+        social={social}
+        onComplete={onChange}
+        onLogin={() => {
+          setError("");
+          setRegister(false);
+        }}
+        kakao={kakao}
+        externalError={error}
+      />
+    );
   return (
     <section className={styles.panel}>
-      <h2>{register ? "광고주 회원가입" : "광고주 로그인"}</h2>
+      <h2>{social ? "기존 계정에 카카오 연결" : "광고주 로그인"}</h2>
       <p className={styles.muted}>
-        신청 내역과 캠페인 진행 상황을 내 계정에서 확인하세요.
+        {social
+          ? "기존 이메일·비밀번호로 본인 확인 후 연결해요."
+          : "신청 내역과 캠페인 진행 상황을 확인하세요."}
       </p>
-      {kakaoEnabled && !social && (
-        <button
-          type="button"
-          className={styles.kakao}
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setError("");
-            try {
-              const d = await marketFetch("/api/auth/kakao/start", {
-                role: "advertiser",
-              });
-              location.assign(d.url);
-            } catch (e) {
-              setError((e as Error).message);
-              setBusy(false);
-            }
-          }}
-        >
-          카카오로 가입·로그인
-        </button>
-      )}
-      {social && (
-        <p role="status">
-          카카오 인증 완료 · 신규 가입은 업체 정보를 입력해주세요. 이미 계정이
-          있다면 기존 계정에 카카오를 연결할 수 있습니다.
-        </p>
-      )}
-      <form className={styles.form} onSubmit={submit}>
+      {kakao}
+      <form
+        className={styles.form}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const f = new FormData(e.currentTarget);
+          setBusy(true);
+          setError("");
+          try {
+            const d = await marketFetch("/api/advertiser-auth", {
+              action: social ? "social-link" : "login",
+              email: f.get("email"),
+              password: f.get("password"),
+            });
+            onChange(d.account);
+          } catch (e) {
+            setError((e as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
         <label>
           이메일
           <input
-            required
             name="email"
             type="email"
+            required
             autoComplete="email"
             maxLength={254}
           />
         </label>
-        {(!social || !register) && (
-          <label>
-            비밀번호 · 10자 이상
-            <input
-              required
-              name="password"
-              type="password"
-              minLength={10}
-              maxLength={128}
-              autoComplete={register ? "new-password" : "current-password"}
-            />
-          </label>
-        )}
-        {register && (
-          <>
-            <label>
-              담당자 이름
-              <input name="name" required maxLength={200} autoComplete="name" />
-            </label>
-            <label>
-              휴대전화
-              <input name="phone" required type="tel" autoComplete="tel" />
-            </label>
-            <label>
-              업체명
-              <input
-                name="companyName"
-                required
-                maxLength={200}
-                autoComplete="organization"
-              />
-            </label>
-            <label>
-              브랜드명
-              <input name="brand" required maxLength={200} />
-            </label>
-            <label>
-              업종
-              <input
-                name="industry"
-                required
-                maxLength={200}
-                placeholder="예: 음식점, 뷰티, 생활용품"
-              />
-            </label>
-            <label>
-              사업자 유형
-              <select name="businessType" required>
-                <option value="individual">개인사업자</option>
-                <option value="corporation">법인사업자</option>
-                <option value="preparing">창업 준비 중</option>
-              </select>
-            </label>
-            <label>
-              사업자등록번호 · 창업 준비 중은 생략 가능
-              <input
-                name="businessNumber"
-                maxLength={12}
-                placeholder="000-00-00000"
-              />
-            </label>
-            <label>
-              사업장 주소 또는 활동 지역
-              <input
-                name="address"
-                required
-                maxLength={200}
-                autoComplete="street-address"
-              />
-            </label>
-            <label>
-              홈페이지·쇼핑몰·매장 링크 (선택)
-              <input
-                name="website"
-                type="url"
-                maxLength={2000}
-                placeholder="https://"
-              />
-            </label>
-            <label className={styles.wide}>
-              제품·서비스 소개
-              <textarea
-                name="description"
-                required
-                minLength={5}
-                maxLength={2000}
-                placeholder="주요 제품·서비스와 홍보하려는 내용을 알려주세요."
-              />
-            </label>
-            <label className={`${styles.wide} ${styles.check}`}>
-              <input required type="checkbox" name="consent" />
-              계정 관리·신청 연락을 위한 업체 정보, 이름, 이메일, 전화번호
-              수집에 동의합니다. 계정 정보는 탈퇴 시 삭제하며 계약·거래 정보는
-              별도 보관 기준을 따릅니다.
-            </label>
-          </>
-        )}
+        <label>
+          비밀번호
+          <input
+            name="password"
+            type="password"
+            required
+            minLength={10}
+            maxLength={128}
+            autoComplete="current-password"
+          />
+        </label>
         <div className={`${styles.row} ${styles.wide}`}>
           <button className={styles.primary} disabled={busy}>
-            {busy
-              ? "확인 중…"
-              : register
-                ? "가입하기"
-                : social
-                  ? "카카오 연결하기"
-                  : "로그인"}
+            {busy ? "확인 중…" : social ? "카카오 연결하기" : "로그인"}
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => setRegister(!register)}
+            onClick={() => {
+              setError("");
+              setRegister(true);
+            }}
           >
-            {social
-              ? register
-                ? "기존 계정에 카카오 연결"
-                : "새 광고주로 가입"
-              : register
-                ? "로그인으로 이동"
-                : "처음이라면 회원가입"}
+            처음이라면 회원가입
           </button>
         </div>
       </form>

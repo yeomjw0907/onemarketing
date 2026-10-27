@@ -31,7 +31,8 @@ export async function productBasis(project: RecordData) {
     unknown
   >;
   const data = {
-    product: product || knowledge?.product || {},
+    product:
+      project.productLibrarySnapshot || product || knowledge?.product || {},
     customer: {
       name: company.name,
       brand: company.brand,

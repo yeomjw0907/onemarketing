@@ -23,8 +23,12 @@ export default function LoginScreen({
   }, [next, role]);
   return (
     <div className="auth-page">
-      <h1>{register ? "회원가입" : "로그인"}</h1>
-      <p>이용할 계정을 선택해주세요.</p>
+      {!(register && role === "advertiser") && (
+        <>
+          <h1>{register ? "회원가입" : "로그인"}</h1>
+          <p>이용할 계정을 선택해주세요.</p>
+        </>
+      )}
       <div className="auth-roles" aria-label="계정 유형">
         <button
           aria-pressed={role === "advertiser"}

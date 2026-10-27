@@ -1,0 +1,237 @@
+.root {
+  --ink: #191f28;
+  --sub: #6b7684;
+  --line: #e5e9ee;
+  --accent: #3182f6;
+  max-width: 680px;
+  margin: 0 auto;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.root * {
+  box-sizing: border-box;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  font-weight: 600;
+}
+.header button,
+.review button {
+  border: 0;
+  background: transparent;
+  color: var(--sub);
+  font: inherit;
+  padding: 10px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.header span:last-child {
+  font-size: 13px;
+  color: var(--sub);
+}
+.progress {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+.progress span {
+  height: 100%;
+  display: block;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+.body {
+  padding: 42px 0 32px;
+  min-height: 380px;
+  animation: enter 0.2s ease;
+}
+.eyebrow {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.body h2 {
+  font-size: clamp(25px, 4vw, 32px);
+  line-height: 1.4;
+  letter-spacing: -1px;
+  margin: 0 0 24px;
+  outline: none;
+}
+.hint,
+.optional {
+  color: var(--sub);
+  font-size: 14px;
+}
+.hint {
+  margin: -10px 0 28px;
+}
+.root input:not([type="checkbox"]),
+.root textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #d8dfe6;
+  border-radius: 12px;
+  min-height: 58px;
+  padding: 16px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+.root textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+.root :focus-visible {
+  outline: 3px solid #a5caff;
+  outline-offset: 3px;
+}
+.options {
+  display: grid;
+  gap: 12px;
+}
+.options button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  text-align: left;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--ink);
+  border-radius: 14px;
+  min-height: 76px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.16s,
+    background 0.16s;
+}
+.options strong {
+  font-size: 17px;
+  font-weight: 600;
+}
+.options small {
+  display: block;
+  color: var(--sub);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.options svg {
+  color: #c7cdd5;
+  flex-shrink: 0;
+}
+.options button[aria-pressed="true"] {
+  background: #f1f6ff;
+  border: 2px solid var(--accent);
+  padding: 19px;
+}
+.options button[aria-pressed="true"] svg {
+  color: var(--accent);
+}
+.footer {
+  position: sticky;
+  bottom: 0;
+  background: #ffffffed;
+  backdrop-filter: blur(12px);
+  padding: 18px 0 max(18px, env(safe-area-inset-bottom));
+  z-index: 2;
+}
+.root .next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.root .next:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.error {
+  color: #b42318;
+  background: #fff1ef;
+  border-radius: 10px;
+  padding: 12px;
+}
+.review {
+  margin: 0;
+}
+.review > div {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.review dt {
+  font-size: 13px;
+  color: var(--sub);
+}
+.review dd {
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.review button {
+  float: right;
+  font-size: 13px;
+}
+.consent {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.consent input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 600px) {
+  .body {
+    padding-top: 32px;
+    min-height: 390px;
+  }
+  .root {
+    width: 100%;
+  }
+  .footer {
+    padding-top: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .body {
+    animation: none;
+  }
+  .progress span,
+  .options button {
+    transition: none;
+  }
+}
+
+.root h2:focus {
+  outline: none;
+}

@@ -49,6 +49,19 @@ export async function objectExists(storageName: string) {
   if (error) throw new Error("파일 존재 여부를 확인할 수 없습니다.");
   return data === true;
 }
+export async function signedUpload(storageName: string) {
+  const { data, error } = await bucket().createSignedUploadUrl(
+    objectKey(storageName),
+    { upsert: false },
+  );
+  if (error || !data) throw new Error("업로드 연결을 준비하지 못했습니다.");
+  return { signedUrl: data.signedUrl };
+}
+export async function objectInfo(storageName: string) {
+  const { data, error } = await bucket().info(objectKey(storageName));
+  if (error || !data) throw new Error("업로드한 파일을 확인하지 못했습니다.");
+  return data;
+}
 export async function removeObjects(storageNames: string[]) {
   if (!storageNames.length) return;
   const { error } = await bucket().remove(storageNames.map(objectKey));

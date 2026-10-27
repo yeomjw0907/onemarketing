@@ -1,4 +1,5 @@
 "use client";
+import CustomerIntakeAdmin from "./customer-intake-admin";
 import CustomerAccountProvision from "./customer-account-provision";
 import KeywordEvidence from "./keyword-evidence";
 import MarketAdmin from "./market-admin";
@@ -1743,6 +1744,11 @@ export default function Workspace() {
             )}
             {tab === 1 && (
               <>
+                <CustomerIntakeAdmin
+                  key={project.id}
+                  projectId={project.id}
+                  onReload={load}
+                />
                 <MaterialChecklist
                   key={
                     project.id +
