@@ -225,47 +225,81 @@ async function persist(
   return saved;
 }
 export async function commerceView(actor: CommerceActor) {
-  const campaigns = await campaignsFor(actor);
-  const out = [];
-  for (const c of campaigns) {
-    const apps = await query<Stored>(
-      "select * from commerce_applications where campaign_id=$1 order by created_at",
-      [c.id],
-    );
-    const visible =
+  const [campaigns, orders, payment, productionProjects, productionAssets] =
+    await Promise.all([
+      campaignsFor(actor),
       actor.role === "participant"
-        ? apps.filter((a) => a.participant_id === actor.id)
-        : apps;
-    const applications = await Promise.all(
-      visible.map(async (a) => {
-        if (actor.role === "admin")
-          return { ...a, participant: await get(String(a.participant_id)) };
-        return {
-          id: a.id,
-          campaign_id: a.campaign_id,
-          version: a.version,
-          data: { ...a.data, history: undefined, referrerSnapshot: undefined },
-          participant_id:
-            actor.role === "participant" ? a.participant_id : undefined,
-        };
-      }),
-    );
-    const data =
+        ? Promise.resolve([])
+        : query<Stored>(
+            actor.role === "admin"
+              ? "select * from commerce_orders order by created_at desc"
+              : "select * from commerce_orders where advertiser_id=$1 order by created_at desc",
+            actor.role === "admin" ? [] : [actor.id],
+          ),
       actor.role === "participant"
-        ? { input: c.data.input, status: c.data.status, terms: c.data.terms }
-        : c.data;
-    out.push({
+        ? Promise.resolve(undefined)
+        : paymentInstructions(),
+      actor.role === "admin" ? list("projects") : Promise.resolve(undefined),
+      actor.role === "admin" ? list("assets") : Promise.resolve(undefined),
+    ]);
+  const apps = campaigns.length
+    ? await query<Stored>(
+        "select * from commerce_applications where campaign_id=any($1::uuid[]) and ($2::text is null or participant_id=$2) order by created_at",
+        [
+          campaigns.map((c) => c.id),
+          actor.role === "participant" ? actor.id : null,
+        ],
+      )
+    : [];
+  const participantIds = [
+    ...new Set(apps.map((a) => String(a.participant_id))),
+  ];
+  const participants =
+    actor.role === "admin" && participantIds.length
+      ? await query<{ id: string; data: RecordData }>(
+          "select id,data from records where kind='participants' and id=any($1::text[])",
+          [participantIds],
+        )
+      : [];
+  const byParticipant = new Map(participants.map((p) => [p.id, p.data]));
+  const byCampaign = new Map<string, Stored[]>();
+  for (const a of apps) {
+    const group = byCampaign.get(String(a.campaign_id)) || [];
+    group.push(a);
+    byCampaign.set(String(a.campaign_id), group);
+  }
+  const out = campaigns.map((c) => {
+    const rows = byCampaign.get(c.id) || [];
+    return {
       id: c.id,
       order_id: actor.role === "participant" ? undefined : c.order_id,
       version: c.version,
-      data,
-      applications,
+      data:
+        actor.role === "participant"
+          ? { input: c.data.input, status: c.data.status, terms: c.data.terms }
+          : c.data,
+      applications: rows.map((a) =>
+        actor.role === "admin"
+          ? { ...a, participant: byParticipant.get(String(a.participant_id)) }
+          : {
+              id: a.id,
+              campaign_id: a.campaign_id,
+              version: a.version,
+              data: {
+                ...a.data,
+                history: undefined,
+                referrerSnapshot: undefined,
+              },
+              participant_id:
+                actor.role === "participant" ? a.participant_id : undefined,
+            },
+      ),
       ...(actor.role === "participant"
         ? {}
         : {
             counts: {
-              applied: apps.filter((a) => a.data.status === "applied").length,
-              accepted: apps.filter((a) =>
+              applied: rows.filter((a) => a.data.status === "applied").length,
+              accepted: rows.filter((a) =>
                 [
                   "accepted",
                   "submitted",
@@ -274,48 +308,32 @@ export async function commerceView(actor: CommerceActor) {
                   "paid",
                 ].includes(a.data.status),
               ).length,
-              completed: apps.filter((a) =>
+              completed: rows.filter((a) =>
                 ["verified", "paid"].includes(a.data.status),
               ).length,
             },
           }),
-    });
-  }
-  const orders =
-    actor.role === "participant"
-      ? []
-      : await query<Stored>(
-          actor.role === "admin"
-            ? "select * from commerce_orders order by created_at desc"
-            : "select * from commerce_orders where advertiser_id=$1 order by created_at desc",
-          actor.role === "admin" ? [] : [actor.id],
-        );
+    };
+  });
   return {
-    productionProjects:
-      actor.role === "admin"
-        ? (await list("projects"))
-            .filter((p) => !p.deletedAt && p.status !== "cancelled")
-            .map((p) => ({ id: p.id, name: p.name, customerId: p.customerId }))
-        : undefined,
-    productionAssets:
-      actor.role === "admin"
-        ? (await list("assets"))
-            .filter(
-              (a) =>
-                a.current === true &&
-                ["copy", "image", "video"].includes(String(a.category)),
-            )
-            .map((a) => ({
-              id: a.id,
-              projectId: a.projectId,
-              name: a.name,
-              category: a.category,
-            }))
-        : undefined,
+    productionProjects: productionProjects
+      ?.filter((p) => !p.deletedAt && p.status !== "cancelled")
+      .map((p) => ({ id: p.id, name: p.name, customerId: p.customerId })),
+    productionAssets: productionAssets
+      ?.filter(
+        (a) =>
+          a.current === true &&
+          ["copy", "image", "video"].includes(String(a.category)),
+      )
+      .map((a) => ({
+        id: a.id,
+        projectId: a.projectId,
+        name: a.name,
+        category: a.category,
+      })),
     campaigns: out,
     orders,
-    payment:
-      actor.role === "participant" ? undefined : await paymentInstructions(),
+    payment,
   };
 }
 export async function publicCommerceCampaigns() {

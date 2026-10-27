@@ -3,15 +3,20 @@ import { list, create, update, lock, transaction, query, execute } from "./db";
 import { advertiserAuth, type Advertiser } from "./market";
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export async function advertiserKakaoPending(identity: string) {
-  const row = (await list("portal_links")).find(
-    (r) =>
-      r.purpose === "advertiser-kakao-login" &&
-      r.tokenHash === hash(identity) &&
-      !r.usedAt &&
-      !r.revokedAt &&
-      Date.parse(String(r.expiresAt)) > Date.now(),
+  if (!/^[a-f0-9]{64}$/.test(identity))
+    throw new Error("카카오 로그인을 다시 진행해주세요.");
+  const [result] = await query<{ data: Record<string, any> }>(
+    "select data from records where kind='portal_links' and data->>'purpose'='advertiser-kakao-login' and data->>'tokenHash'=$1 limit 1",
+    [hash(identity)],
   );
-  if (!row) throw new Error("카카오 로그인을 다시 진행해주세요.");
+  const row = result?.data;
+  if (
+    !row ||
+    row.usedAt ||
+    row.revokedAt ||
+    Date.parse(String(row.expiresAt)) <= Date.now()
+  )
+    throw new Error("카카오 로그인을 다시 진행해주세요.");
   return row;
 }
 export async function advertiserKakaoLogin(

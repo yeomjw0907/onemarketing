@@ -12,14 +12,15 @@ import {
 import { lockCatalog } from "./domain";
 import { saveCustomerFile } from "./customer-files";
 import { bytes } from "./assets";
+import type { RecordData } from "./types";
 import { WorkflowError } from "./workflow-http";
 async function owner(advertiserId: string) {
-  const [a] = await query<{ customer_id: string | null }>(
-    "select customer_id from advertiser_accounts where id=$1",
+  const [row] = await query<{ data: RecordData }>(
+    "select r.data from advertiser_accounts a join records r on r.id=a.customer_id and r.kind='customers' where a.id=$1 and coalesce(r.data->>'deletedAt','')=''",
     [advertiserId],
   );
-  const customer = a?.customer_id ? await get(a.customer_id) : null;
-  if (customer?.kind !== "customers" || customer.deletedAt)
+  const customer = row?.data;
+  if (!customer)
     throw new WorkflowError(
       "연결된 고객 정보를 확인해주세요. 담당자에게 문의해주세요.",
       403,
@@ -67,18 +68,19 @@ function publicProduct(p: Record<string, unknown>) {
   };
 }
 export async function advertiserProducts(advertiserId: string) {
-  const c = await owner(advertiserId),
-    products = (await list("products")).filter(
-      (p) => p.customerId === c.id && !p.deletedAt,
-    );
-  const files = (await list("assets")).filter(
-    (a) =>
-      a.customerId === c.id &&
-      products.some((p) => p.id === a.productId) &&
-      !a.projectId &&
-      a.current !== false &&
-      !a.deletedAt,
-  );
+  const c = await owner(advertiserId);
+  const [productRows, fileRows] = await Promise.all([
+    query<{ data: RecordData }>(
+      "select data from records where kind='products' and data->>'customerId'=$1 and coalesce(data->>'deletedAt','')='' order by created_at desc,id",
+      [c.id],
+    ),
+    query<{ data: RecordData }>(
+      "select jsonb_build_object('id',a.id,'name',a.data->'name','size',a.data->'size','mime',a.data->'mime','productId',a.data->'productId') as data from records a join records p on p.id=a.data->>'productId' and p.kind='products' where a.kind='assets' and a.data->>'customerId'=$1 and p.data->>'customerId'=$1 and coalesce(p.data->>'deletedAt','')='' and coalesce(a.data->>'projectId','')='' and coalesce(a.data->>'deletedAt','')='' and coalesce(a.data->>'current','true')<>'false' order by a.created_at desc,a.id",
+      [c.id],
+    ),
+  ]);
+  const products = productRows.map((r) => r.data),
+    files = fileRows.map((r) => r.data);
   return products.map((p) => ({
     ...publicProduct(p),
     files: files
