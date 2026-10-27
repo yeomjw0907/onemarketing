@@ -203,6 +203,7 @@ export default function QuestionFlow({
                   onChange={(value) => onChange(q.key, value)}
                   required={q.required}
                   disabled={busy}
+                  onEnter={() => void next()}
                 />
               ) : q.type === "textarea" ? (
                 <textarea

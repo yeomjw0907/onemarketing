@@ -16,9 +16,11 @@ export default function ApplicationEmail({
   onChange,
   required = false,
   disabled = false,
+  onEnter,
 }: {
   value: string;
   required?: boolean;
+  onEnter?: () => void;
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
@@ -67,6 +69,15 @@ export default function ApplicationEmail({
           setFocused(true);
         }}
         onKeyDown={(e) => {
+          if (
+            e.key === "Enter" &&
+            !e.nativeEvent.isComposing &&
+            onEnter &&
+            !suggestions.length
+          ) {
+            e.preventDefault();
+            onEnter();
+          }
           if (e.key === "Escape") setFocused(false);
           if (e.key === "ArrowDown" && suggestions.length) {
             e.preventDefault();
