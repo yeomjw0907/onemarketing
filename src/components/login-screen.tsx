@@ -13,6 +13,7 @@ export default function LoginScreen({
   initialRole: "advertiser" | "participant";
 }) {
   const [role, setRole] = useState(initialRole);
+  const [onboarding, setOnboarding] = useState(false);
   useEffect(() => {
     try {
       if (next && role === "participant")
@@ -23,31 +24,34 @@ export default function LoginScreen({
   }, [next, role]);
   return (
     <div className="auth-page">
-      {!(register && role === "advertiser") && (
+      {!onboarding && !(register && role === "advertiser") && (
         <>
           <h1>{register ? "회원가입" : "로그인"}</h1>
           <p>이용할 계정을 선택해주세요.</p>
         </>
       )}
-      <div className="auth-roles" aria-label="계정 유형">
-        <button
-          aria-pressed={role === "advertiser"}
-          onClick={() => setRole("advertiser")}
-        >
-          광고주
-        </button>
-        <button
-          aria-pressed={role === "participant"}
-          onClick={() => setRole("participant")}
-        >
-          체험단
-        </button>
-      </div>
+      {!onboarding && (
+        <div className="auth-roles" aria-label="계정 유형">
+          <button
+            aria-pressed={role === "advertiser"}
+            onClick={() => setRole("advertiser")}
+          >
+            광고주
+          </button>
+          <button
+            aria-pressed={role === "participant"}
+            onClick={() => setRole("participant")}
+          >
+            체험단
+          </button>
+        </div>
+      )}
       {role === "advertiser" ? (
         <AdvertiserAccess
           key={String(register)}
           register={register}
           returnTo={next}
+          onOnboardingChange={setOnboarding}
         />
       ) : (
         <div className="participant-portal portal-entry auth-participant">
@@ -59,9 +63,11 @@ export default function LoginScreen({
           />
         </div>
       )}
-      <p className="auth-admin">
-        운영 담당자는 <Link href="/admin">관리자 로그인</Link>을 이용해주세요.
-      </p>
+      {!onboarding && (
+        <p className="auth-admin">
+          운영 담당자는 <Link href="/admin">관리자 로그인</Link>을 이용해주세요.
+        </p>
+      )}
     </div>
   );
 }

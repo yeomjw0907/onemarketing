@@ -1,0 +1,52 @@
+.entry {
+  max-width: 680px;
+  margin: 24px auto;
+  color: #191f28;
+  line-height: 1.6;
+  padding: 24px 0 40px;
+}
+.entry h2 {
+  font-size: 28px;
+  line-height: 1.4;
+  letter-spacing: -0.8px;
+  margin: 12px 0 18px;
+}
+.entry > p {
+  color: #6b7684;
+  font-size: 14px;
+}
+.entry .eyebrow {
+  color: #3182f6;
+  font-size: 12px;
+  font-weight: 600;
+}
+.entry button {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 14px;
+  font: inherit;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.entry .primary {
+  background: #3182f6;
+  color: #fff;
+  border: 0;
+  font-weight: 600;
+}
+.entry .login {
+  background: transparent;
+  color: #6b7684;
+  border: 0;
+}
+.entry button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.entry .error {
+  color: #b42318;
+}
+.entry :focus-visible {
+  outline: 3px solid #a5caff;
+  outline-offset: 3px;
+}

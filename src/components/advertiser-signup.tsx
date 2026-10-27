@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QuestionFlow, { type Question } from "./question-flow";
 import { marketFetch } from "./public-fetch";
+import styles from "./advertiser-signup.module.css";
 const questions: Question[] = [
   {
     key: "businessType",
@@ -122,16 +123,65 @@ export default function AdvertiserSignup({
   onLogin,
   kakao,
   externalError,
+  entryBusy = false,
+  onOnboardingChange,
 }: {
   social: boolean;
+  entryBusy?: boolean;
+  onOnboardingChange?: (active: boolean) => void;
   onComplete: (account: Record<string, any>) => void;
   onLogin: () => void;
   externalError?: string;
   kakao: React.ReactNode;
 }) {
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    onOnboardingChange?.(started);
+    return () => onOnboardingChange?.(false);
+  }, [started, onOnboardingChange]);
   const [values, setValues] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  if (!started)
+    return (
+      <section className={styles.entry} aria-label="가입 방식 선택">
+        <p className={styles.eyebrow}>광고주 회원가입</p>
+        <h2>
+          {social ? "카카오 인증을 마쳤어요." : "어떤 방법으로 시작할까요?"}
+        </h2>
+        <p>
+          {social
+            ? "새 광고주로 가입하거나 기존 계정에 연결할 수 있어요."
+            : "가입 방법을 고른 뒤, 필요한 정보를 하나씩 알려주세요."}
+        </p>
+        {!social && kakao}
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={entryBusy}
+          onClick={() => setStarted(true)}
+        >
+          {entryBusy
+            ? "확인 중…"
+            : social
+              ? "새 광고주로 가입하기"
+              : "이메일로 가입하기"}
+        </button>
+        <button
+          type="button"
+          className={styles.login}
+          disabled={entryBusy}
+          onClick={onLogin}
+        >
+          {social ? "기존 계정에 카카오 연결" : "이미 계정이 있어요 · 로그인"}
+        </button>
+        {externalError && (
+          <p role="alert" className={styles.error}>
+            {externalError}
+          </p>
+        )}
+      </section>
+    );
   return (
     <>
       <QuestionFlow
@@ -164,25 +214,7 @@ export default function AdvertiserSignup({
             setBusy(false);
           }
         }}
-        footer={
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onLogin}
-            style={{
-              display: "block",
-              margin: "12px auto",
-              background: "none",
-              border: 0,
-              color: "#6b7684",
-              padding: 12,
-            }}
-          >
-            {social ? "기존 계정에 카카오 연결" : "이미 계정이 있어요 · 로그인"}
-          </button>
-        }
       />
-      {!social && kakao}
     </>
   );
 }

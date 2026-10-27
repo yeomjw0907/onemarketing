@@ -60,16 +60,19 @@ function Account({
   account,
   onChange,
   initialRegister = false,
+  onOnboardingChange,
 }: {
   account: Row | null;
   onChange: (a: Row | null) => void;
   initialRegister?: boolean;
+  onOnboardingChange?: (active: boolean) => void;
 }) {
   const [register, setRegister] = useState(initialRegister),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [social, setSocial] = useState(false),
-    [kakaoEnabled, setKakaoEnabled] = useState(false);
+    [kakaoEnabled, setKakaoEnabled] = useState(false),
+    [authReady, setAuthReady] = useState(false);
   useEffect(() => {
     if (new URLSearchParams(location.search).has("loginError"))
       setError("카카오 로그인이 취소되었거나 만료됐어요. 다시 시도해주세요.");
@@ -79,7 +82,8 @@ function Account({
         setKakaoEnabled(d.kakaoEnabled);
         if (d.kakaoPending) setRegister(true);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setAuthReady(true));
   }, []);
   async function kakaoLogin() {
     setBusy(true);
@@ -142,6 +146,8 @@ function Account({
         }}
         kakao={kakao}
         externalError={error}
+        entryBusy={!authReady || busy}
+        onOnboardingChange={onOnboardingChange}
       />
     );
   return (
@@ -222,9 +228,11 @@ function Account({
 export function AdvertiserAccess({
   register = false,
   returnTo = "",
+  onOnboardingChange,
 }: {
   register?: boolean;
   returnTo?: string;
+  onOnboardingChange?: (active: boolean) => void;
 }) {
   const [account, setAccount] = useState<Row | null>(null);
   useEffect(() => {
@@ -247,6 +255,7 @@ export function AdvertiserAccess({
             location.assign(returnTo);
         }}
         initialRegister={register}
+        onOnboardingChange={onOnboardingChange}
       />
       {account && <Link href="/advertisers">광고주 마이페이지로 이동 →</Link>}
     </>
