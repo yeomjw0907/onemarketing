@@ -65,6 +65,13 @@ async function setup(overrides: Record<string, unknown> = {}) {
   const a = await advertiserAuth(
     {
       action: "register",
+      companyName: "테스트 업체",
+      brand: "테스트 브랜드",
+      industry: "생활용품",
+      businessType: "preparing",
+      businessNumber: "",
+      address: "서울",
+      description: "테스트 제품과 서비스",
       email: crypto.randomUUID() + "@test.local",
       password: "strong-password-123",
       name: "광고주",
@@ -431,11 +438,11 @@ test("production linking checks advertiser ownership, protects legacy assignment
   const { actor, order } = await setup();
   await confirmPayment(admin, order.id, order.version, "실제 입금 검증");
   let c = (await commerceView(actor)).campaigns[0];
-  const customer = await save(
-    "customers",
-    { name: "제작 고객", brand: "브랜드" },
-    admin.id,
+  const [account] = await query<{ customer_id: string }>(
+    "select customer_id from advertiser_accounts where id=$1",
+    [actor.id],
   );
+  const customer = (await get(account.customer_id))!;
   const project = await create("projects", {
     name: "제작 전용",
     customerId: customer.id,

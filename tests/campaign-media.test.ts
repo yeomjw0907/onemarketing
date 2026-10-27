@@ -20,6 +20,13 @@ test("campaign covers are transcoded, owner isolated, private until paid and val
   const auth = await advertiserAuth(
     {
       action: "register",
+      companyName: "테스트 업체",
+      brand: "테스트 브랜드",
+      industry: "생활용품",
+      businessType: "preparing",
+      businessNumber: "",
+      address: "서울",
+      description: "테스트 제품과 서비스",
       email: crypto.randomUUID() + "@test.local",
       password: "strong-password-123",
       name: "대표 이미지",

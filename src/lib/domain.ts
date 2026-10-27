@@ -1,3 +1,4 @@
+import { customerCompanyFields } from "./advertiser-profile";
 import { requireClipMaterials } from "./clip-description";
 import { requireCopyApproval } from "./copy-quality";
 import {
@@ -47,6 +48,7 @@ const name = z.string().trim().min(1).max(200);
 const amount = z.number().int().min(0).max(1e12);
 const optionalAmount = amount.nullable();
 const customer = z.object({
+  ...customerCompanyFields,
   name,
   businessNumber: z
     .string()

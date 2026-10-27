@@ -1,3 +1,8 @@
+import { kakaoConfigured } from "@/lib/kakao-auth";
+import {
+  advertiserKakaoPending,
+  advertiserKakaoLogin,
+} from "@/lib/advertiser-social";
 import { cookies } from "next/headers";
 import { sameOrigin } from "@/lib/auth";
 import {
@@ -8,8 +13,18 @@ import {
 import { ZodError } from "zod";
 export const dynamic = "force-dynamic";
 export async function GET() {
+  const jar = await cookies();
+  let pending = false;
+  try {
+    await advertiserKakaoPending(
+      jar.get("om_advertiser_kakao_pending")?.value || "",
+    );
+    pending = true;
+  } catch {}
   return Response.json(
     {
+      kakaoEnabled: kakaoConfigured(),
+      kakaoPending: pending,
       account: await advertiserSession(
         (await cookies()).get("om_advertiser")?.value,
       ),
@@ -21,20 +36,33 @@ export async function POST(request: Request) {
   try {
     sameOrigin(request);
     const raw = await request.text();
-    if (raw.length > 4000) throw new Error("요청이 너무 깁니다.");
+    if (raw.length > 16000) throw new Error("요청이 너무 깁니다.");
     const b = JSON.parse(raw);
     const jar = await cookies();
     if (b.action === "logout") {
       await advertiserLogout(jar.get("om_advertiser")?.value);
       jar.delete("om_advertiser");
+      jar.delete("om_advertiser_kakao_pending");
       return Response.json({ ok: true });
     }
-    const result = await advertiserAuth(
-      b,
-      request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        "unknown",
-    );
+    const pendingIdentity = jar.get("om_advertiser_kakao_pending")?.value;
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
+    const result =
+      b.action === "social-register" || b.action === "social-link"
+        ? await advertiserKakaoLogin(pendingIdentity || "", b, ip)
+        : await advertiserAuth(
+            b,
+            request.headers
+              .get("x-vercel-forwarded-for")
+              ?.split(",")[0]
+              ?.trim() ||
+              request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+              "unknown",
+          );
+    if (!result) throw new Error("카카오 로그인을 다시 진행해주세요.");
+    jar.delete("om_advertiser_kakao_pending");
     jar.set("om_advertiser", result.token, {
       httpOnly: true,
       sameSite: "lax",

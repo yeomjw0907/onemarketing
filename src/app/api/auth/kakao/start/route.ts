@@ -13,6 +13,18 @@ export async function POST(request: Request) {
       typeof body.access === "string" ? body.access : undefined,
       body.reselect === true,
       silent,
+      body.role === "advertiser" ? "advertiser" : "participant",
+    );
+    (await cookies()).set(
+      "om_kakao_role",
+      body.role === "advertiser" ? "advertiser" : "participant",
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      },
     );
     (await cookies()).set("om_kakao_state", result.state, {
       httpOnly: true,

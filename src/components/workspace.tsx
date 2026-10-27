@@ -1,4 +1,5 @@
 "use client";
+import CustomerAccountProvision from "./customer-account-provision";
 import KeywordEvidence from "./keyword-evidence";
 import MarketAdmin from "./market-admin";
 import KeywordMetrics from "./keyword-metrics";
@@ -1422,6 +1423,12 @@ export default function Workspace() {
                   ["피해야 할 표현", customer.forbidden],
                   ["연락처", customer.contact],
                   ["사업자등록번호", customer.businessNumber],
+                  ["업종", customer.industry],
+                  ["사업자 유형", customer.businessType],
+                  ["주소·지역", customer.address],
+                  ["이메일", customer.email],
+                  ["웹사이트", customer.website],
+                  ["제품·서비스 소개", customer.description],
                 ].map(([k, v]) => (
                   <div className="amountline" key={String(k)}>
                     <span className="muted">{String(k)}</span>
@@ -1430,6 +1437,7 @@ export default function Workspace() {
                 ))}
               </section>
               <section className="section">
+                <CustomerAccountProvision customerId={customer.id} />
                 <h2>고객 현황</h2>
                 <SignalRail
                   items={[
@@ -2356,6 +2364,14 @@ export default function Workspace() {
                     첨부파일은 고객 저장 시 함께 등록됩니다. 작성된 Excel은
                     자료실에서 미리보기·다운로드할 수 있습니다.
                   </p>
+                  <Field label="업종">{input("industry")}</Field>
+                  <Field label="사업자 유형">{input("businessType")}</Field>
+                  <Field label="주소·지역">{input("address")}</Field>
+                  <Field label="이메일">{input("email", "email")}</Field>
+                  <Field label="웹사이트">{input("website", "url")}</Field>
+                  <Field label="제품·서비스 소개" full>
+                    {area("description")}
+                  </Field>
                   <Field label="브랜드">{input("brand")}</Field>
                   <Field label="연락처" full>
                     {input("contact")}

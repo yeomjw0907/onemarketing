@@ -26,6 +26,13 @@ async function account() {
   return advertiserAuth(
     {
       action: "register",
+      companyName: "테스트 업체",
+      brand: "테스트 브랜드",
+      industry: "생활용품",
+      businessType: "preparing",
+      businessNumber: "",
+      address: "서울",
+      description: "테스트 제품과 서비스",
       email: `advertiser-${crypto.randomUUID()}@test.local`,
       password: "a-strong-password",
       name: "테스트 광고주",
@@ -156,6 +163,13 @@ test("광고주 계정은 동의·비밀번호를 검사하며 별도 세션과 
     advertiserAuth(
       {
         action: "register",
+        companyName: "테스트 업체",
+        brand: "테스트 브랜드",
+        industry: "생활용품",
+        businessType: "preparing",
+        businessNumber: "",
+        address: "서울",
+        description: "테스트 제품과 서비스",
         email: "bad@test.local",
         password: "long-enough-password",
         name: "미동의",
@@ -253,7 +267,7 @@ test("신청 후 가격이 바뀌면 견적 전환을 롤백하고 접수 금액
         [a.account.id],
       )
     )[0].customer_id,
-    null,
+    a.account.customer_id,
   );
 });
 test("공개 지원은 회원·계정·중복·철회를 검사하고 선정 후 기존 수락으로 배정한다", async () => {

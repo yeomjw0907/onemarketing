@@ -1,3 +1,4 @@
+import { advertiserProfileSchema } from "./advertiser-profile";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { z } from "zod";
 import { query, execute, get, list, lock, transaction, audit } from "./db";
@@ -91,6 +92,10 @@ export async function advertiserSession(
   );
 }
 export async function advertiserAuth(input: unknown, ip: string) {
+  const profile =
+    (input as { action?: string }).action === "register"
+      ? advertiserProfileSchema.parse(input)
+      : null;
   const b = z
     .object({
       action: z.enum(["register", "login"]),
@@ -166,6 +171,23 @@ export async function advertiserAuth(input: unknown, ip: string) {
       )[0];
     } else if (!a || !verifyPassword(b.password, a.password_hash))
       throw new Error("이메일 또는 비밀번호를 확인해주세요.");
+    if (profile) {
+      const customer = await save(
+        "customers",
+        {
+          ...profile,
+          name: profile.companyName,
+          contact: `${b.name} · ${b.phone} · ${b.email}`,
+          email: b.email,
+        },
+        a.id,
+      );
+      await execute(
+        "update advertiser_accounts set customer_id=$1 where id=$2",
+        [customer.id, a.id],
+      );
+      a.customer_id = customer.id;
+    }
     await execute("delete from login_attempts where key=$1", [key]);
     const token = randomBytes(32).toString("hex");
     await execute(

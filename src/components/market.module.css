@@ -278,3 +278,23 @@
     transform: none;
   }
 }
+
+.kakao {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  min-height: 48px;
+  margin: 20px 0;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: #fee500;
+  color: #191919;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kakao:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

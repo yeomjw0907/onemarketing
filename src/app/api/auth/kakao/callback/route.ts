@@ -1,3 +1,4 @@
+import { advertiserKakaoLogin } from "@/lib/advertiser-social";
 import { cookies } from "next/headers";
 import { completeKakao, kakaoOnboarding } from "@/lib/kakao-auth";
 export async function GET(request: Request) {
@@ -18,6 +19,37 @@ export async function GET(request: Request) {
       sameSite: "lax" as const,
       path: "/",
     };
+    if (result.advertiserIdentity) {
+      const login = await advertiserKakaoLogin(result.advertiserIdentity);
+      if (login) {
+        store.set("om_advertiser", login.token, {
+          ...options,
+          maxAge: 7 * 86400,
+        });
+        destination.pathname = "/advertisers";
+      } else {
+        store.delete("om_advertiser");
+        destination.pathname = "/login";
+        destination.search = "?role=advertiser&signup=1";
+      }
+      store.delete("om_advertiser_kakao_pending");
+      if (!login)
+        store.set("om_advertiser_kakao_pending", result.advertiserIdentity, {
+          ...options,
+          maxAge: 1800,
+        });
+      store.delete("om_kakao_role");
+      store.delete("om_kakao_state");
+      store.delete("om_kakao_silent");
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: destination.toString(),
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
     store.delete("om_kakao_pending");
     if (result.session)
       store.set("om_participant", result.session, {
@@ -40,10 +72,15 @@ export async function GET(request: Request) {
       }
     }
   } catch {
+    if (store.get("om_kakao_role")?.value === "advertiser") {
+      destination.pathname = "/login";
+      destination.searchParams.set("role", "advertiser");
+    }
     if (store.get("om_kakao_silent")?.value === "1")
       destination.searchParams.set("autoLogin", "skipped");
     else destination.searchParams.set("loginError", "1");
   }
+  store.delete("om_kakao_role");
   store.delete("om_kakao_state");
   store.delete("om_kakao_silent");
   return new Response(null, {

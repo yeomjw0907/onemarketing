@@ -28,6 +28,7 @@ export async function beginKakao(
   access?: string,
   reselect = false,
   silent = false,
+  role: "participant" | "advertiser" = "participant",
 ) {
   if (!kakaoConfigured()) throw new Error("카카오 로그인을 준비 중이에요.");
   const participantId = access
@@ -36,6 +37,7 @@ export async function beginKakao(
   const state = randomBytes(32).toString("hex");
   await create("portal_links", {
     purpose: "kakao-oauth",
+    role,
     tokenHash: hash(state),
     candidateId: participantId,
     expiresAt: new Date(Date.now() + 10 * 60000).toISOString(),
@@ -103,6 +105,21 @@ export async function completeKakao(
     nickname = String(
       user.kakao_account?.profile?.nickname || "카카오 사용자",
     ).slice(0, 100);
+  if (attempt.role === "advertiser") {
+    const identity = randomBytes(32).toString("hex");
+    await create("portal_links", {
+      purpose: "advertiser-kakao-login",
+      kakaoId,
+      nickname,
+      tokenHash: hash(identity),
+      expiresAt: new Date(Date.now() + 1800000).toISOString(),
+    });
+    return {
+      advertiserIdentity: identity,
+      session: undefined,
+      identity: undefined,
+    };
+  }
   const binding = (await list("portal_links")).find(
     (l) =>
       l.purpose === "kakao-account" && l.kakaoId === kakaoId && !l.revokedAt,
@@ -215,9 +232,15 @@ export async function unlinkKakao(kakaoId: string) {
   await transaction(async () => {
     await lock("save:participants");
     await lock("kakao-bind");
+    await lock("advertiser-kakao:" + kakaoId);
     for (const row of (await list("portal_links")).filter(
       (l) => l.kakaoId === kakaoId,
-    ))
+    )) {
+      if (row.purpose === "advertiser-kakao-account")
+        await execute(
+          "delete from advertiser_sessions where advertiser_id=$1",
+          [row.advertiserId],
+        );
       await update(row.id, {
         revokedAt: new Date().toISOString(),
         kakaoId: null,
@@ -226,6 +249,7 @@ export async function unlinkKakao(kakaoId: string) {
         phone: null,
         status: "cancelled",
       });
+    }
     await execute(
       "update participant_applications set data=data-'trustedKakaoId',version=version+1,updated_at=now() where data->>'trustedKakaoId'=$1",
       [kakaoId],
