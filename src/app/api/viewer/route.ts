@@ -1,3 +1,7 @@
+import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "@/lib/database-errors";
 import { cookies } from "next/headers";
 import { actor } from "@/lib/auth";
 import { advertiserSession } from "@/lib/market";
@@ -8,16 +12,20 @@ export async function GET() {
     const [admin, advertiser, participant] = await Promise.all([
       actor(),
       advertiserSession((await cookies()).get("om_advertiser")?.value),
-      portalParticipant().catch(() => null),
+      portalParticipant().catch((e) => {
+        if (databaseUnavailable(e)) throw e;
+        return null;
+      }),
     ]);
     return Response.json(
       { admin: !!admin, advertiser: !!advertiser, participant: !!participant },
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
+  } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
-      { admin: false, advertiser: false, participant: false },
-      { headers: { "Cache-Control": "private, no-store" } },
+      { error: "로그인 상태를 확인하지 못했어요. 다시 시도해주세요." },
+      { status: 500, headers: { "Cache-Control": "private, no-store" } },
     );
   }
 }

@@ -63,3 +63,11 @@ test("invalid credentials and business validation are not connection failures", 
   ])
     assert.equal(databaseUnavailable(error), false);
 });
+
+import { workflowFailure, WorkflowError } from "../src/lib/workflow-http";
+test("workflow transport failures preserve retryable status and real authentication errors", async () => {
+  const unavailable = workflowFailure(Object.assign(new Error("private connection detail"), {code:"ECONNRESET"}));
+  assert.equal(unavailable.status,503);
+  assert.doesNotMatch(JSON.stringify(await unavailable.json()),/private connection detail/);
+  assert.equal(workflowFailure(new WorkflowError("로그인이 필요합니다.",401)).status,401);
+});

@@ -1,3 +1,7 @@
+import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "@/lib/database-errors";
 import { kakaoConfigured } from "@/lib/kakao-auth";
 import {
   advertiserKakaoPending,
@@ -13,24 +17,34 @@ import {
 import { ZodError } from "zod";
 export const dynamic = "force-dynamic";
 export async function GET() {
-  const jar = await cookies();
-  let pending = false;
   try {
-    await advertiserKakaoPending(
-      jar.get("om_advertiser_kakao_pending")?.value || "",
+    const jar = await cookies();
+    let pending = false;
+    try {
+      await advertiserKakaoPending(
+        jar.get("om_advertiser_kakao_pending")?.value || "",
+      );
+      pending = true;
+    } catch (e) {
+      if (databaseUnavailable(e)) throw e;
+    }
+    return Response.json(
+      {
+        kakaoEnabled: kakaoConfigured(),
+        kakaoPending: pending,
+        account: await advertiserSession(
+          (await cookies()).get("om_advertiser")?.value,
+        ),
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
     );
-    pending = true;
-  } catch {}
-  return Response.json(
-    {
-      kakaoEnabled: kakaoConfigured(),
-      kakaoPending: pending,
-      account: await advertiserSession(
-        (await cookies()).get("om_advertiser")?.value,
-      ),
-    },
-    { headers: { "Cache-Control": "private, no-store" } },
-  );
+  } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
+    return Response.json(
+      { error: "로그인 상태를 확인하지 못했어요. 다시 시도해주세요." },
+      { status: 500, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
 }
 export async function POST(request: Request) {
   try {
@@ -74,6 +88,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ account: result.account });
   } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
       {
         error:

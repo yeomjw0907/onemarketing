@@ -1,3 +1,7 @@
+import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "@/lib/database-errors";
 import { cookies } from "next/headers";
 import { actor, sameOrigin } from "@/lib/auth";
 import { advertiserSession } from "@/lib/market";
@@ -37,6 +41,7 @@ async function identity(role: string | null): Promise<CommerceActor> {
   return { role: "advertiser", id: a.id };
 }
 function fail(e: unknown) {
+  if (databaseUnavailable(e)) return databaseUnavailableResponse();
   const message =
     e instanceof ZodError
       ? e.issues[0]?.message

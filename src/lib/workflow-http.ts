@@ -1,3 +1,7 @@
+import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "./database-errors";
 import { ZodError } from "zod";
 import { WorkflowConflict } from "./workflow-store";
 export const privateHeaders = {
@@ -41,6 +45,7 @@ export async function workflowBuffer(request: Request, limit: number) {
   return Buffer.concat(chunks);
 }
 export function workflowFailure(error: unknown) {
+  if (databaseUnavailable(error)) return databaseUnavailableResponse();
   const status =
     error instanceof WorkflowError
       ? error.status

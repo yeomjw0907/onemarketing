@@ -1,4 +1,5 @@
 "use client";
+import { requestJSON } from "@/lib/request-json";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useRef, type ReactNode } from "react";
@@ -16,11 +17,12 @@ export default function PublicShell({ children }: { children: ReactNode }) {
   });
   useEffect(() => {
     let active = true;
+    let generation = 0;
     const refresh = () => {
-      fetch("/api/viewer", { cache: "no-store" })
-        .then((r) => r.json())
+      const request = ++generation;
+      requestJSON<{admin:boolean;advertiser:boolean;participant:boolean}>("/api/viewer")
         .then((v) => {
-          if (active) setViewer(v);
+          if (active && request === generation) setViewer(v);
         })
         .catch(() => {});
     };
