@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import s from "./question-flow.module.css";
+import ApplicationEmail from "./application-email";
+import { formatMobilePhone } from "@/lib/participant-payment";
 export type Question = {
   validate?: (value: string) => string | null;
   key: string;
@@ -195,6 +197,13 @@ export default function QuestionFlow({
                   />
                   {q.hint || q.title}
                 </label>
+              ) : q.type === "email" ? (
+                <ApplicationEmail
+                  value={values[q.key] || ""}
+                  onChange={(value) => onChange(q.key, value)}
+                  required={q.required}
+                  disabled={busy}
+                />
               ) : q.type === "textarea" ? (
                 <textarea
                   aria-label={q.title}
@@ -209,8 +218,22 @@ export default function QuestionFlow({
                 <input
                   aria-label={q.title}
                   type={q.type || "text"}
-                  value={values[q.key] || ""}
-                  onChange={(e) => onChange(q.key, e.target.value)}
+                  value={
+                    q.type === "tel" &&
+                    (q.key === "phone" || /^01/.test(values[q.key] || ""))
+                      ? formatMobilePhone(values[q.key] || "")
+                      : values[q.key] || ""
+                  }
+                  onChange={(e) =>
+                    onChange(
+                      q.key,
+                      q.type === "tel" &&
+                        (q.key === "phone" ||
+                          /^01/.test(e.target.value.replace(/\D/g, "")))
+                        ? formatMobilePhone(e.target.value)
+                        : e.target.value,
+                    )
+                  }
                   required={q.required}
                   minLength={q.minLength}
                   maxLength={q.maxLength || 200}

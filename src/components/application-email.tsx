@@ -14,8 +14,12 @@ const domains = [
 export default function ApplicationEmail({
   value,
   onChange,
+  required = false,
+  disabled = false,
 }: {
   value: string;
+  required?: boolean;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const [focused, setFocused] = useState(false);
@@ -47,6 +51,8 @@ export default function ApplicationEmail({
       <ApplicationInput
         label="이메일"
         inputRef={ref}
+        required={required}
+        disabled={disabled}
         type="email"
         inputMode="email"
         autoComplete="email"
@@ -82,6 +88,7 @@ export default function ApplicationEmail({
             <button
               key={address}
               type="button"
+              disabled={disabled}
               onPointerDown={(e) => {
                 if (e.button === 0) {
                   e.preventDefault();

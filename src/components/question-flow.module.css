@@ -58,6 +58,8 @@
   margin: 0 0 12px;
 }
 .body h2 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
   font-size: clamp(25px, 4vw, 32px);
   line-height: 1.4;
   letter-spacing: -1px;
