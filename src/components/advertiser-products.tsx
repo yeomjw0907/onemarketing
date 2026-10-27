@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Package, Plus, Paperclip, ArrowLeft } from "lucide-react";
+import { requestJSON } from "@/lib/request-json";
 import { marketFetch } from "./public-fetch";
 import QuestionFlow, { type Question } from "./question-flow";
 import s from "./advertiser-products.module.css";
@@ -42,22 +43,48 @@ const questions: Question[] = [
     type: "textarea",
   },
 ];
-export default function AdvertiserProducts() {
+export default function AdvertiserProducts({
+  refreshKey = 0,
+}: {
+  refreshKey?: number;
+}) {
   const [products, setProducts] = useState<Product[]>([]),
     [edit, setEdit] = useState<Product | null | "new">(null),
     [values, setValues] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true),
+    [loaded, setLoaded] = useState(false),
+    [errorStatus, setErrorStatus] = useState(0),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
+  const generation = useRef(0);
   async function load() {
-    setProducts(await marketFetch("/api/advertiser-products"));
+    const request = ++generation.current;
+    setLoading(true);
+    setError("");
+    setErrorStatus(0);
+    try {
+      const data = await marketFetch("/api/advertiser-products");
+      if (request === generation.current) {
+        setProducts(data);
+        setLoaded(true);
+      }
+    } catch (e) {
+      if (request === generation.current) {
+        setError((e as Error).message);
+        setErrorStatus(Number((e as { status?: number }).status || 0));
+      }
+      throw e;
+    } finally {
+      if (request === generation.current) setLoading(false);
+    }
   }
   useEffect(() => {
-    load()
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+    void load().catch(() => {});
+    return () => {
+      generation.current++;
+    };
+  }, [refreshKey]);
   function open(p: Product | "new") {
     setError("");
     setNotice("");
@@ -76,20 +103,29 @@ export default function AdvertiserProducts() {
     );
   }
   async function upload(p: Product, file: File) {
+    if (file.size > 4 * 1024 * 1024) {
+      setError(
+        "파일당 4MB 이하로 등록해주세요. 큰 영상은 공유 링크로 남겨주세요.",
+      );
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const form = new FormData();
       form.set("productId", p.id);
       form.set("file", file);
-      const r = await fetch("/api/advertiser-products", {
-        method: "POST",
-        body: form,
-      });
-      const d = await r.json();
-      if (!r.ok) throw Error(d.error);
-      await load();
+      await requestJSON(
+        "/api/advertiser-products",
+        { method: "POST", body: form },
+        { timeoutMs: 60_000 },
+      );
       setNotice("자료를 추가했어요. 담당자도 같은 자료를 확인할 수 있어요.");
+      await load().catch(() =>
+        setNotice(
+          "자료 등록은 완료됐지만 목록을 갱신하지 못했어요. 다시 불러와주세요.",
+        ),
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -103,10 +139,21 @@ export default function AdvertiserProducts() {
           {notice}
         </p>
       )}
-      {error && (
-        <p role="alert" className={s.error}>
-          {error}
-        </p>
+      {error && !edit && (
+        <div role="alert" className={s.error}>
+          <p>{error}</p>
+          {errorStatus === 401 ? (
+            <a href="/login?role=advertiser">로그인으로 이동</a>
+          ) : (
+            <button
+              type="button"
+              disabled={loading || busy}
+              onClick={() => void load().catch(() => {})}
+            >
+              다시 불러오기
+            </button>
+          )}
+        </div>
       )}
       {edit ? (
         <>
@@ -143,10 +190,14 @@ export default function AdvertiserProducts() {
                     .map((v) => v.trim())
                     .filter(Boolean),
                 });
-                await load();
                 setEdit(null);
                 setNotice(
                   "제품 정보를 저장했어요. 기존 캠페인의 확정 정보는 유지돼요.",
+                );
+                await load().catch(() =>
+                  setNotice(
+                    "제품 저장은 완료됐지만 목록을 갱신하지 못했어요. 다시 불러와 결과를 확인해주세요.",
+                  ),
                 );
               } catch (e) {
                 setError((e as Error).message);
@@ -165,7 +216,7 @@ export default function AdvertiserProducts() {
             </div>
             <button
               type="button"
-              disabled={busy || loading}
+              disabled={busy || loading || !loaded}
               onClick={() => open("new")}
             >
               <Plus size={18} /> 제품 등록
@@ -173,7 +224,7 @@ export default function AdvertiserProducts() {
           </div>
           {loading ? (
             <p role="status">제품을 불러오고 있어요…</p>
-          ) : !products.length ? (
+          ) : !loaded ? null : !products.length ? (
             <div className={s.empty}>
               <Package size={36} />
               <h3>아직 등록된 제품이 없어요.</h3>

@@ -3,7 +3,13 @@ import AdvertiserProducts from "./advertiser-products";
 import OperationQueue from "./operation-queue";
 import CampaignPresentationFields from "./campaign-presentation-fields";
 import Link from "next/link";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { marketFetch } from "./market-public";
 import PublicShell from "./public-shell";
 import { appStates, campaignStates, money } from "@/lib/commerce-policy";
@@ -14,18 +20,67 @@ const formatDate = (v: string) =>
 export function CommerceBoard({ admin = false }: { admin?: boolean }) {
   const [data, setData] = useState<Row | null>(null),
     [error, setError] = useState(""),
+    [errorStatus, setErrorStatus] = useState(0),
+    [loading, setLoading] = useState(true),
+    [productRefresh, setProductRefresh] = useState(0),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [selected, setSelected] = useState(""),
     [tab, setTab] = useState("overview"),
     [appFilter, setAppFilter] = useState("all"),
     [appQuery, setAppQuery] = useState("");
+  const generation = useRef(0);
   const load = useCallback(async () => {
-    setData(await marketFetch("/api/commerce" + (admin ? "?role=admin" : "")));
+    const request = ++generation.current;
+    setLoading(true);
+    setError("");
+    setErrorStatus(0);
+    try {
+      const result = await marketFetch(
+        "/api/commerce" + (admin ? "?role=admin" : ""),
+      );
+      if (request === generation.current) setData(result);
+    } catch (e) {
+      if (request === generation.current) {
+        setError((e as Error).message);
+        setErrorStatus(Number((e as { status?: number }).status || 0));
+      }
+      throw e;
+    } finally {
+      if (request === generation.current) setLoading(false);
+    }
   }, [admin]);
   useEffect(() => {
-    load().catch((e) => setError(e.message));
-  }, [load]);
+    const initial = new URLSearchParams(location.search).get("tab");
+    const allowed = admin
+      ? ["overview", "orders", "settings"]
+      : ["overview", "orders", "products"];
+    const value = initial && allowed.includes(initial) ? initial : "overview";
+    setTab(value);
+    if (value === "products") setLoading(false);
+    else void load().catch(() => {});
+    const restore = () => {
+      const t = new URLSearchParams(location.search).get("tab");
+      setTab(t && allowed.includes(t) ? t : "overview");
+      setSelected("");
+    };
+    window.addEventListener("popstate", restore);
+    return () => {
+      generation.current++;
+      window.removeEventListener("popstate", restore);
+    };
+  }, [admin, load]);
+  useEffect(() => {
+    if (tab !== "products" && !data && !error && !loading)
+      void load().catch(() => {});
+  }, [tab, data, error, loading, load]);
+  function changeTab(value: string) {
+    setSelected("");
+    setTab(value);
+    const url = new URL(location.href);
+    url.searchParams.set("tab", value);
+    history.replaceState(null, "", url);
+  }
   async function act(body: Row) {
     if (busy) return;
     setBusy(true);
@@ -36,8 +91,12 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
         ...body,
         ...(admin ? { role: "admin" } : {}),
       });
-      await load();
       setNotice("처리 내역을 저장했습니다.");
+      await load().catch(() =>
+        setNotice(
+          "처리는 완료됐지만 목록을 갱신하지 못했어요. 다시 불러와 결과를 확인해주세요.",
+        ),
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -126,22 +185,75 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
               새 캠페인
             </Link>
             <button
-              disabled={busy}
-              onClick={() =>
-                load()
-                  .then(() => setError(""))
-                  .catch((e) => setError(e.message))
-              }
+              disabled={busy || (tab !== "products" && loading)}
+              onClick={() => {
+                if (tab === "products") setProductRefresh((v) => v + 1);
+                else void load().catch(() => {});
+              }}
             >
               새로고침
             </button>
           </div>
         </div>
-        {error && (
+        <nav className={s.tabs} aria-label="마이페이지 메뉴">
+          <button
+            aria-pressed={tab === "overview"}
+            onClick={() => {
+              changeTab("overview");
+            }}
+          >
+            캠페인·할 일
+          </button>
+          <button
+            aria-pressed={tab === "orders"}
+            onClick={() => {
+              changeTab("orders");
+            }}
+          >
+            주문·결제
+          </button>
+          {!admin && (
+            <button
+              aria-pressed={tab === "products"}
+              onClick={() => {
+                changeTab("products");
+              }}
+            >
+              내 제품·서비스
+            </button>
+          )}
+          {!admin && <Link href="/advertisers/connections">AI 연결 관리</Link>}
+          {admin && (
+            <>
+              <button
+                aria-pressed={tab === "settings"}
+                onClick={() => {
+                  changeTab("settings");
+                }}
+              >
+                결제 계좌 설정
+              </button>
+              <Link href="/admin">제작·회원·정산 관리</Link>
+            </>
+          )}
+        </nav>
+        {tab === "products" && !admin && (
+          <AdvertiserProducts refreshKey={productRefresh} />
+        )}
+        {tab !== "products" && error && (
           <div role="alert" className={s.error}>
             {error}{" "}
-            {!data && (
+            {errorStatus === 401 && (
               <Link href={admin ? "/admin" : "/login"}>로그인으로 이동</Link>
+            )}
+            {errorStatus !== 401 && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void load().catch(() => {})}
+              >
+                다시 불러오기
+              </button>
             )}
           </div>
         )}
@@ -150,58 +262,11 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
             {notice}
           </p>
         )}
-        {!data && !error && <p>내역을 불러오는 중…</p>}
+        {tab !== "products" && loading && !data && (
+          <p role="status">내역을 불러오는 중…</p>
+        )}
         {data && (
           <>
-            <nav className={s.tabs} aria-label="마이페이지 메뉴">
-              <button
-                aria-pressed={tab === "overview"}
-                onClick={() => {
-                  setSelected("");
-                  setTab("overview");
-                }}
-              >
-                캠페인·할 일
-              </button>
-              <button
-                aria-pressed={tab === "orders"}
-                onClick={() => {
-                  setSelected("");
-                  setTab("orders");
-                }}
-              >
-                주문·결제
-              </button>
-              {!admin && (
-                <button
-                  aria-pressed={tab === "products"}
-                  onClick={() => {
-                    setSelected("");
-                    setTab("products");
-                  }}
-                >
-                  내 제품·서비스
-                </button>
-              )}
-              {!admin && (
-                <Link href="/advertisers/connections">AI 연결 관리</Link>
-              )}
-              {admin && (
-                <>
-                  <button
-                    aria-pressed={tab === "settings"}
-                    onClick={() => {
-                      setSelected("");
-                      setTab("settings");
-                    }}
-                  >
-                    결제 계좌 설정
-                  </button>
-                  <Link href="/admin">제작·회원·정산 관리</Link>
-                </>
-              )}
-            </nav>
-            {tab === "products" && !admin && <AdvertiserProducts />}
             {tab === "settings" && admin && (
               <section className={s.panel}>
                 <h2>계좌이체 결제 설정</h2>
