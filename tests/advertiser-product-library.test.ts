@@ -130,6 +130,32 @@ test("링크는 요청한 질문만 저장하고 임시 저장·보완·제출�
   const token = issued.url.split("#")[1];
   let view: Awaited<ReturnType<typeof saveIntake>> = await intakeView(token);
   assert.equal(view.fields.productName, "링크 제품");
+  assert.equal(view.fields.contactName, "고객");
+  assert.equal(view.fields.contactPhone, "01012345678");
+  const { update } = await import("../src/lib/db");
+  await update(a.customer_id!, { contactName: "", phone: "" });
+  const legacy = await issueIntake(
+    project.id,
+    ["company"],
+    "이전 고객 기본값",
+    "admin@test.local",
+  );
+  const legacyView = await intakeView(legacy.url.split("#")[1]);
+  assert.equal(legacyView.fields.contactName, "고객");
+  assert.equal(legacyView.fields.contactPhone, "01012345678");
+  await update(a.customer_id!, {
+    contactName: "별도 캠페인 담당자",
+    phone: "01099998888",
+  });
+  const override = await issueIntake(
+    project.id,
+    ["company"],
+    "관리자 지정 기본값",
+    "admin@test.local",
+  );
+  const overrideView = await intakeView(override.url.split("#")[1]);
+  assert.equal(overrideView.fields.contactName, "별도 캠페인 담당자");
+  assert.equal(overrideView.fields.contactPhone, "01099998888");
   await assert.rejects(
     saveIntake(token, view.version, view.fields, false, randomUUID()),
     /다른 캠페인/,

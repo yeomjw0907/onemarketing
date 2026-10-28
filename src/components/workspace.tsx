@@ -1421,6 +1421,8 @@ export default function Workspace() {
                   ["타깃", customer.target],
                   ["피해야 할 표현", customer.forbidden],
                   ["연락처", customer.contact],
+                  ["담당자", customer.contactName],
+                  ["휴대전화", customer.phone],
                   ["사업자등록번호", customer.businessNumber],
                   ["업종", customer.industry],
                   ["사업자 유형", customer.businessType],
@@ -2371,6 +2373,8 @@ export default function Workspace() {
                   <Field label="업종">{input("industry")}</Field>
                   <Field label="사업자 유형">{input("businessType")}</Field>
                   <Field label="주소·지역">{input("address")}</Field>
+                  <Field label="담당자">{input("contactName")}</Field>
+                  <Field label="휴대전화">{input("phone", "tel")}</Field>
                   <Field label="이메일">{input("email", "email")}</Field>
                   <Field label="웹사이트">{input("website", "url")}</Field>
                   <Field label="제품·서비스 소개" full>

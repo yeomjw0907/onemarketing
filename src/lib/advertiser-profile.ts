@@ -38,6 +38,8 @@ export const advertiserProfileSchema = z
     "사업자등록번호를 입력해주세요.",
   );
 export const customerCompanyFields = {
+  contactName: z.string().trim().max(200).default(""),
+  phone: z.string().trim().max(40).default(""),
   industry: z.string().max(200).default(""),
   businessType: z.string().max(100).default(""),
   address: z.string().max(200).default(""),

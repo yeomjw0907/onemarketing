@@ -37,6 +37,12 @@ test("가입 시 고객 생성·연결 및 업체 정보 보존, 필수 정보 �
   assert.equal(customer?.businessNumber, "1234567890");
   assert.equal(customer?.email, input.email);
   assert.equal(customer?.description, profile.description);
+  assert.equal(customer?.contactName, input.name);
+  assert.equal(customer?.phone, input.phone);
+  assert.equal(customer?.brand, profile.brand);
+  assert.equal(customer?.businessType, profile.businessType);
+  assert.equal(customer?.address, profile.address);
+  assert.equal(customer?.website, profile.website);
   await assert.rejects(
     advertiserAuth({ ...registration(), industry: "" }, crypto.randomUUID()),
   );
@@ -121,12 +127,29 @@ test("광고주 카카오 신규 가입·재로그인·state 재사용 차단·�
   }
   const pending = await identity();
   assert.equal(await advertiserKakaoLogin(pending), null);
+  const socialInput = registration();
   const created = await advertiserKakaoLogin(
     pending,
-    registration(),
+    socialInput,
     crypto.randomUUID(),
   );
   assert.ok(created);
+  const socialCustomer = await get(created.account.customer_id!);
+  for (const [key, value] of Object.entries({
+    name: profile.companyName,
+    brand: profile.brand,
+    industry: profile.industry,
+    businessType: profile.businessType,
+    businessNumber: "1234567890",
+    address: profile.address,
+    website: profile.website,
+    description: profile.description,
+    email: socialInput.email,
+    contactName: socialInput.name,
+    phone: socialInput.phone,
+  })) {
+    assert.equal(socialCustomer?.[key], value, key);
+  }
   assert.equal(
     (await advertiserSession(created.token))?.id,
     created.account.id,

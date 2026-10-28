@@ -177,6 +177,8 @@ export async function advertiserAuth(input: unknown, ip: string) {
         {
           ...profile,
           name: profile.companyName,
+          contactName: b.name,
+          phone: b.phone,
           contact: `${b.name} · ${b.phone} · ${b.email}`,
           email: b.email,
         },

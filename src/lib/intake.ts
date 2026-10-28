@@ -51,13 +51,23 @@ export async function issueIntake(
       ["completed", "cancelled"].includes(String(p.status))
     )
       throw new WorkflowError("접수 가능한 프로젝트를 선택해주세요.", 409);
+    // Older customers may only have a combined contact string. Use an unambiguous
+    // linked account for missing defaults without rewriting the customer master.
+    const accounts =
+      customer && (!customer.contactName || !customer.phone)
+        ? await query<{ name: string; phone: string }>(
+            "select name,phone from advertiser_accounts where customer_id=$1 limit 2",
+            [customer.id],
+          )
+        : [];
+    const account = accounts.length === 1 ? accounts[0] : undefined;
     const token = randomBytes(32).toString("hex");
     const fields = intakeFields.parse({
       companyName: String(customer?.brand || customer?.name || ""),
       productName: String(product?.name || ""),
       features: String(product?.facts || ""),
-      contactName: String(customer?.contactName || ""),
-      contactPhone: String(customer?.phone || ""),
+      contactName: String(customer?.contactName || account?.name || ""),
+      contactPhone: String(customer?.phone || account?.phone || ""),
       forbidden: String(product?.forbidden || customer?.forbidden || ""),
     });
     const req = z
