@@ -7,6 +7,16 @@
     "doc": "docs"
   },
   "scripts": {
+    "clip-lab": "node scripts/clip-lab/server.mjs",
+    "clip-lab:batch": "node scripts/clip-lab/batch.mjs",
+    "clip-lab:research": "node scripts/clip-lab/research.mjs",
+    "clip-lab:research:group": "node scripts/clip-lab/research-group.mjs",
+    "clip-lab:research:fal": "node scripts/clip-lab/fal-research.mjs",
+    "clip-lab:collect": "node scripts/clip-lab/collect.mjs",
+    "clip-lab:catalog": "node scripts/clip-lab/catalog.mjs",
+    "clip-lab:storyboard": "node scripts/clip-lab/storyboard.mjs",
+    "clip-lab:master": "node scripts/clip-lab/master-audio.mjs",
+    "clip-lab:test": "node --test tests/clip-lab*.test.mjs tests/gemini-video-smoke.test.mjs",
     "assistant:pair": "tsx scripts/assistant-pc.ts pair",
     "assistant:worker": "tsx scripts/assistant-pc.ts worker",
     "assistant:startup": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/assistant-startup.ps1 -Mode Install",
@@ -65,6 +75,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "hyperframes": "0.9.5",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

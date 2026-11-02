@@ -18,6 +18,9 @@ export const mediaBriefSchema = z.object({
         eating: z.boolean(),
         action: z.string().max(1500),
         camera: z.string().max(1500),
+        startState: z.string().trim().min(1).max(1000).optional(),
+        endState: z.string().trim().min(1).max(1000).optional(),
+        continuityConstraint: z.string().trim().min(1).max(1000).optional(),
       }),
     )
     .min(1)

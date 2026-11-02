@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>클립 퀄리티 고도화 대작전!연구소</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <a class="wordmark" href="/">ONE MARKETING <span>CLIP LAB / 01</span></a
+      ><span class="local">내부 연구 · 로컬 실험</span>
+    </header>
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">더 나은 장면을 만드는 실험</p>
+          <h1>클립 퀄리티 고도화<br />대작전!연구소</h1>
+          <p class="intro">
+            영상의 움직임과 연결을 관찰하고, 재현할 연출을 찾습니다.<br />AI
+            분석은 원본 대조 전 초안이며 효과가 검증된 제작 규칙이 아닙니다.
+          </p>
+        </div>
+        <div class="run-control">
+          <p id="engine"></p>
+          <button id="run">미분석 영상 분석하기</button
+          ><button class="secondary" id="cancel">다음 분석 중지하기</button>
+          <button class="secondary" id="retry">
+            503 요청 한 번 재시도하기
+          </button>
+          <p id="running"></p>
+        </div>
+      </section>
+      <p id="message" role="status" aria-live="polite"></p>
+      <section id="metrics" aria-label="실험 진행 현황"></section>
+      <section id="knowledge" aria-label="제작 규칙 후보"></section>
+      <section class="toolbar">
+        <h2>참고 영상과 분석 기록</h2>
+        <div>
+          <label
+            >검색
+            <input
+              id="query"
+              type="search"
+              placeholder="영상 제목 또는 분석 내용" /></label
+          ><label
+            >분야
+            <select id="category">
+              <option value="">전체 분야</option>
+            </select></label
+          ><label
+            >수집 당시 조회수
+            <select id="popularity">
+              <option value="0">전체</option>
+              <option value="1000000">100만 회 이상</option>
+              <option value="10000000">1,000만 회 이상</option>
+            </select></label
+          ><label
+            >상태
+            <select id="status">
+              <option value="">전체 상태</option>
+              <option value="succeeded">분석 완료</option>
+              <option value="unreviewed">원본 대조 대기</option>
+              <option value="source-checked">원본 대조 완료</option>
+              <option value="rejected">요청·검토 반려</option>
+              <option value="uncertain">응답 확인 필요</option>
+              <option value="pending">미분석</option>
+            </select></label
+          ><button class="secondary" id="export">기록 내보내기</button>
+        </div>
+      </section>
+      <div class="workbench">
+        <section id="list" aria-label="영상 목록"></section>
+        <section id="detail" aria-label="선택한 영상 분석">
+          <p class="empty">
+            영상을 선택하면 장면 분석과 실험 가설을 확인할 수 있습니다.
+          </p>
+        </section>
+      </div>
+      <details class="register">
+        <summary>참고 영상 등록하기</summary>
+        <p>
+          한 줄에 YouTube 링크 하나를 입력하세요. 중복은 제외하며 이 실험에는
+          최대 30개를 등록할 수 있습니다.
+        </p>
+        <label for="urls">YouTube 링크</label
+        ><textarea id="urls" rows="4"></textarea
+        ><button id="register">영상 등록하기</button>
+      </details>
+      <footer>
+        관찰 → 가설 → 제작 비교 → 검증 · Gemini 영상 분석 · 로컬 편집 실험 ·
+        vidIQ 사용 없음
+      </footer>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

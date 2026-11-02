@@ -8,6 +8,11 @@ import BrandOrb from "./brand-orb";
 import guidanceStyles from "./workflow-guidance.module.css";
 import { clipTitle, TITLE_STYLES, resolveTitleStyle } from "@/lib/clip-layout";
 import { money } from "@/lib/types";
+const continuityFields = new Set([
+  "startState",
+  "endState",
+  "continuityConstraint",
+]);
 
 export type BriefingRequest = {
   taskId: string;
@@ -186,24 +191,41 @@ function Plan({
                   ["composition", "구도·빛·대상 위치"],
                   ["action", "대상 동작"],
                   ["camera", "카메라 연출"],
+                  ["startState", "시작할 때의 모습"],
+                  ["endState", "끝날 때의 모습"],
+                  ["continuityConstraint", "다음 장면과 맞출 조건"],
                   ["timing", "장면 시간"],
                 ] as const
-              ).map(([key, label]) => (
-                <label key={key}>
-                  {label}
-                  <textarea
-                    value={scene[key]}
-                    onChange={(e) =>
-                      setBrief({
-                        ...brief,
-                        scenes: brief.scenes.map((s, n) =>
-                          n === i ? { ...s, [key]: e.target.value } : s,
-                        ),
-                      })
-                    }
-                  />
-                </label>
-              ))}
+              )
+                .filter(
+                  ([key]) =>
+                    plan.mediaType === "video" || !continuityFields.has(key),
+                )
+                .map(([key, label]) => (
+                  <label key={key}>
+                    {label}
+                    <textarea
+                      value={scene[key] ?? ""}
+                      onChange={(e) =>
+                        setBrief({
+                          ...brief,
+                          scenes: brief.scenes.map((s, n) =>
+                            n === i
+                              ? {
+                                  ...s,
+                                  [key]:
+                                    e.target.value ||
+                                    (continuityFields.has(key)
+                                      ? undefined
+                                      : ""),
+                                }
+                              : s,
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                ))}
             </div>
           ))}
         </details>

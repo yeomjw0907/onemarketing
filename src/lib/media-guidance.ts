@@ -51,6 +51,9 @@ export function briefingPrompt(
       eating: boolean;
       action: string;
       camera: string;
+      startState?: string;
+      endState?: string;
+      continuityConstraint?: string;
     }[];
   },
   guidance = "",
@@ -62,7 +65,12 @@ export function briefingPrompt(
     brief.scenes
       .map(
         (s, i) =>
-          `장면 ${i + 1} · ${s.timing}\n구도: ${s.composition}\n인물: ${s.people ? "등장" : "등장하지 않음"} · 손: ${s.hands ? "등장" : "등장하지 않음"} · 먹는 장면: ${s.eating ? "포함" : "포함하지 않음"}\n대상 동작: ${s.action}\n카메라: ${s.camera}`,
+          `장면 ${i + 1} · ${s.timing}\n구도: ${s.composition}\n인물: ${s.people ? "등장" : "등장하지 않음"} · 손: ${s.hands ? "등장" : "등장하지 않음"} · 먹는 장면: ${s.eating ? "포함" : "포함하지 않음"}\n대상 동작: ${s.action}\n카메라: ${s.camera}` +
+          (s.startState ? `\n시작 상태: ${s.startState}` : "") +
+          (s.endState ? `\n종료 상태: ${s.endState}` : "") +
+          (s.continuityConstraint
+            ? `\n장면 연결 조건: ${s.continuityConstraint}`
+            : ""),
       )
       .join("\n\n")
   );
