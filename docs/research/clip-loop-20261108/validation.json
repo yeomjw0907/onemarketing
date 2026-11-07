@@ -1,0 +1,16 @@
+{
+  "typecheck": "passed",
+  "tests": {
+    "researchAndCatalog": 26,
+    "productionAndWorkflow": 22,
+    "total": 48,
+    "failed": 0
+  },
+  "productionBuild": {
+    "command": "next build --webpack",
+    "status": "passed",
+    "note": "Isolated worktree links dependencies outside its root; Turbopack package resolution was unavailable in that arrangement."
+  },
+  "paidGenerationABTest": false,
+  "productionDeployment": false
+}

@@ -1,0 +1,344 @@
+{
+  "version": "editing-evidence-v1",
+  "observationCount": 1000,
+  "categories": {
+    "음식": 348,
+    "생활": 106,
+    "광고": 151,
+    "커피": 89,
+    "뷰티": 115,
+    "제품": 191
+  },
+  "reviewStatus": "ai-observed-unreviewed",
+  "scope": "공개 영상 첫 30초 1fps 관찰의 조건부 편집 실험 근거. 제품 사실·효과·라이선스 근거 아님.",
+  "families": [
+    {
+      "id": "detail-scale",
+      "label": "전체와 세부의 관계",
+      "matchingObservations": 646,
+      "method": "관찰 문구의 키워드 분류; 실제 사용 빈도나 성공 원인 아님",
+      "sources": [
+        {
+          "id": "c283e2f9b733d1774aa8e2ea426abf8c6382cf5aeaee0770c47ed05320810e7e",
+          "url": "https://www.youtube.com/watch?v=6jleNJx3veY",
+          "category": "음식",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "a5e67c1a550a3db506ffd2f7c55a4ee1d97992400de4f0d816913de7e3e0218e",
+          "url": "https://www.youtube.com/watch?v=u476BQtG1Xg",
+          "category": "뷰티",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            3000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "7e36813f23a06dc232accf9672164df27ae494cb45862aaeed682848cae1e6cc",
+          "url": "https://www.youtube.com/watch?v=SvDx1DF8BMk",
+          "category": "제품",
+          "shotIndex": 1,
+          "rangeMs": [
+            7000,
+            17000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "07ea9499008679c6affb4b0a200aea35e2c71fa6eb0ff2ededdbdb3f8464144c",
+          "url": "https://www.youtube.com/watch?v=R5zXDUSRE4c",
+          "category": "생활",
+          "shotIndex": 1,
+          "rangeMs": [
+            14000,
+            15000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "45e4c01341032bf67979045e26dfa1caf139289b0948561367d7528b76bf0a6d",
+          "url": "https://www.youtube.com/watch?v=x6F9eyxyzbc",
+          "category": "커피",
+          "shotIndex": 1,
+          "rangeMs": [
+            1000,
+            2000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "61b84a2fee2b4669272674b3aa4df52361f632ab4db52720f2f44ef82cd1e907",
+          "url": "https://www.youtube.com/watch?v=ccIw1ZqT6JY",
+          "category": "광고",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        }
+      ]
+    },
+    {
+      "id": "lateral-motion",
+      "label": "작은 옆 이동",
+      "matchingObservations": 76,
+      "method": "관찰 문구의 키워드 분류; 실제 사용 빈도나 성공 원인 아님",
+      "sources": [
+        {
+          "id": "a36035a55d658c77ae89262822847690daee84394b51659d2002ab34aa9482da",
+          "url": "https://www.youtube.com/watch?v=jyNz8r5NCXg",
+          "category": "음식",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            3000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "45e4c01341032bf67979045e26dfa1caf139289b0948561367d7528b76bf0a6d",
+          "url": "https://www.youtube.com/watch?v=x6F9eyxyzbc",
+          "category": "커피",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "633936c2e62a71f1c75bf62f212a3a50bedfd57c0982473625d1e1b1c72495cc",
+          "url": "https://www.youtube.com/watch?v=ROcx2IrEr-w",
+          "category": "생활",
+          "shotIndex": 1,
+          "rangeMs": [
+            3000,
+            4000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "c84b71c5938f29f9679c0ce1b09c08a711e2165499e093f17c3592372f7c71ed",
+          "url": "https://www.youtube.com/watch?v=b6xlhB0aljE",
+          "category": "제품",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            2000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "75f3174584e0571e21a54611d2e65dcb4f7b08e3cddf96e0f7cf0a15e7c476bf",
+          "url": "https://www.youtube.com/watch?v=JquCGnJ6qPY",
+          "category": "광고",
+          "shotIndex": 1,
+          "rangeMs": [
+            5000,
+            10000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "b991a7f788605e9fdf844a4df9d16d549980bc49f098c67884af946916d642de",
+          "url": "https://www.youtube.com/watch?v=K-JLE-zpcO4",
+          "category": "뷰티",
+          "shotIndex": 1,
+          "rangeMs": [
+            3000,
+            8000
+          ],
+          "reviewStatus": "unreviewed"
+        }
+      ]
+    },
+    {
+      "id": "fixed-composition",
+      "label": "고정 구도와 대상 동작",
+      "matchingObservations": 475,
+      "method": "관찰 문구의 키워드 분류; 실제 사용 빈도나 성공 원인 아님",
+      "sources": [
+        {
+          "id": "2ecd9d4e1a92b44a6e1e6540589796c1ec7a29b97814931408d44f02934967c3",
+          "url": "https://www.youtube.com/watch?v=RZTj_vDAFqM",
+          "category": "음식",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            5000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "e7f2eb6c2ecd338fabf83c3a5902607957314bf387f2f0d7516ac1fc278969f0",
+          "url": "https://www.youtube.com/watch?v=1Ozv5BJ_jPc",
+          "category": "커피",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "02507d61800010c8007d8ae1b22004f577da4f9d27c596f33f27eff06fc72e1e",
+          "url": "https://www.youtube.com/watch?v=9QBg_N3bNqs",
+          "category": "뷰티",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            5000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "e2366df92d81c5ec300527e3afbeb6000e22d16441bd3b7354dc666e09340c1a",
+          "url": "https://www.youtube.com/watch?v=8j6ZBH3Eb_M",
+          "category": "광고",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "904acd209d4f71c546961bf00707e4377805ec77d82d6a8db159d81af58c712e",
+          "url": "https://www.youtube.com/watch?v=cuAPghkXr78",
+          "category": "제품",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "06c8458af0f8fa99b1405af9668b423cbe800a7340d9a99ee5b9d8952feff5c1",
+          "url": "https://www.youtube.com/watch?v=8BP-b2lyDoQ",
+          "category": "생활",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            3000
+          ],
+          "reviewStatus": "unreviewed"
+        }
+      ]
+    },
+    {
+      "id": "continuity",
+      "label": "위치·방향·빛의 연결",
+      "matchingObservations": 710,
+      "method": "관찰 문구의 키워드 분류; 실제 사용 빈도나 성공 원인 아님",
+      "sources": [
+        {
+          "id": "4e92bcf9c1cb401313586c381da08d7c389d9ebe962fa2ad87cd726c0272ab08",
+          "url": "https://www.youtube.com/watch?v=GD-1tNunKnk",
+          "category": "음식",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "a5e67c1a550a3db506ffd2f7c55a4ee1d97992400de4f0d816913de7e3e0218e",
+          "url": "https://www.youtube.com/watch?v=u476BQtG1Xg",
+          "category": "뷰티",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            3000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "7e36813f23a06dc232accf9672164df27ae494cb45862aaeed682848cae1e6cc",
+          "url": "https://www.youtube.com/watch?v=SvDx1DF8BMk",
+          "category": "제품",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            6000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "e2366df92d81c5ec300527e3afbeb6000e22d16441bd3b7354dc666e09340c1a",
+          "url": "https://www.youtube.com/watch?v=8j6ZBH3Eb_M",
+          "category": "광고",
+          "shotIndex": 1,
+          "rangeMs": [
+            3000,
+            5000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "42cf29ccba0b67f9c6a341437172760a6c2dc6be819b64b7fe7e1572c80f4a9c",
+          "url": "https://www.youtube.com/watch?v=pnMUgzy3bgs",
+          "category": "생활",
+          "shotIndex": 2,
+          "rangeMs": [
+            18000,
+            20000
+          ],
+          "reviewStatus": "unreviewed"
+        },
+        {
+          "id": "73ed5c2993f92af7bfea32aa3ffb01d9d516011b6a30a1cad7fcb1daf0ac125f",
+          "url": "https://www.youtube.com/watch?v=itzNZZBbI2c",
+          "category": "커피",
+          "shotIndex": 0,
+          "rangeMs": [
+            0,
+            1000
+          ],
+          "reviewStatus": "unreviewed"
+        }
+      ]
+    }
+  ],
+  "localPatterns": [
+    {
+      "mode": "process",
+      "label": "사용 상황→설정→통화→리포트",
+      "source": {
+        "id": "local-3db18b41838cbc413bb278c179fcd4947b516e84a2dd05b20e5a30af572ae7ea",
+        "sourceName": "KakaoTalk_20261108_002742278.mp4",
+        "sha256": "3db18b41838cbc413bb278c179fcd4947b516e84a2dd05b20e5a30af572ae7ea",
+        "rangeMs": [
+          3000,
+          17000
+        ],
+        "samplingFps": 3,
+        "reviewStatus": "AI full-file observation plus sampled visual check"
+      }
+    },
+    {
+      "mode": "dialogue",
+      "label": "화자별 위치·색과 대사/반응 교대",
+      "source": {
+        "id": "local-f97106f39ac58872f48e8345a6eaf1e4c77aea0c1fc60c276992181b905f681c",
+        "sourceName": "KakaoTalk_20261027_144237735.mp4",
+        "sha256": "f97106f39ac58872f48e8345a6eaf1e4c77aea0c1fc60c276992181b905f681c",
+        "rangeMs": [
+          0,
+          47440
+        ],
+        "samplingFps": 3,
+        "reviewStatus": "AI full-file observation plus sampled visual check; not exact cut timing"
+      }
+    }
+  ]
+}

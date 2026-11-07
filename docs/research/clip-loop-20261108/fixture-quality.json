@@ -1,0 +1,71 @@
+[
+  {
+    "sourceName": "KakaoTalk_20261108_002739104.mp4",
+    "sha256": "830c8ed4ae133651b9d26de475e78a47db43c4b7cad8423ac34433dd13961e34",
+    "quality": {
+      "version": "clip-temporal-v1",
+      "samplingFps": 2,
+      "sampledSeconds": 30,
+      "scope": "최대 60초, 중앙 80% 화면을 2fps·64×64 밝기로 표집. 정밀 컷·자막·음성·제품 형태·성과는 검증하지 않음. 경고는 사람 검토용이며 자동 불합격 아님.",
+      "warnings": []
+    }
+  },
+  {
+    "sourceName": "KakaoTalk_20261108_002735155.mp4",
+    "sha256": "234b5d23b7838f10d9d2f0b2cf6de56b262acc8bd94a992c3ef9ef3b98861baf",
+    "quality": {
+      "version": "clip-temporal-v1",
+      "samplingFps": 2,
+      "sampledSeconds": 35,
+      "scope": "최대 60초, 중앙 80% 화면을 2fps·64×64 밝기로 표집. 정밀 컷·자막·음성·제품 형태·성과는 검증하지 않음. 경고는 사람 검토용이며 자동 불합격 아님.",
+      "warnings": [
+        {
+          "code": "long-hold",
+          "start": 25,
+          "end": 32.5,
+          "message": "6초 이상 화면 변화가 작습니다. 의도한 정보 유지 구간인지, 생성 움직임이 멈췄는지 확인해주세요."
+        }
+      ]
+    }
+  },
+  {
+    "sourceName": "KakaoTalk_20261108_002742278.mp4",
+    "sha256": "3db18b41838cbc413bb278c179fcd4947b516e84a2dd05b20e5a30af572ae7ea",
+    "quality": {
+      "version": "clip-temporal-v1",
+      "samplingFps": 2,
+      "sampledSeconds": 25,
+      "scope": "최대 60초, 중앙 80% 화면을 2fps·64×64 밝기로 표집. 정밀 컷·자막·음성·제품 형태·성과는 검증하지 않음. 경고는 사람 검토용이며 자동 불합격 아님.",
+      "warnings": []
+    }
+  },
+  {
+    "sourceName": "KakaoTalk_20261108_002731850.mp4",
+    "sha256": "b0de6c9e7066afd105facd4c461641d119a0e18f9e0e1cc268b2657166756ea1",
+    "quality": {
+      "version": "clip-temporal-v1",
+      "samplingFps": 2,
+      "sampledSeconds": 40,
+      "scope": "최대 60초, 중앙 80% 화면을 2fps·64×64 밝기로 표집. 정밀 컷·자막·음성·제품 형태·성과는 검증하지 않음. 경고는 사람 검토용이며 자동 불합격 아님.",
+      "warnings": [
+        {
+          "code": "long-hold",
+          "start": 29,
+          "end": 40,
+          "message": "6초 이상 화면 변화가 작습니다. 의도한 정보 유지 구간인지, 생성 움직임이 멈췄는지 확인해주세요."
+        }
+      ]
+    }
+  },
+  {
+    "sourceName": "KakaoTalk_20261027_144237735.mp4",
+    "sha256": "f97106f39ac58872f48e8345a6eaf1e4c77aea0c1fc60c276992181b905f681c",
+    "quality": {
+      "version": "clip-temporal-v1",
+      "samplingFps": 2,
+      "sampledSeconds": 47.5,
+      "scope": "최대 60초, 중앙 80% 화면을 2fps·64×64 밝기로 표집. 정밀 컷·자막·음성·제품 형태·성과는 검증하지 않음. 경고는 사람 검토용이며 자동 불합격 아님.",
+      "warnings": []
+    }
+  }
+]
