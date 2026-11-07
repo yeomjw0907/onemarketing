@@ -1,5 +1,9 @@
 import { reportRecovery } from "@/lib/retention";
 import {
+  databaseUnavailable,
+  databaseUnavailableResponse,
+} from "@/lib/database-errors";
+import {
   requestPortalCode,
   verifyPortalCode,
   portalLinkParticipant,
@@ -21,14 +25,23 @@ const headers = {
   "Referrer-Policy": "no-referrer",
 };
 export async function GET() {
+  let participant;
   try {
-    return Response.json(await portalView(await portalParticipant()), {
-      headers,
-    });
-  } catch {
+    participant = await portalParticipant();
+  } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
       { error: "유효한 접속 링크로 접속해주세요." },
       { status: 401, headers },
+    );
+  }
+  try {
+    return Response.json(await portalView(participant), { headers });
+  } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
+    return Response.json(
+      { error: "작업을 불러오지 못했어요. 잠시 후 다시 시도해주세요." },
+      { status: 500, headers },
     );
   }
 }
@@ -136,6 +149,7 @@ export async function POST(request: Request) {
     else throw new Error("잘못된 요청입니다.");
     return Response.json(result, { headers });
   } catch (e) {
+    if (databaseUnavailable(e)) return databaseUnavailableResponse();
     return Response.json(
       { error: e instanceof Error ? e.message : "처리 실패" },
       { status: 400, headers },

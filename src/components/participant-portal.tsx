@@ -17,6 +17,7 @@ import ParticipantCampaignQueue from "./participant-campaign-queue";
 import PublicShell from "./public-shell";
 import { taskDeadline, taskOverdue } from "@/lib/task-deadline";
 import KakaoPortalLogin from "./kakao-portal-login";
+import { marketFetch } from "./public-fetch";
 import {
   Button,
   Field,
@@ -49,12 +50,12 @@ export default function ParticipantPortal() {
   const [campaignFocus, setCampaignFocus] = useState("");
   const [access, setAccess] = useState("");
   const [taskFilter, setTaskFilter] = useState("all");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reload, setReload] = useState(0);
   const { ask, dialog } = useDecisionDialog();
   const firstLoad = useRef(true);
   async function load() {
-    const r = await fetch("/api/participant-portal");
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
+    const d = await marketFetch("/api/participant-portal");
     setData(d);
     const returnTo =
       safeReturnPath(new URL(location.href).searchParams.get("next")) ||
@@ -101,13 +102,7 @@ export default function ParticipantPortal() {
     setError("");
     setNotice("");
     try {
-      const r = await fetch("/api/participant-portal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error);
+      await marketFetch("/api/participant-portal", body);
       await load();
       setNotice(
         body.action === "submit"
@@ -132,6 +127,9 @@ export default function ParticipantPortal() {
   }
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setLoadFailed(false);
+    setError("");
     async function init() {
       const initialNext = safeReturnPath(
         new URL(location.href).searchParams.get("next"),
@@ -144,15 +142,13 @@ export default function ParticipantPortal() {
           sessionStorage.getItem("om_portal_access");
       if (access) {
         sessionStorage.setItem("om_portal_access", access);
-        history.replaceState(null, "", url.pathname);
+        url.searchParams.delete("access");
+        history.replaceState(null, "", url.pathname + url.search + url.hash);
         setAccess(access);
-        const r = await fetch("/api/participant-portal", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "inspect-link", access }),
+        const d = await marketFetch("/api/participant-portal", {
+          action: "inspect-link",
+          access,
         });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error);
         if (!d.authenticated) return;
       }
       setAccess(access || sessionStorage.getItem("om_portal_access") || "");
@@ -160,6 +156,7 @@ export default function ParticipantPortal() {
     }
     void init()
       .catch((e) => {
+        if (active && (!e.status || e.status >= 500)) setLoadFailed(true);
         if (active && !String(e.message).includes("유효한 접속 링크"))
           setError(e.message);
       })
@@ -169,7 +166,7 @@ export default function ParticipantPortal() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reload]);
   const availableOffers =
     data?.offers.filter(
       (o: Row) =>
@@ -219,12 +216,9 @@ export default function ParticipantPortal() {
               setBusy(true);
               setError("");
               try {
-                const r = await fetch("/api/participant-portal", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ action: "logout" }),
+                await marketFetch("/api/participant-portal", {
+                  action: "logout",
                 });
-                if (!r.ok) throw new Error("로그아웃을 다시 시도해주세요.");
                 setData(null);
                 setAccess("");
 
@@ -252,6 +246,16 @@ export default function ParticipantPortal() {
             <BrandOrb active={loading} state="connecting" />
             <p>내 작업을 불러오고 있어요.</p>
           </div>
+        ) : loadFailed ? (
+          <section aria-label="작업 조회 재시도">
+            <p>
+              로그인 상태를 확인하지 못했어요. 연결이 복구되면 내 작업을 다시
+              불러올 수 있어요.
+            </p>
+            <Button onClick={() => setReload((value) => value + 1)}>
+              다시 불러오기
+            </Button>
+          </section>
         ) : !data ? (
           <KakaoPortalLogin
             access={access}
