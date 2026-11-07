@@ -16,6 +16,7 @@ import {
 import { PDFDocument } from "pdf-lib";
 import { collectNaverKeywordMetrics } from "./naver-keywords";
 import { mediaBriefSchema } from "./media-plans";
+import { editingReviewWarnings } from "./clip-editing-policy";
 import { mediaGuidance } from "./media-guidance";
 import { z } from "zod";
 import sharp from "sharp";
@@ -840,6 +841,7 @@ async function mediaPlan(job: RecordData) {
         .replace(/\s*```$/, ""),
     ),
   );
+  brief.warnings = editingReviewWarnings(brief);
   await transaction(async () => {
     await lock("media-plan-job:" + job.id);
     if ((await list("media_plans")).some((p) => p.jobId === job.id)) return;

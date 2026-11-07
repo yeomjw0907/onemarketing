@@ -1,3 +1,5 @@
+import { referenceEditingGuidance } from "./clip-editing-policy";
+
 export const shootingTargets = [
   "",
   "food",
@@ -29,6 +31,7 @@ const targetGuidance: Record<string, string> = {
 export function mediaGuidance(project: Record<string, unknown>, video = false) {
   const target = String(project.shootingTarget || "");
   return [
+    referenceEditingGuidance(project, video),
     "실제 촬영한 듯한 자연스러운 이미지·영상을 제작하세요. 실제로 가능한 광원과 방향에 맞는 그림자·반사, 자연스러운 색과 화이트밸런스, 재료의 질감과 작은 불균일함을 살리세요. 과한 HDR·채도·윤곽 선명도·플라스틱 같은 광택은 피하되 실제 재질의 윤기는 보존하세요. 참고 자료의 대상 형태·비율·배치·정체성과 확인된 글자·로고를 보존하고 새로운 글자를 추가하지 마세요. 같은 게시물의 장면은 조명·색감을 통일하세요.",
     targetGuidance[target] ||
       "첨부 자료와 조사로 촬영 대상을 판단하고 대상에 맞는 구도·질감·보존 요소를 기획하세요. 자료에 없는 구조·재료·설비·점포·인파를 만들어 사실처럼 표현하지 마세요. 정보가 부족하면 확인된 모습과 앵글 안에서 연출하세요.",

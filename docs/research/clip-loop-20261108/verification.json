@@ -1,0 +1,115 @@
+{
+  "version": "clip-loop-20261108-v1",
+  "publicObservations": 1000,
+  "localReferences": [
+    {
+      "sourceName": "KakaoTalk_20261108_002739104.mp4",
+      "sha256": "830c8ed4ae133651b9d26de475e78a47db43c4b7cad8423ac34433dd13961e34",
+      "seconds": 29.87,
+      "model": "gemini-3.1-flash-lite",
+      "samplingFps": 3,
+      "inputRange": "full-file",
+      "visualAccess": true,
+      "visualSegments": 7,
+      "audioObserved": true,
+      "audioModel": "gemini-3.1-flash-lite",
+      "audioInput": "full-file-audio-only-16khz-mono-32kbps",
+      "reviewStatus": "AI observation plus sampled contact-sheet visual review; no human listening"
+    },
+    {
+      "sourceName": "KakaoTalk_20261108_002735155.mp4",
+      "sha256": "234b5d23b7838f10d9d2f0b2cf6de56b262acc8bd94a992c3ef9ef3b98861baf",
+      "seconds": 35.05,
+      "model": "gemini-3.1-flash-lite",
+      "samplingFps": 3,
+      "inputRange": "full-file",
+      "visualAccess": true,
+      "visualSegments": 6,
+      "audioObserved": true,
+      "audioModel": "gemini-3.1-flash-lite",
+      "audioInput": "full-file-audio-only-16khz-mono-32kbps",
+      "reviewStatus": "AI observation plus sampled contact-sheet visual review; no human listening"
+    },
+    {
+      "sourceName": "KakaoTalk_20261108_002742278.mp4",
+      "sha256": "3db18b41838cbc413bb278c179fcd4947b516e84a2dd05b20e5a30af572ae7ea",
+      "seconds": 25.15,
+      "model": "gemini-3.1-flash-lite",
+      "samplingFps": 3,
+      "inputRange": "full-file",
+      "visualAccess": true,
+      "visualSegments": 6,
+      "audioObserved": true,
+      "audioModel": "gemini-3.1-flash-lite",
+      "audioInput": "full-file-audio-only-16khz-mono-32kbps",
+      "reviewStatus": "AI observation plus sampled contact-sheet visual review; no human listening"
+    },
+    {
+      "sourceName": "KakaoTalk_20261108_002731850.mp4",
+      "sha256": "b0de6c9e7066afd105facd4c461641d119a0e18f9e0e1cc268b2657166756ea1",
+      "seconds": 40,
+      "model": "gemini-3.1-flash-lite",
+      "samplingFps": 3,
+      "inputRange": "full-file",
+      "visualAccess": true,
+      "visualSegments": 8,
+      "audioObserved": true,
+      "audioModel": "gemini-3.1-flash-lite",
+      "audioInput": "full-file-audio-only-16khz-mono-32kbps",
+      "reviewStatus": "AI observation plus sampled contact-sheet visual review; no human listening"
+    },
+    {
+      "sourceName": "KakaoTalk_20261027_144237735.mp4",
+      "sha256": "f97106f39ac58872f48e8345a6eaf1e4c77aea0c1fc60c276992181b905f681c",
+      "seconds": 47.44,
+      "model": "gemini-3.1-flash-lite",
+      "samplingFps": 3,
+      "inputRange": "full-file",
+      "visualAccess": true,
+      "visualSegments": 6,
+      "audioObserved": true,
+      "audioModel": "gemini-3.1-flash-lite",
+      "audioInput": "full-file-audio-only-16khz-mono-32kbps",
+      "reviewStatus": "AI observation plus sampled contact-sheet visual review; no human listening"
+    }
+  ],
+  "totalReferences": 1005,
+  "previousCatalogOverlap": 0,
+  "uniquePublicSources": 1000,
+  "categories": {
+    "음식": 348,
+    "생활": 106,
+    "광고": 151,
+    "커피": 89,
+    "뷰티": 115,
+    "제품": 191
+  },
+  "representativeSegments": 2938,
+  "unreviewedPublic": 1000,
+  "input": {
+    "rangeMs": [
+      0,
+      30000
+    ],
+    "samplingFps": 1
+  },
+  "accounting": {
+    "attempts": 1204,
+    "firstPassSucceeded": 995,
+    "retried": 5,
+    "providerRequests": 241,
+    "knownUsageCount": 240,
+    "usageUnavailableAttempts": 1,
+    "providerReportedUsd": 0,
+    "estimatedUsd": 1.8021887500000016,
+    "inputTokens": 2996275,
+    "outputTokens": 702080,
+    "actualUsd": null
+  },
+  "limitations": [
+    "모델 가중치 재학습 아님",
+    "공개 1000개 전수 사람 검토·정밀 컷·음성 분석 아님",
+    "첨부 5개 전체 3fps 영상 관찰, 별도 압축 오디오 AI 관찰; 사람 청취 없음",
+    "성과 인과 추정·광고 효과 검증 아님"
+  ]
+}

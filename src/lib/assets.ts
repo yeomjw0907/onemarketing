@@ -16,6 +16,7 @@ import { getObject, putObject, removeObjects } from "./storage";
 import { requireRecord } from "./domain";
 import type { RecordData } from "./types";
 import { jobLog } from "./job-logs";
+import { reviewClipMotion, type ClipQualityReport } from "./clip-quality";
 export function storageName(a: RecordData) {
   const name = String(a.storageName);
   if (!/^[a-f0-9-]+\.[a-z0-9]+$/.test(name))
@@ -195,6 +196,22 @@ export async function saveAsset(
   // 업로드가 성공한 뒤에만 DB에 기록한다. DB 기록이 실패하면 올린 객체를 정리한다.
   const storageName = randomUUID() + "." + ext;
   await putObject(storageName, input.buffer, mime);
+  let editingQuality: ClipQualityReport | { status: "unavailable" } | undefined;
+  // One shared check covers both generated single shots and the final scene assembler.
+  // Upload first; a decoder failure is advisory and cannot discard a paid provider result.
+  if (input.category === "video" && input.jobId) {
+    try {
+      const { runFFmpeg } = await import("./video");
+      const job = await get(input.jobId);
+      editingQuality = await reviewClipMotion(
+        input.buffer,
+        runFFmpeg,
+        job?.type !== "slideshow",
+      );
+    } catch {
+      editingQuality = { status: "unavailable" };
+    }
+  }
   if (input.jobId)
     await jobLog(
       "storage",
@@ -356,6 +373,7 @@ export async function saveAsset(
         slot,
         text: input.text || null,
         editorialNotes: input.editorialNotes || null,
+        ...(editingQuality ? { editingQuality } : {}),
         creativePlanId: input.taskId
           ? (await requireRecord(input.taskId)).approvedCreativePlanId || null
           : null,

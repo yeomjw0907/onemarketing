@@ -1,4 +1,5 @@
 "use client";
+import { ClipQualityNote } from "./clip-quality-note";
 import { requestJSON } from "@/lib/request-json";
 import CustomerIntakeAdmin from "./customer-intake-admin";
 import CustomerAccountProvision from "./customer-account-provision";
@@ -884,6 +885,7 @@ export default function Workspace() {
             {a.common === true && (
               <span className="badge blue">공통 필수 이미지</span>
             )}
+            <ClipQualityNote report={a.editingQuality} />
             {a.similarWarning === true && (
               <span className="badge orange">
                 다른 글 이미지와 유사 · 확인 필요
