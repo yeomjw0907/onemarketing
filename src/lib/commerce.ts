@@ -891,7 +891,7 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
           actor: actor.id,
         });
     } else if (b.action === "refund-request") {
-      if (d.input.kind !== "package") {
+      if (d.input.kind !== "package" && !d.input.managed) {
         const completed = apps.filter((a) =>
           ["verified", "paid"].includes(a.data.status),
         ).length;
