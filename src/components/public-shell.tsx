@@ -99,6 +99,8 @@ export default function PublicShell({ children }: { children: ReactNode }) {
           <Link href="/about">서비스 소개</Link>
           <Link href="/policy">이용·환불 안내</Link>
           <Link href="/guide">이용 가이드</Link>
+          <Link href={viewer.participant && !viewer.advertiser ? "/account?role=participant" : "/account"}>계정·정산 문의</Link>
+          {viewer.admin && <Link href="/admin/account-requests">회원 요청 관리</Link>}
           <Link href="/ai">AI·MCP 문서</Link>
           <Link href="/admin">관리자</Link>
         </nav>
