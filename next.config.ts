@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
-  serverExternalPackages: ["pg", "better-sqlite3", "pdf-parse", "pdfjs-dist"],
+  serverExternalPackages: [
+    "pg",
+    "better-sqlite3",
+    "pdf-parse",
+    "pdfjs-dist",
+    "@napi-rs/canvas",
+  ],
   poweredByHeader: false,
   outputFileTracingIncludes: {
     "/api/**": ["./assets/fonts/*.ttf"],

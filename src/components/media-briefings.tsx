@@ -8,6 +8,7 @@ import BrandOrb from "./brand-orb";
 import guidanceStyles from "./workflow-guidance.module.css";
 import { clipTitle, TITLE_STYLES, resolveTitleStyle } from "@/lib/clip-layout";
 import { money } from "@/lib/types";
+import { blogImageReviewItems } from "@/lib/blog-image-policy";
 const continuityFields = new Set([
   "startState",
   "endState",
@@ -54,6 +55,9 @@ function Plan({
     data.tasks.find((t) => t.id === plan.taskId)?.mode === "slideshow";
   const estimate = photoVideo ? 1 : estimates[String(plan.mediaType)] || 1000;
   const source = data.assets.find((a) => a.id === plan.sourceAssetId);
+  const blogImage =
+    plan.mediaType === "image" &&
+    data.tasks.find((t) => t.id === plan.taskId)?.channel === "blog";
   const titleText = clipTitle(
     brief.edit,
     (
@@ -147,6 +151,114 @@ function Plan({
         disabled={busy || used}
         style={{ border: 0, padding: 0, minWidth: 0 }}
       >
+        {blogImage && (
+          <details>
+            <summary>블로그 이미지 구성 · 사진형 / 홍보형</summary>
+            <label>
+              이미지 구성
+              <select
+                value={brief.blogPoster ? "poster" : "photo"}
+                onChange={(e) =>
+                  setBrief({
+                    ...brief,
+                    blogPoster:
+                      e.target.value === "poster"
+                        ? {
+                            headline: "",
+                            productName: "",
+                            price: "",
+                            brand: "",
+                            palette: "ivory",
+                            confirmed: false,
+                          }
+                        : undefined,
+                  })
+                }
+              >
+                <option value="photo">본문 사진 · 추가 글자 없음</option>
+                <option value="poster">
+                  대표 홍보 이미지 · 승인 문구 후편집
+                </option>
+              </select>
+            </label>
+            {brief.blogPoster && (
+              <>
+                <p className="hint">
+                  사진 전체를 자르지 않고 제목과 상품명·가격을 별도 영역에
+                  합성합니다. 제품 앞에 글자를 겹치거나 배경을 자동 제거하지
+                  않습니다. 가격은 확인된 경우에만 입력하세요.
+                </p>
+                {(
+                  [
+                    ["headline", "대표 제목", 40],
+                    ["productName", "상품명", 60],
+                    ["price", "실제 판매 가격 (선택)", 24],
+                    ["brand", "브랜드 (선택)", 40],
+                  ] as const
+                ).map(([key, label, maxLength]) => (
+                  <label key={key}>
+                    {label}
+                    <input
+                      value={brief.blogPoster![key]}
+                      maxLength={maxLength}
+                      onChange={(e) =>
+                        setBrief({
+                          ...brief,
+                          blogPoster: {
+                            ...brief.blogPoster!,
+                            [key]: e.target.value,
+                            confirmed: false,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                ))}
+                <label>
+                  포스터 배경
+                  <select
+                    value={brief.blogPoster.palette}
+                    onChange={(e) =>
+                      setBrief({
+                        ...brief,
+                        blogPoster: {
+                          ...brief.blogPoster!,
+                          palette: e.target.value as "ivory" | "dark",
+                          confirmed: false,
+                        },
+                      })
+                    }
+                  >
+                    <option value="ivory">밝은 아이보리</option>
+                    <option value="dark">짙은 녹회색</option>
+                  </select>
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={brief.blogPoster.confirmed}
+                    onChange={(e) =>
+                      setBrief({
+                        ...brief,
+                        blogPoster: {
+                          ...brief.blogPoster!,
+                          confirmed: e.target.checked,
+                        },
+                      })
+                    }
+                  />{" "}
+                  상품명·가격·브랜드를 원자료와 대조했습니다.
+                </label>
+              </>
+            )}
+            <p className="hint">생성 후 확인할 항목</p>
+            <ul>
+              {blogImageReviewItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </details>
+        )}
         <details>
           <summary>장면·연출 수정</summary>
           <label>
@@ -504,6 +616,48 @@ function Plan({
             생성 요청이 등록되었습니다. 실행 상태는 아래 로그에서, 완성본은
             제작·검수에서 확인하세요.
           </p>
+          {blogImage &&
+            data.assets
+              .filter(
+                (a) => a.jobId === plan.consumedJobId && a.category === "image",
+              )
+              .map((a) => (
+                <details key={a.id}>
+                  <summary>블로그 원본·완성 이미지 비교</summary>
+                  <p className="hint">
+                    생성형 편집은 제품 세부를 바꿀 수 있어요. 원본과 나란히
+                    확인하고 모바일 크기에서도 상품명·가격·라벨을 읽을 수 있는지
+                    검수하세요.
+                  </p>
+                  <div className="assets">
+                    {source && (
+                      <img
+                        alt="블로그 원본 기준 사진"
+                        src={`/api/assets/${source.id}`}
+                        style={{
+                          width: "100%",
+                          maxHeight: 400,
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+                    <img
+                      alt="블로그 완성 이미지"
+                      src={`/api/assets/${a.id}`}
+                      style={{
+                        width: "100%",
+                        maxHeight: 400,
+                        objectFit: "contain",
+                      }}
+                    />
+                  </div>
+                  <ul>
+                    {blogImageReviewItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </details>
+              ))}
           {data.assets
             .filter(
               (a) => a.jobId === plan.consumedJobId && a.category === "video",

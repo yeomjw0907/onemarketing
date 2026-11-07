@@ -886,6 +886,14 @@ export default function Workspace() {
               <span className="badge blue">공통 필수 이미지</span>
             )}
             <ClipQualityNote report={a.editingQuality} />
+            {a.category === "image" && a.editorialNotes ? (
+              <details>
+                <summary>이미지 납품 전 확인 사항</summary>
+                <p style={{ whiteSpace: "pre-wrap" }}>
+                  {String(a.editorialNotes)}
+                </p>
+              </details>
+            ) : null}
             {a.similarWarning === true && (
               <span className="badge orange">
                 다른 글 이미지와 유사 · 확인 필요

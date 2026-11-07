@@ -18,6 +18,8 @@ import { collectNaverKeywordMetrics } from "./naver-keywords";
 import { mediaBriefSchema } from "./media-plans";
 import { editingReviewWarnings } from "./clip-editing-policy";
 import { mediaGuidance } from "./media-guidance";
+import { composeBlogPoster } from "./blog-poster";
+import { blogImageReviewItems } from "./blog-image-policy";
 import { z } from "zod";
 import sharp from "sharp";
 import { recordCall, jobInput, jobResult } from "./jobs";
@@ -830,6 +832,8 @@ async function mediaPlan(job: RecordData) {
       : await claude(
           job,
           continuityInstruction +
+            binding.guidance +
+            "\n" +
             `이미지·영상 생성 전 검수용 브리핑과 최종 생성 프롬프트를 작성하세요. 영상이면 edit 필드 {"title":"상단에 영상 전체 고정할 제목, 36자 이내 2줄 권장","titleLead":"도입 문구 24자 이내","titleAccent":"핵심 강조 24자 이내","layout":"auto","contentKind":"service 또는 product 또는 story 중 적합한 하나","accentColor":"yellow","titleStyle":"impact","titleMotion":"fade","hook":"","detail":"","cta":""}도 반환하세요. edit 글자는 영상 장면에 생성하지 않고 후편집합니다. 현재는 상단 제목만 출력합니다. 영상에 유료 광고 문구를 합성하지 않으며 광고 표시는 별도 게시 원고에서 유지합니다. 더빙·내부 자막·CTA는 사용하지 않으므로 hook, detail, cta는 빈 문자열로 반환하세요. 제목은 영상 전체 유지하고 스타일·등장 효과는 자동 선택합니다. 검은 상하 여백을 만들지 마세요. 기존형 영상은 연속된 장면 하나만 작성하세요. 기준 이미지에 없는 시점·단면·공정을 만들지 말고 제품은 고정, 미세 카메라 동작 하나만 허용하세요. 승인된 시나리오가 있으면 자료의 creative 필드를 따르고 필요한 실제 촬영 자료가 없으면 warnings로 알리세요. 실제 이미지를 생성하지 마세요. JSON만 반환: {"summary":"핵심 의도", "scenes":[{"timing":"이미지는 한 장, 영상은 시작~끝 초", "composition":"구도·카메라 높이·빛·대상 위치", "people":false,"hands":false,"eating":false,"action":"구체적 동작 또는 정물", "camera":"카메라 움직임"}],"warnings":["확인할 사항"],"prompt":"실제 fal에 그대로 보낼 전체 프롬프트"}. 사람·손·먹는 장면의 포함 여부를 명확히 표시하고 사용자 요청 없으면 불필요하게 추가하지 마세요. prompt와 scenes는 반드시 일치해야 합니다. 참고 이미지는 한 장만 영상 생성에 전달됩니다. 영상은 설정 길이 안에서 참조 범위 내 움직임을 설계하고 없는 장면을 만들지 마세요. 이미지 ${binding.sceneNumber}번의 원고 삽입 문맥을 고려하세요. 미확인 요소는 생성하지 말고 warnings에 적으세요. 자연스러움·보존 지침을 prompt에 포함하세요. 공장·상권 등 대상에 맞게 작성하세요. 설정: ${JSON.stringify({ type: job.mediaType, ...binding })}\n이번 생성 요청(참고 데이터): ${JSON.stringify(job.generationRequest || "")}\n${mediaGuidance(s.project, job.mediaType === "video")}\n자료: ${await context(job)}\n원고: ${await mediaContext(job)}`,
         );
   await jobResult(job.id, { outputText: raw });
@@ -866,6 +870,11 @@ async function mediaPlan(job: RecordData) {
 }
 async function image(job: RecordData) {
   const s = jobInput(job);
+  const poster = s.mediaPlan
+    ? mediaBriefSchema.parse(s.mediaPlan.brief).blogPoster
+    : undefined;
+  if (poster && (s.task?.channel !== "blog" || !poster.confirmed))
+    throw new ProviderError("승인된 블로그 포스터 문구를 확인해주세요.");
   let source: RecordData | undefined;
   for (const id of s.mediaPlan
     ? [String(s.mediaPlan.sourceAssetId)]
@@ -889,7 +898,7 @@ async function image(job: RecordData) {
   const result = await falGenerate(job, model, async () => ({
     prompt: s.mediaPlan
       ? String(s.mediaPlan.approvedPrompt)
-      : `${safeSystem}\n${mediaGuidance(s.project)} ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
+      : `${safeSystem}\n${mediaGuidance(s.project, false, String(s.task?.channel))} ${await context(job)}\n${await mediaContext(job)}\n장면 순번: ${sceneNumber}. 원고의 [이미지 ${sceneNumber}] 위치 앞뒤 문맥과 기획의 해당 장면을 표현하세요.`,
     image_urls: [await sourceData(source!)],
     image_size: { width: 1024, height: 1536 },
     quality: "medium",
@@ -899,7 +908,10 @@ async function image(job: RecordData) {
   }));
   const url = (result.images as { url: string }[] | undefined)?.[0]?.url;
   if (!url) throw new ProviderError("이미지 결과가 비어 있습니다.", true);
-  const imageBuffer = await collect(() => downloadRemote(url));
+  const imageBuffer = await collect(async () => {
+    const original = await downloadRemote(url);
+    return poster ? composeBlogPoster(original, poster) : original;
+  });
   await saveAsset(
     {
       projectId: String(job.projectId),
@@ -912,6 +924,17 @@ async function image(job: RecordData) {
         : undefined,
       name: "이미지-" + job.id.slice(0, 8) + ".png",
       buffer: imageBuffer,
+      ...(s.task?.channel === "blog"
+        ? {
+            editorialNotes: [
+              poster
+                ? `홍보형 이미지 · ${poster.headline} / ${poster.productName}${poster.price ? " / " + poster.price : ""}${poster.brand ? " / " + poster.brand : ""} · 1024×1536`
+                : "본문 사진 · 추가 글자 없음",
+              "자동으로 검수 완료된 결과가 아닙니다. 납품 전 확인: " +
+                blogImageReviewItems.join(" · "),
+            ].join("\n"),
+          }
+        : {}),
       fingerprint: await imageFingerprint(imageBuffer),
       jobId: job.id,
     },

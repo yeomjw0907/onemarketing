@@ -5,8 +5,10 @@ import { audit, list, lock, transaction, update } from "./db";
 import { requireRecord } from "./domain";
 import { orderedImages } from "./copy-format";
 import type { RecordData } from "./types";
+import { blogPosterSchema } from "./blog-image-policy";
 
 export const mediaBriefSchema = z.object({
+  blogPoster: blogPosterSchema.optional(),
   summary: z.string().trim().min(1).max(2000),
   scenes: z
     .array(
@@ -138,7 +140,11 @@ export async function mediaBinding(
   const sceneNumber = replaceAssetId
     ? images.findIndex((a) => a.id === replaceAssetId) + 1
     : images.length + 1;
-  const guidance = mediaGuidance(project, type === "video");
+  const guidance = mediaGuidance(
+    project,
+    type === "video",
+    String(task.channel),
+  );
   const fingerprint = createHash("sha256")
     .update(
       JSON.stringify({
@@ -203,6 +209,17 @@ export async function validateMediaPlan(
       "자료·기획·설정이 변경되었습니다. 새 브리핑을 작성하고 검수하세요.",
     );
   const brief = mediaBriefSchema.parse(plan.brief);
+  if (brief.blogPoster) {
+    const posterTask = await requireRecord(taskId, "tasks");
+    if (type !== "image" || posterTask.channel !== "blog")
+      throw new Error(
+        "홍보형 포스터는 블로그 이미지에서만 사용할 수 있습니다.",
+      );
+    if (!brief.blogPoster.confirmed)
+      throw new Error(
+        "포스터 문구·가격·브랜드를 원자료와 확인한 뒤 승인해주세요.",
+      );
+  }
   if (type === "image" && brief.scenes.length !== 1)
     throw new Error("이미지는 한 장면으로 브리핑하세요.");
   const task = await requireRecord(taskId, "tasks");
