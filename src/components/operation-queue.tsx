@@ -26,6 +26,7 @@ export default function OperationQueue({
           ["selection", "지원자 선정"],
           ["review", "콘텐츠 검수"],
           ["refund", "환불"],
+          ...(admin ? [["payout", "리워드 지급"]] : []),
         ].map(([k, v]) => (
           <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)}>
             {v}{" "}

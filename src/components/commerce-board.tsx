@@ -119,7 +119,9 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
         ? "submitted"
         : item.kind === "selection"
           ? "applied"
-          : "all",
+          : item.kind === "payout"
+            ? "verified"
+            : "all",
     );
     setAppQuery("");
     setTab(item.orderId ? "orders" : "overview");

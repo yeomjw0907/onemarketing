@@ -3,7 +3,7 @@ export type QueueItem = {
   id: string;
   campaignId?: string;
   orderId?: string;
-  kind: "payment" | "selection" | "review" | "refund";
+  kind: "payment" | "selection" | "review" | "refund" | "payout";
   title: string;
   label: string;
   count: number;
@@ -41,6 +41,15 @@ export function operationQueue(data: Row, admin: boolean): QueueItem[] {
         label: admin ? "환불 검토·송금 확인" : "환불 처리 확인",
         count: refund.length,
       });
+    const unpaid = apps.filter((a: Row) => a.data.status === "verified").length;
+    if (admin && unpaid)
+      rows.push({
+        ...base,
+        id: "payout:" + c.id,
+        kind: "payout",
+        label: "리워드 지급 확인",
+        count: unpaid,
+      });
     if (
       ["paused", "cancelled", "completed", "awaiting_payment"].includes(
         c.data.status,
@@ -69,7 +78,7 @@ export function operationQueue(data: Row, admin: boolean): QueueItem[] {
         count: applied,
       });
   }
-  const rank = { refund: 0, payment: 1, review: 2, selection: 3 };
+  const rank = { refund: 0, payout: 1, payment: 2, review: 3, selection: 4 };
   return rows.sort(
     (a, b) => rank[a.kind] - rank[b.kind] || a.due.localeCompare(b.due),
   );
