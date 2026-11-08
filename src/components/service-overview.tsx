@@ -53,22 +53,36 @@ export function ServiceBanner({
               ? "모집, 콘텐츠 제작, 게시 확인까지 하나의 흐름으로."
               : "모집부터 콘텐츠 게시 확인까지, 원마케팅에서."}
         </p>
-        <DiscoverButton
-          href={
-            products
-              ? "#service-products-title"
-              : about
-                ? "/campaigns"
-                : "/about"
-          }
-          label={
-            products
-              ? "상품 구성 살펴보기"
-              : about
-                ? "캠페인 둘러보기"
-                : "서비스 알아보기"
-          }
-        />
+        {variant === "home" ? (
+          <div className="home-platform-actions">
+            <Link className="home-platform-primary" href="/marketing">
+              체험단 모집하기 <span aria-hidden="true">→</span>
+            </Link>
+            <Link className="home-platform-secondary" href="#home-campaigns">
+              캠페인 참여하기
+            </Link>
+            <Link className="home-platform-about" href="/about">
+              서비스 알아보기
+            </Link>
+          </div>
+        ) : (
+          <DiscoverButton
+            href={
+              products
+                ? "#service-products-title"
+                : about
+                  ? "/campaigns"
+                  : "/about"
+            }
+            label={
+              products
+                ? "상품 구성 살펴보기"
+                : about
+                  ? "캠페인 둘러보기"
+                  : "서비스 알아보기"
+            }
+          />
+        )}
       </div>
       <div className="service-art" aria-hidden="true">
         <BrandVisual

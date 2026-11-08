@@ -447,12 +447,33 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
   );
   return (
     <PublicShell>
-      <div className="campaign-experience">
+      <div
+        className={
+          "campaign-experience" +
+          (home && data && !data.campaigns.length && !error
+            ? " home-without-campaigns"
+            : "")
+        }
+      >
         <div className="wrap">
           {home ? (
             <>
               <ServiceBanner />
-              <section className="homelead">
+              <nav className="home-work-links" aria-label="내 업무와 이용 안내">
+                <Link href="/participants/portal">
+                  <strong>내 참여·리워드</strong>
+                  <span>참여 중인 작업과 정산 확인</span>
+                </Link>
+                <Link href="/advertisers">
+                  <strong>광고주 캠페인 관리</strong>
+                  <span>주문·콘텐츠·진행 상황 확인</span>
+                </Link>
+                <Link href="/guide">
+                  <strong>처음 이용하시나요?</strong>
+                  <span>모집부터 참여까지 이용 방법</span>
+                </Link>
+              </nav>
+              <section className="homelead" id="home-campaigns">
                 <div>
                   <h1>모집 중인 캠페인</h1>
                   <p>제품 체험과 원고 게시 캠페인을 확인하세요.</p>
@@ -688,9 +709,17 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
                   {data.campaigns.length ? (
                     <button onClick={reset}>조건 초기화</button>
                   ) : (
-                    <Link className="btn" href="/marketing">
-                      캠페인 등록
-                    </Link>
+                    <div className="home-empty-actions">
+                      <Link
+                        className="btn"
+                        href="/login?role=participant&signup=1"
+                      >
+                        참여자로 시작하기
+                      </Link>
+                      <Link href="/participants/guide">
+                        참여 방법 알아보기 →
+                      </Link>
+                    </div>
                   )}
                 </div>
               ) : (

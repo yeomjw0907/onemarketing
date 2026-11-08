@@ -3,6 +3,7 @@ import styles from "./signup-shell.module.css";
 import { safeReturnPath } from "@/lib/campaign-display";
 import PublicShell from "@/components/public-shell";
 import LoginScreen from "@/components/login-screen";
+import { loginEntryRole } from "@/lib/login-entry";
 export const metadata = { title: "로그인 | 원마케팅" };
 export default async function Page({
   searchParams,
@@ -11,12 +12,7 @@ export default async function Page({
 }) {
   const p = await searchParams,
     next = safeReturnPath(p.next);
-  const role =
-    p.role === "advertiser" || p.signup === "1" || next === "/marketing"
-      ? "advertiser"
-      : p.role === "participant" || next.startsWith("/campaigns/")
-        ? "participant"
-        : "advertiser";
+  const role = loginEntryRole(p.role, p.signup, next);
   if (p.signup === "1" && role === "advertiser")
     return (
       <main className={styles.root}>

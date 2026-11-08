@@ -86,6 +86,76 @@
 .service-banner--about .service-art {
   transform: rotate(-5deg);
 }
+.home-platform-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.home-platform-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.home-platform-actions .home-platform-primary {
+  color: #fff;
+  background: #2563eb;
+  border: 1px solid #2563eb;
+}
+.home-platform-actions .home-platform-secondary {
+  color: #1f3f6b;
+  background: #fff;
+  border: 1px solid #c8d8ef;
+}
+.home-platform-actions .home-platform-about {
+  color: #405b7c;
+  padding: 8px 2px;
+  font-size: 13px;
+}
+.home-platform-actions a:focus-visible {
+  outline: 3px solid #8bb8ff;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .campaign-experience .service-banner.service-banner--home {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+  .campaign-experience .service-banner--home .service-art {
+    position: absolute;
+    width: 86px;
+    top: 22px;
+    right: 12px;
+    z-index: 0;
+  }
+  .service-banner--home h2,
+  .service-banner--home p {
+    padding-right: 66px;
+  }
+  .home-platform-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .home-platform-actions a {
+    padding: 10px 8px;
+    font-size: 13px;
+    gap: 6px;
+  }
+  .home-platform-actions .home-platform-about {
+    grid-column: 1/-1;
+    justify-self: start;
+    min-height: 36px;
+    padding: 6px 0;
+  }
+}
 .service-products {
   margin: 48px 0;
 }

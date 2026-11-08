@@ -112,3 +112,23 @@
 }
 
 .portal-auth .kakao-login-button { height:48px; border-radius:12px; gap:10px; margin-bottom:12px; }
+
+.campaign-experience .home-work-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; padding:0 0 26px; margin-bottom:8px; border-bottom:1px solid #e9edf2; }
+.campaign-experience .home-work-links a { display:flex; flex-direction:column; gap:4px; padding:8px 12px; border-left:2px solid #dce8fb; }
+.campaign-experience .home-work-links strong { color:#253b58; font-size:14px; }
+.campaign-experience .home-work-links span { color:#6b7684; font-size:12px; }
+.campaign-experience .home-empty-actions { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:16px; }
+.campaign-experience .home-empty-actions > a { min-height:44px; display:inline-flex; align-items:center; }
+.campaign-experience #home-campaigns { scroll-margin-top:96px; }
+.campaign-experience.home-without-campaigns .summarybar,
+.campaign-experience.home-without-campaigns .categories,
+.campaign-experience.home-without-campaigns .toolbar,
+.campaign-experience.home-without-campaigns .filters,
+.campaign-experience.home-without-campaigns .sectiontitle,
+.campaign-experience.home-without-campaigns .homelead .search { display:none; }
+@media (max-width:700px) {
+  .campaign-experience .home-work-links { gap:8px; padding-bottom:20px; }
+  .campaign-experience .home-work-links a { padding:6px; gap:4px; }
+  .campaign-experience .home-work-links strong { font-size:12px; line-height:1.6; }
+  .campaign-experience .home-work-links span { font-size:11px; line-height:1.6; }
+}
