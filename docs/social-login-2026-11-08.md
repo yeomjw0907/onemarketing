@@ -29,7 +29,7 @@ While `NAVER_LOGIN_REVIEW_PENDING=true`, ordinary visitors see the Naver button 
 
 Isolated browser QA covers advertiser signup entry, participant login, social buttons and mobile overflow. HTTP QA verifies provider authorization hosts, HttpOnly state cookies and cross-origin rejection. Provider branding assets come from the official Google and Naver bundles; attribution is in public/brands/README.md.
 
-Manual production verification and Naver review evidence are completed after deployment; provider review status must be reported separately from code deployment. No unrelated worktree changes are included.
+Production browser verification completed: real Google consent returned to advertiser social onboarding; real Naver identifier-only consent returned to participant application with an authenticated pending identity. Ordinary production entry guards Naver while the review entry enables it. New-account business/contact submission remains separate from provider consent. An additional signup-method switch was added after this verification exposed a missing escape from pending onboarding. Provider review status must be reported separately from code deployment. No unrelated worktree changes are included.
 
 ## Primary references
 

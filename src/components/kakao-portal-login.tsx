@@ -152,6 +152,14 @@ export default function KakaoPortalLogin({
           >
             간편 로그인 다시 시작
           </Button>
+          <SocialLoginButtons
+            providers={providers}
+            naverReviewPending={naverReviewPending}
+            role="participant"
+            access={access}
+            disabled={busy}
+            onError={setError}
+          />
         </>
       ) : (
         <>

@@ -121,6 +121,7 @@ export default function AdvertiserSignup({
   social,
   onComplete,
   onLogin,
+  onCancelSocial,
   kakao,
   externalError,
   entryBusy = false,
@@ -131,6 +132,7 @@ export default function AdvertiserSignup({
   onOnboardingChange?: (active: boolean) => void;
   onComplete: (account: Record<string, any>) => void;
   onLogin: () => void;
+  onCancelSocial?: () => Promise<void>;
   externalError?: string;
   kakao: React.ReactNode;
 }) {
@@ -177,6 +179,16 @@ export default function AdvertiserSignup({
             ? "기존 계정에 간편 로그인 연결"
             : "이미 계정이 있어요 · 로그인"}
         </button>
+        {social && onCancelSocial && (
+          <button
+            type="button"
+            className={styles.login}
+            disabled={entryBusy}
+            onClick={() => void onCancelSocial()}
+          >
+            다른 가입 방법 선택
+          </button>
+        )}
         {externalError && (
           <p role="alert" className={styles.error}>
             {externalError}

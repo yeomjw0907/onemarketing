@@ -159,6 +159,19 @@ function Account({
     return (
       <AdvertiserSignup
         social={social}
+        onCancelSocial={async () => {
+          setBusy(true);
+          setError("");
+          try {
+            await marketFetch("/api/advertiser-auth", { action: "logout" });
+            setSocial(false);
+            setRegister(true);
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "다시 시도해주세요.");
+          } finally {
+            setBusy(false);
+          }
+        }}
         onComplete={onChange}
         onLogin={() => {
           setError("");
