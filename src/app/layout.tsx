@@ -4,6 +4,12 @@ import "./campaign-experience.css";
 import "./public-refinement.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.onemarketing.kr"),
+  verification: {
+    google: "j_QacCWx_Ql7M0qP-FyFILCofahutHtVZj-5eSvp-V4",
+    other: {
+      "naver-site-verification": "d18fabdeaa0ac8d67b2226f20fc87a5d426e51af",
+    },
+  },
   title: "원마케팅 | 콘텐츠와 사람을 연결하는 캠페인",
   description: "마케팅 제작과 운영을 한 곳에서",
   openGraph: {
