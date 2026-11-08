@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { sameOrigin } from "@/lib/auth";
 import { additionalProvider, beginSocial } from "@/lib/social-oauth";
+import {
+  safeLoginReturnPath,
+  safeParticipantPortalReturn,
+} from "@/lib/login-entry";
 export async function POST(
   request: Request,
   context: { params: Promise<{ provider: string }> },
@@ -30,6 +34,13 @@ export async function POST(
       };
     jar.set(`om_${provider}_state`, result.state, options);
     jar.set(`om_${provider}_role`, role, options);
+    jar.set(
+      `om_${provider}_next`,
+      role === "advertiser"
+        ? safeLoginReturnPath(body.next)
+        : safeParticipantPortalReturn(body.next),
+      options,
+    );
     return Response.json(
       { url: result.url },
       { headers: { "Cache-Control": "no-store" } },

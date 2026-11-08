@@ -13,6 +13,7 @@ import {
 import { marketFetch } from "./market-public";
 import PublicShell from "./public-shell";
 import { appStates, campaignStates, money } from "@/lib/commerce-policy";
+import { advertiserLoginPath } from "@/lib/login-entry";
 import s from "./platform.module.css";
 type Row = Record<string, any>;
 const formatDate = (v: string) =>
@@ -44,6 +45,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
       if (request === generation.current) {
         setError((e as Error).message);
         setErrorStatus(Number((e as { status?: number }).status || 0));
+        if ((e as { status?: number }).status === 401) setData(null);
       }
       throw e;
     } finally {
@@ -246,7 +248,9 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
           <div role="alert" className={s.error}>
             {error}{" "}
             {errorStatus === 401 && (
-              <Link href={admin ? "/admin" : "/login"}>로그인으로 이동</Link>
+              <Link href={admin ? "/admin" : advertiserLoginPath(tab)}>
+                로그인으로 이동
+              </Link>
             )}
             {errorStatus !== 401 && (
               <button
@@ -413,8 +417,27 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
               <>
                 <OperationQueue data={data} admin={admin} onOpen={openQueue} />
                 <h2>전체 캠페인 · {data.campaigns.length}</h2>
-                {!data.campaigns.length && (
-                  <p>아직 캠페인이 없어요. 새 캠페인을 등록해주세요.</p>
+                {!data.campaigns.length && admin && (
+                  <p>
+                    등록된 캠페인이 없습니다. 주문·결제 탭에서 접수와 입금 확인
+                    내역을 확인해주세요.
+                  </p>
+                )}
+                {!data.campaigns.length && !admin && (
+                  <div className={s.panel}>
+                    <h3>첫 캠페인을 시작해보세요</h3>
+                    <p>
+                      상품과 모집 조건을 정하고 주문을 접수하면 결제 안내를
+                      확인할 수 있어요. 결제 확인 후 모집·콘텐츠 진행 상황을
+                      이곳에서 관리합니다.
+                    </p>
+                    <div className={s.actions}>
+                      <Link className={s.cta} href="/marketing">
+                        캠페인 구성하기
+                      </Link>
+                      <Link href="/guide">진행 방법 확인</Link>
+                    </div>
+                  </div>
                 )}
                 <div className={s.columns}>
                   {data.campaigns.map((c: Row) => (

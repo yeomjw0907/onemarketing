@@ -1,4 +1,5 @@
 "use client";
+import { safeLoginReturnPath } from "@/lib/login-entry";
 import {
   useEffect,
   useRef,
@@ -246,9 +247,13 @@ export function AdvertiserAccess({
   const [account, setAccount] = useState<Row | null>(null);
   useEffect(() => {
     marketFetch("/api/advertiser-auth")
-      .then((d) => setAccount(d.account))
+      .then((d) => {
+        setAccount(d.account);
+        const next = safeLoginReturnPath(returnTo);
+        if (d.account && next) location.assign(next);
+      })
       .catch(() => {});
-  }, []);
+  }, [returnTo]);
   return (
     <>
       <Account
@@ -256,12 +261,7 @@ export function AdvertiserAccess({
         onChange={(a) => {
           setAccount(a);
           window.dispatchEvent(new Event("om-auth-change"));
-          if (
-            a &&
-            (returnTo === "/marketing" ||
-              /^\/campaigns\/[a-f0-9-]{36}$/.test(returnTo))
-          )
-            location.assign(returnTo);
+          if (a && safeLoginReturnPath(returnTo)) location.assign(returnTo);
         }}
         initialRegister={register}
         onOnboardingChange={onOnboardingChange}

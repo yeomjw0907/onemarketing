@@ -1,6 +1,10 @@
 import { cookies } from "next/headers";
 import { sameOrigin } from "@/lib/auth";
 import { beginKakao } from "@/lib/kakao-auth";
+import {
+  safeLoginReturnPath,
+  safeParticipantPortalReturn,
+} from "@/lib/login-entry";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
@@ -41,6 +45,19 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 600,
     });
+    (await cookies()).set(
+      "om_kakao_next",
+      body.role === "advertiser"
+        ? safeLoginReturnPath(body.next)
+        : safeParticipantPortalReturn(body.next),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      },
+    );
     return Response.json(
       { url: result.url },
       { headers: { "Cache-Control": "no-store" } },

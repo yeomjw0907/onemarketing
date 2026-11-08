@@ -3,6 +3,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { marketFetch } from "./public-fetch";
 import { appStates, money } from "@/lib/commerce-policy";
+import {
+  saveAndRefresh,
+  refreshAfterSaveMessage,
+} from "@/lib/save-and-refresh";
 import s from "./platform.module.css";
 type Row = Record<string, any>;
 export function CommerceOpportunities() {
@@ -148,20 +152,28 @@ export function CommerceParticipant({ focusId = "" }: { focusId?: string }) {
     if (busy) return;
     setBusy(true);
     setError("");
+    setNotice("");
     try {
-      await marketFetch("/api/commerce", {
-        role: "participant",
-        action: "participant",
-        data: {
-          id: a.id,
-          version: a.version,
-          action,
-          ...(links ? { links } : {}),
-        },
-      });
-      await load();
+      const result = await saveAndRefresh(
+        () =>
+          marketFetch("/api/commerce", {
+            role: "participant",
+            action: "participant",
+            data: {
+              id: a.id,
+              version: a.version,
+              action,
+              ...(links ? { links } : {}),
+            },
+          }),
+        load,
+      );
       window.dispatchEvent(new Event("om-commerce-update"));
-      setNotice("작업 상태를 저장했습니다.");
+      setNotice(
+        result.refreshed
+          ? "작업 상태를 저장했습니다."
+          : refreshAfterSaveMessage,
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -176,7 +188,10 @@ export function CommerceParticipant({ focusId = "" }: { focusId?: string }) {
           disabled={busy}
           onClick={() =>
             load()
-              .then(() => setError(""))
+              .then(() => {
+                setError("");
+                setNotice("");
+              })
               .catch((e) => setError(e.message))
           }
         >

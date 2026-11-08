@@ -1,5 +1,10 @@
 "use client";
 import { safeReturnPath } from "@/lib/campaign-display";
+import {
+  saveAndRefresh,
+  refreshAfterSaveMessage,
+} from "@/lib/save-and-refresh";
+import { initialPortalTab, portalTab } from "@/lib/portal-navigation";
 import { ArrowRight } from "lucide-react";
 import { ParticipantSteps } from "./public-progress";
 import styles from "./public-experience.module.css";
@@ -78,40 +83,30 @@ export default function ParticipantPortal() {
           o.status === "proposed" && Date.parse(o.expiresAt) > Date.now(),
       );
       const requested = new URL(location.href).searchParams.get("tab");
-      setTab(
-        requested &&
-          [
-            "offers",
-            "tasks",
-            "availability",
-            "payments",
-            "applications",
-          ].includes(requested)
-          ? requested
-          : pendingOffers
-            ? "offers"
-            : d.tasks.length
-              ? "tasks"
-              : "offers",
-      );
+      setTab(initialPortalTab(requested, pendingOffers, d.tasks.length));
       firstLoad.current = false;
     }
   }
   async function act(body: Row) {
+    if (busy) return false;
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      await marketFetch("/api/participant-portal", body);
-      await load();
+      const result = await saveAndRefresh(
+        () => marketFetch("/api/participant-portal", body),
+        load,
+      );
       setNotice(
-        body.action === "submit"
-          ? "게시물 링크를 제출했어요. 검수 가능일을 확인해주세요."
-          : body.action === "respond"
-            ? body.accept
-              ? "제안을 수락했어요. 자료가 준비되면 안내해드릴게요."
-              : "제안을 거절했어요."
-            : "변경 내용을 저장했어요.",
+        !result.refreshed
+          ? refreshAfterSaveMessage
+          : body.action === "submit"
+            ? "게시물 링크를 제출했어요. 검수 가능일을 확인해주세요."
+            : body.action === "respond"
+              ? body.accept
+                ? "제안을 수락했어요. 자료가 준비되면 안내해드릴게요."
+                : "제안을 거절했어요."
+              : "변경 내용을 저장했어요.",
       );
       return true;
     } catch (e) {
@@ -156,6 +151,7 @@ export default function ParticipantPortal() {
     }
     void init()
       .catch((e) => {
+        if (active && e.status === 401) setData(null);
         if (active && (!e.status || e.status >= 500)) setLoadFailed(true);
         if (active && !String(e.message).includes("유효한 접속 링크"))
           setError(e.message);
@@ -167,6 +163,20 @@ export default function ParticipantPortal() {
       active = false;
     };
   }, [reload]);
+  useEffect(() => {
+    if (!data || firstLoad.current) return;
+    const url = new URL(location.href);
+    url.searchParams.set("tab", tab);
+    history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }, [tab, data]);
+  useEffect(() => {
+    const restore = () => {
+      const value = portalTab(new URL(location.href).searchParams.get("tab"));
+      if (value) setTab(value);
+    };
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, []);
   const availableOffers =
     data?.offers.filter(
       (o: Row) =>
@@ -237,6 +247,17 @@ export default function ParticipantPortal() {
         )}
         {error && <Feedback tone="error">{error}</Feedback>}
         {notice && <Feedback tone="success">{notice}</Feedback>}
+        {notice === refreshAfterSaveMessage && (
+          <Button
+            onClick={() => {
+              setNotice("");
+              setReload((value) => value + 1);
+            }}
+            busy={loading}
+          >
+            최신 내역 다시 불러오기
+          </Button>
+        )}
         {loading ? (
           <div
             className="portal-loading"

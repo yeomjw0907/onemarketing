@@ -87,6 +87,13 @@ export function participantNext(
         "제출 후 3일이 지나면 검수해요. 작업에서 검수 가능일을 확인해주세요.",
       tab: "tasks",
     };
+  if (!tasks.length)
+    return {
+      title: "참여할 캠페인을 찾아보세요",
+      description:
+        "모집 조건을 확인하고 지원하세요. 지원 내역과 선정 결과를 내 캠페인 지원에서 확인할 수 있어요.",
+      tab: "applications",
+    };
   return {
     title: "내 작업의 진행 상황을 확인하세요",
     description: "새 제안과 게시·정산 내역을 이곳에서 확인할 수 있어요.",

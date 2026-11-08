@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { participantPortalReturn } from "@/lib/login-entry";
 import {
   socialProviderLabels,
   type SocialProvider,
@@ -66,6 +67,14 @@ export default function SocialLoginButtons({
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       role,
+                      next:
+                        role === "advertiser"
+                          ? new URLSearchParams(location.search).get("next") ||
+                            undefined
+                          : participantPortalReturn(
+                              location.pathname,
+                              location.search,
+                            ) || undefined,
                       access: access || undefined,
                       referralCode:
                         role === "participant"

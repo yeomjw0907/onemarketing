@@ -3,6 +3,12 @@ import { additionalProvider, completeSocial } from "@/lib/social-oauth";
 import { advertiserKakaoLogin } from "@/lib/advertiser-social";
 import { kakaoOnboarding } from "@/lib/kakao-auth";
 import { socialSignupPath } from "@/lib/social-referral";
+import {
+  applyAdvertiserReturn,
+  applyParticipantReturn,
+  safeParticipantPortalReturn,
+} from "@/lib/login-entry";
+import { safeLoginReturnPath } from "@/lib/login-entry";
 export async function GET(
   request: Request,
   context: { params: Promise<{ provider: string }> },
@@ -22,6 +28,10 @@ export async function GET(
     sameSite: "lax" as const,
     path: "/",
   };
+  const next =
+    safeLoginReturnPath(jar.get(`om_${provider}_next`)?.value) ||
+    safeParticipantPortalReturn(jar.get(`om_${provider}_next`)?.value);
+  jar.delete(`om_${provider}_next`);
   try {
     const url = new URL(request.url);
     if (url.searchParams.has("error")) throw new Error("cancelled");
@@ -42,6 +52,7 @@ export async function GET(
           maxAge: 7 * 86400,
         });
         destination.pathname = "/advertisers";
+        applyAdvertiserReturn(destination, next);
       } else {
         jar.delete("om_advertiser");
         jar.set("om_advertiser_kakao_pending", result.advertiserIdentity, {
@@ -50,13 +61,15 @@ export async function GET(
         });
         destination.pathname = "/login";
         destination.search = "?role=advertiser&signup=1";
+        if (next) destination.searchParams.set("next", next);
       }
-    } else if (result.session)
+    } else if (result.session) {
       jar.set("om_participant", result.session, {
         ...options,
         maxAge: 30 * 86400,
       });
-    else if (result.identity) {
+      applyParticipantReturn(destination, next);
+    } else if (result.identity) {
       jar.delete("om_participant");
       jar.set("om_kakao_pending", result.identity, {
         ...options,
@@ -76,9 +89,12 @@ export async function GET(
       }
     }
   } catch {
+    if (jar.get(`om_${provider}_role`)?.value !== "advertiser")
+      applyParticipantReturn(destination, next);
     if (jar.get(`om_${provider}_role`)?.value === "advertiser") {
       destination.pathname = "/login";
       destination.search = "?role=advertiser";
+      if (next) destination.searchParams.set("next", next);
     }
     destination.searchParams.set("loginError", "1");
   }

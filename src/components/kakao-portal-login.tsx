@@ -5,6 +5,7 @@ import Image from "next/image";
 import SocialLoginButtons from "./social-login-buttons";
 import type { SocialProvider } from "@/lib/social-identity";
 import { socialSignupPath } from "@/lib/social-referral";
+import { participantPortalReturn } from "@/lib/login-entry";
 import { Button, Feedback } from "./ui/workflow-ui";
 type Pending = {
   provider?: SocialProvider;
@@ -68,6 +69,9 @@ export default function KakaoPortalLogin({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             silent: true,
+            next:
+              participantPortalReturn(location.pathname, location.search) ||
+              undefined,
             access: access || undefined,
             referralCode:
               new URLSearchParams(location.search).get("ref") || undefined,
@@ -102,6 +106,9 @@ export default function KakaoPortalLogin({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: type,
+            next:
+              participantPortalReturn(location.pathname, location.search) ||
+              undefined,
             access: access || undefined,
             reselect: !!pending,
             referralCode:
