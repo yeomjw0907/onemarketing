@@ -31,6 +31,15 @@ Isolated browser QA covers advertiser signup entry, participant login, social bu
 
 Production browser verification completed: real Google consent returned to advertiser social onboarding; real Naver identifier-only consent returned to participant application with an authenticated pending identity. Ordinary production entry guards Naver while the review entry enables it. New-account business/contact submission remains separate from provider consent. An additional signup-method switch was added after this verification exposed a missing escape from pending onboarding. Provider review status must be reported separately from code deployment. No unrelated worktree changes are included.
 
+## Final production and review status
+
+- Deployed code commit: `89a26f96758a146749e891542748d0c6aad5e9d3`, production deployment `dpl_DpvnnzwpWaNhT2uresjnzkq1zzRP` READY on www.onemarketing.kr.
+- Real Google advertiser authentication completed and returned to social onboarding. Real Naver authentication completed for both participant and advertiser entry. The production signup-method switch was exercised successfully.
+- Isolated browser registration completed all 11 required profile steps and created the test advertiser/customer/session without a new password. This used a synthetic pending identity fixture and synthetic contact details in the disposable schema, distinct from the real production provider-authentication checks.
+- Naver console displayed `검수요청`, final request date `2026.11.08`, with a 7-page / 915,055-byte PDF attached. The PDF explicitly separates production provider-consent/return screens from isolated synthetic registration screens and masks the unrelated personal profile header.
+- Review evidence: ignored `output/pdf/onemarketing-naver-login-review.pdf`; confirmation screenshots: `output/social-naver-review-submitted.png` and `output/social-production-final.png`.
+- General Naver access remains approval-dependent. Keep NAVER_LOGIN_REVIEW_PENDING true until the console confirms approval, then set it false and redeploy. Key issuance and review submission are not approval.
+
 ## Primary references
 
 - https://developers.google.com/identity/protocols/oauth2/web-server
