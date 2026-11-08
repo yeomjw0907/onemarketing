@@ -23,7 +23,7 @@ export default function SocialLoginButtons({
 }) {
   const [busy, setBusy] = useState(false);
   return (
-    <div style={{ display: "grid", gap: 10 }}>
+    <div style={{ display: "grid", gap: 12 }}>
       {(includeKakao
         ? (["kakao", "google"] as const)
         : (["google"] as const)
@@ -39,8 +39,17 @@ export default function SocialLoginButtons({
               style={{
                 background: provider === "kakao" ? "#fee500" : "#fff",
                 color: "#1f1f1f",
-                border: "1px solid #747775",
+                border:
+                  provider === "kakao"
+                    ? "1px solid #fee500"
+                    : "1px solid #747775",
                 minHeight: 48,
+                height: 48,
+                margin: 0,
+                borderRadius: 12,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
                 padding: 12,
                 gap: 10,
                 fontFamily:
@@ -82,18 +91,18 @@ export default function SocialLoginButtons({
                 }
               }}
             >
-              {provider === "google" && (
-                <Image
-                  src="/brands/google-login.png"
-                  alt=""
-                  width={200}
-                  height={204}
-                  style={{ width: 20, height: "auto" }}
-                />
-              )}
-              {provider === "google"
-                ? "Google로 계속하기"
-                : "카카오로 시작하기"}
+              <Image
+                src={
+                  provider === "google"
+                    ? "/brands/google-login.png"
+                    : "/brands/kakao-login.svg"
+                }
+                alt=""
+                width={provider === "google" ? 200 : 20}
+                height={provider === "google" ? 204 : 20}
+                style={{ width: 20, height: "auto" }}
+              />
+              {provider === "google" ? "Google로 계속하기" : "카카오 로그인"}
             </button>
           ),
       )}

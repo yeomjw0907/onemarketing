@@ -22,8 +22,8 @@
 }
 .entry button {
   width: 100%;
-  min-height: 52px;
-  margin-top: 14px;
+  min-height: 48px;
+  margin-top: 12px;
   font: inherit;
   border-radius: 12px;
   cursor: pointer;

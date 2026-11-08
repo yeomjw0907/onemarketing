@@ -1,12 +1,14 @@
+import { publicMetadata } from "@/lib/public-seo";
+import PublicStructuredData from "@/components/public-structured-data";
 import PublicShell from "@/components/public-shell";
 import ClipPostingNotes from "@/components/clip-posting-notes";
 import NaverAppButton from "@/components/naver-app-button";
 import Link from "next/link";
 export const metadata = {
-  title: "원마케팅 · 참여 가이드",
+  ...publicMetadata("/participants/guide"),
   referrer: "no-referrer" as const,
 };
-export default function Guide() {
+function PageContent() {
   return (
     <PublicShell>
       <div className="participant-portal participant-guide">
@@ -85,5 +87,14 @@ export default function Guide() {
         <Link href="/participants/apply">참여자 등록 신청</Link>
       </div>
     </PublicShell>
+  );
+}
+
+export default function Guide() {
+  return (
+    <>
+      <PublicStructuredData path="/participants/guide" />
+      <PageContent />
+    </>
   );
 }

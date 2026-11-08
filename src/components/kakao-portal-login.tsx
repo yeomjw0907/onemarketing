@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import BrandOrb from "./brand-orb";
+import Image from "next/image";
 import SocialLoginButtons from "./social-login-buttons";
 import type { SocialProvider } from "@/lib/social-identity";
 import { socialSignupPath } from "@/lib/social-referral";
@@ -185,13 +186,13 @@ export default function KakaoPortalLogin({
             disabled={!enabled}
             onClick={() => void action("login")}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 3C6.48 3 2 6.52 2 10.86c0 2.78 1.83 5.22 4.6 6.62l-1.17 4.3 5.1-3.1c.48.05.97.08 1.47.08 5.52 0 10-3.53 10-7.9S17.52 3 12 3Z"
-              />
-            </svg>
-            카카오로 시작하기
+            <Image
+              src="/brands/kakao-login.svg"
+              alt=""
+              width={20}
+              height={20}
+            />
+            카카오 로그인
           </Button>
           {!enabled && (
             <p className="muted">카카오 로그인 연결을 준비 중이에요.</p>

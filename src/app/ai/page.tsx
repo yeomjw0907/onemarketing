@@ -1,10 +1,9 @@
+import { publicMetadata } from "@/lib/public-seo";
+import PublicStructuredData from "@/components/public-structured-data";
 import Link from "next/link";
 import DocumentationShell from "@/components/documentation-shell";
-export const metadata = {
-  title: "AI·MCP 가이드 | 원마케팅",
-  robots: { index: true, follow: true },
-};
-export default function Page() {
+export const metadata = publicMetadata("/ai");
+function PageContent() {
   return (
     <DocumentationShell
       ai
@@ -150,5 +149,14 @@ export default function Page() {
         },
       ]}
     />
+  );
+}
+
+export default function Page() {
+  return (
+    <>
+      <PublicStructuredData path="/ai" />
+      <PageContent />
+    </>
   );
 }

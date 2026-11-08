@@ -110,3 +110,5 @@
     transform: none;
   }
 }
+
+.portal-auth .kakao-login-button { height:48px; border-radius:12px; gap:10px; margin-bottom:12px; }

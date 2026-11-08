@@ -93,19 +93,6 @@ function Account({
       .catch((e) => setError(e.message))
       .finally(() => setAuthReady(true));
   }, []);
-  async function kakaoLogin() {
-    setBusy(true);
-    setError("");
-    try {
-      const d = await marketFetch("/api/auth/kakao/start", {
-        role: "advertiser",
-      });
-      location.assign(d.url);
-    } catch (e) {
-      setError((e as Error).message);
-      setBusy(false);
-    }
-  }
   if (account)
     return (
       <div className={styles.row}>
@@ -132,22 +119,11 @@ function Account({
         {error && <p role="alert">{error}</p>}
       </div>
     );
-  const kakaoButton =
-    kakaoEnabled && !social ? (
-      <button
-        type="button"
-        className={styles.kakao}
-        disabled={busy}
-        onClick={() => void kakaoLogin()}
-      >
-        카카오로 가입·로그인
-      </button>
-    ) : null;
   const kakao = !social ? (
     <>
-      {kakaoButton}
       <SocialLoginButtons
-        providers={providers}
+        providers={{ ...providers, kakao: kakaoEnabled }}
+        includeKakao
         naverReviewPending={naverReviewPending}
         role="advertiser"
         disabled={busy || !authReady}
