@@ -8,6 +8,8 @@ import {
 } from "react";
 import Link from "next/link";
 import AdvertiserSignup from "./advertiser-signup";
+import SocialLoginButtons from "./social-login-buttons";
+import type { SocialProvider } from "@/lib/social-identity";
 import styles from "./market.module.css";
 import PublicShell from "./public-shell";
 import { CommerceOpportunities } from "./commerce-participant";
@@ -72,14 +74,20 @@ function Account({
     [busy, setBusy] = useState(false),
     [social, setSocial] = useState(false),
     [kakaoEnabled, setKakaoEnabled] = useState(false),
+    [naverReviewPending, setNaverReviewPending] = useState(false),
+    [providers, setProviders] = useState<
+      Partial<Record<SocialProvider, boolean>>
+    >({}),
     [authReady, setAuthReady] = useState(false);
   useEffect(() => {
     if (new URLSearchParams(location.search).has("loginError"))
-      setError("카카오 로그인이 취소되었거나 만료됐어요. 다시 시도해주세요.");
+      setError("간편 로그인이 취소되었거나 만료됐어요. 다시 시도해주세요.");
     marketFetch("/api/advertiser-auth")
       .then((d) => {
         setSocial(d.kakaoPending);
         setKakaoEnabled(d.kakaoEnabled);
+        setProviders(d.providers || {});
+        setNaverReviewPending(d.naverReviewPending === true);
         if (d.kakaoPending) setRegister(true);
       })
       .catch((e) => setError(e.message))
@@ -124,7 +132,7 @@ function Account({
         {error && <p role="alert">{error}</p>}
       </div>
     );
-  const kakao =
+  const kakaoButton =
     kakaoEnabled && !social ? (
       <button
         type="button"
@@ -135,6 +143,18 @@ function Account({
         카카오로 가입·로그인
       </button>
     ) : null;
+  const kakao = !social ? (
+    <>
+      {kakaoButton}
+      <SocialLoginButtons
+        providers={providers}
+        naverReviewPending={naverReviewPending}
+        role="advertiser"
+        disabled={busy || !authReady}
+        onError={setError}
+      />
+    </>
+  ) : null;
   if (register)
     return (
       <AdvertiserSignup
@@ -152,7 +172,7 @@ function Account({
     );
   return (
     <section className={styles.panel}>
-      <h2>{social ? "기존 계정에 카카오 연결" : "광고주 로그인"}</h2>
+      <h2>{social ? "기존 계정에 간편 로그인 연결" : "광고주 로그인"}</h2>
       <p className={styles.muted}>
         {social
           ? "기존 이메일·비밀번호로 본인 확인 후 연결해요."

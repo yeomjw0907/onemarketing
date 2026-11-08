@@ -8,6 +8,7 @@ import {
   kakaoConfigured,
 } from "@/lib/kakao-auth";
 import { list, query } from "@/lib/db";
+import { socialConfigured } from "@/lib/social-oauth";
 export async function GET() {
   const identity = (await cookies()).get("om_kakao_pending")?.value;
   let pending = null;
@@ -16,7 +17,16 @@ export async function GET() {
       pending = await kakaoOnboarding(identity);
     } catch {}
   return Response.json(
-    { enabled: kakaoConfigured(), pending },
+    {
+      enabled: kakaoConfigured(),
+      naverReviewPending: process.env.NAVER_LOGIN_REVIEW_PENDING === "true",
+      providers: {
+        kakao: kakaoConfigured(),
+        google: socialConfigured("google"),
+        naver: socialConfigured("naver"),
+      },
+      pending,
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -47,7 +57,10 @@ export async function POST(request: Request) {
             : "담당자가 연결 요청을 확인 중이에요.",
         );
       }
-      const session = await issueKakaoSession(String(binding.participantId));
+      const session = await issueKakaoSession(
+        String(binding.participantId),
+        String(r.kakaoId),
+      );
       store.set("om_participant", session, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

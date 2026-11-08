@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import BrandOrb from "./brand-orb";
+import SocialLoginButtons from "./social-login-buttons";
+import type { SocialProvider } from "@/lib/social-identity";
 import { Button, Feedback } from "./ui/workflow-ui";
 type Pending = {
+  provider?: SocialProvider;
   nickname: string;
   hasCandidate: boolean;
   status?: string;
@@ -18,6 +21,10 @@ export default function KakaoPortalLogin({
   const [pending, setPending] = useState<Pending | null>(null),
     [ready, setReady] = useState(false),
     [enabled, setEnabled] = useState(false),
+    [naverReviewPending, setNaverReviewPending] = useState(false),
+    [providers, setProviders] = useState<
+      Partial<Record<SocialProvider, boolean>>
+    >({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const autoAttempted = useRef(false);
@@ -27,11 +34,13 @@ export default function KakaoPortalLogin({
     const d = await r.json();
     setPending(d.pending);
     setEnabled(d.enabled);
+    setProviders(d.providers || {});
+    setNaverReviewPending(d.naverReviewPending === true);
     setReady(true);
     if (d.pending) {
       if (d.pending.status === "approved") await action("continue");
       else if (d.pending.status !== "application_pending")
-        location.replace("/participants/apply?kakao=1");
+        location.replace("/participants/apply?social=1");
       return;
     }
     const params = new URL(location.href).searchParams;
@@ -66,14 +75,16 @@ export default function KakaoPortalLogin({
       setReady(true);
     });
     if (new URL(location.href).searchParams.has("loginError"))
-      setError("카카오 로그인을 완료하지 못했어요. 다시 시도해주세요.");
+      setError("간편 로그인을 완료하지 못했어요. 다시 시도해주세요.");
   }, []);
   async function action(type: "login" | "continue") {
     setBusy(true);
     setError("");
     try {
       const r = await fetch(
-        type === "login" ? "/api/auth/kakao/start" : "/api/auth/kakao/account",
+        type === "login"
+          ? `/api/auth/${pending?.provider || "kakao"}/start`
+          : "/api/auth/kakao/account",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -100,7 +111,7 @@ export default function KakaoPortalLogin({
   return (
     <section className="portal-auth">
       {error && <Feedback tone="error">{error}</Feedback>}
-      <h2>{pending ? "참여 신청 확인" : "카카오로 간편하게 시작하세요"}</h2>
+      <h2>{pending ? "참여 신청 확인" : "간편 로그인으로 시작하세요"}</h2>
       {!ready ? (
         <p className="muted">
           <BrandOrb
@@ -139,7 +150,7 @@ export default function KakaoPortalLogin({
             busy={busy}
             onClick={() => void action("login")}
           >
-            카카오 계정 다시 선택
+            간편 로그인 다시 시작
           </Button>
         </>
       ) : (
@@ -164,6 +175,14 @@ export default function KakaoPortalLogin({
           {!enabled && (
             <p className="muted">카카오 로그인 연결을 준비 중이에요.</p>
           )}
+          <SocialLoginButtons
+            providers={providers}
+            naverReviewPending={naverReviewPending}
+            role="participant"
+            access={access}
+            disabled={busy}
+            onError={setError}
+          />
         </>
       )}
     </section>

@@ -1,10 +1,11 @@
 import { randomBytes, createHash } from "node:crypto";
 import { list, create, update, lock, transaction, query, execute } from "./db";
 import { advertiserAuth, type Advertiser } from "./market";
+import { identityProvider } from "./social-identity";
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export async function advertiserKakaoPending(identity: string) {
   if (!/^[a-f0-9]{64}$/.test(identity))
-    throw new Error("카카오 로그인을 다시 진행해주세요.");
+    throw new Error("간편 로그인을 다시 진행해주세요.");
   const [result] = await query<{ data: Record<string, any> }>(
     "select data from records where kind='portal_links' and data->>'purpose'='advertiser-kakao-login' and data->>'tokenHash'=$1 limit 1",
     [hash(identity)],
@@ -16,7 +17,7 @@ export async function advertiserKakaoPending(identity: string) {
     row.revokedAt ||
     Date.parse(String(row.expiresAt)) <= Date.now()
   )
-    throw new Error("카카오 로그인을 다시 진행해주세요.");
+    throw new Error("간편 로그인을 다시 진행해주세요.");
   return row;
 }
 export async function advertiserKakaoLogin(
@@ -77,13 +78,15 @@ export async function advertiserKakaoLogin(
           (r) =>
             r.purpose === "advertiser-kakao-account" &&
             r.advertiserId === accountId &&
+            identityProvider(r.kakaoId) === identityProvider(pending.kakaoId) &&
             !r.revokedAt,
         )
       )
-        throw new Error("이미 다른 카카오 계정이 연결된 광고주입니다.");
+        throw new Error("이미 다른 간편 로그인 계정이 연결된 광고주입니다.");
       await create("portal_links", {
         purpose: "advertiser-kakao-account",
         kakaoId: pending.kakaoId,
+        provider: identityProvider(pending.kakaoId),
         advertiserId: result.account.id,
       });
     }

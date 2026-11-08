@@ -55,7 +55,7 @@ export async function submitApplication(
       );
       if (prior.length)
         throw new Error(
-          "이미 신청을 접수했어요. 담당자 확인 후 카카오로 다시 로그인해주세요.",
+          "이미 신청을 접수했어요. 담당자 확인 후 간편 로그인해주세요.",
         );
     }
     await lock("application-accounts");
@@ -283,7 +283,7 @@ export async function reviewApplication(input: unknown, actor: string) {
           trusted,
           p.id,
           actor,
-          "카카오 로그인 상태에서 제출한 신청 승인",
+          "간편 로그인 상태에서 제출한 신청 승인",
         );
       participantId = p.id;
     }

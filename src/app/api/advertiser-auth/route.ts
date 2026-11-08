@@ -3,6 +3,7 @@ import {
   databaseUnavailableResponse,
 } from "@/lib/database-errors";
 import { kakaoConfigured } from "@/lib/kakao-auth";
+import { socialConfigured } from "@/lib/social-oauth";
 import {
   advertiserKakaoPending,
   advertiserKakaoLogin,
@@ -31,6 +32,12 @@ export async function GET() {
     return Response.json(
       {
         kakaoEnabled: kakaoConfigured(),
+        naverReviewPending: process.env.NAVER_LOGIN_REVIEW_PENDING === "true",
+        providers: {
+          kakao: kakaoConfigured(),
+          google: socialConfigured("google"),
+          naver: socialConfigured("naver"),
+        },
         kakaoPending: pending,
         account: await advertiserSession(
           (await cookies()).get("om_advertiser")?.value,
@@ -75,7 +82,7 @@ export async function POST(request: Request) {
               request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
               "unknown",
           );
-    if (!result) throw new Error("카카오 로그인을 다시 진행해주세요.");
+    if (!result) throw new Error("간편 로그인을 다시 진행해주세요.");
     jar.delete("om_advertiser_kakao_pending");
     jar.set("om_advertiser", result.token, {
       httpOnly: true,

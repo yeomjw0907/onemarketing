@@ -52,16 +52,14 @@ export async function portalParticipant(token?: string) {
     parent.revokedAt ||
     new Date(String(parent.expiresAt)).getTime() <= Date.now()
   )
-    throw new Error(
-      "접속이 만료되었습니다. 카카오 로그인을 다시 진행해주세요.",
-    );
+    throw new Error("접속이 만료되었습니다. 간편 로그인을 다시 진행해주세요.");
   const p = await get(String(link.participantId));
   if (p?.kind !== "participants" || p.status !== "active" || p.deletedAt)
     throw new Error("현재 참여할 수 없는 계정입니다.");
   if (String(p.phone || "").replace(/\D/g, "") !== link.verifiedPhone)
     throw new Error("휴대폰 번호가 변경되었습니다. 다시 인증해주세요.");
   if (
-    link.provider === "kakao" &&
+    ["kakao", "google", "naver"].includes(String(link.provider)) &&
     !(await list("portal_links")).some(
       (l) =>
         l.purpose === "kakao-account" &&
@@ -70,7 +68,9 @@ export async function portalParticipant(token?: string) {
         !l.revokedAt,
     )
   )
-    throw new Error("카카오 계정 연결이 해제되었습니다. 다시 로그인해주세요.");
+    throw new Error(
+      "간편 로그인 계정 연결이 해제되었습니다. 다시 로그인해주세요.",
+    );
   return p;
 }
 export async function portalView(

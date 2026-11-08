@@ -147,7 +147,7 @@ export default function AdvertiserSignup({
       <section className={styles.entry} aria-label="가입 방식 선택">
         <p className={styles.eyebrow}>광고주 회원가입</p>
         <h2>
-          {social ? "카카오 인증을 마쳤어요." : "어떤 방법으로 시작할까요?"}
+          {social ? "간편 인증을 마쳤어요." : "어떤 방법으로 시작할까요?"}
         </h2>
         <p>
           {social
@@ -173,7 +173,9 @@ export default function AdvertiserSignup({
           disabled={entryBusy}
           onClick={onLogin}
         >
-          {social ? "기존 계정에 카카오 연결" : "이미 계정이 있어요 · 로그인"}
+          {social
+            ? "기존 계정에 간편 로그인 연결"
+            : "이미 계정이 있어요 · 로그인"}
         </button>
         {externalError && (
           <p role="alert" className={styles.error}>

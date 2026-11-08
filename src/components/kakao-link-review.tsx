@@ -20,7 +20,7 @@ export default function KakaoLinkReview({
   }, [participants]);
   return (
     <section className="section">
-      <h2>카카오 계정 연결 요청 {rows.length}건</h2>
+      <h2>간편 로그인 계정 연결 요청 {rows.length}건</h2>
       <p className="muted">
         이름·번호만으로 승인하지 말고, 기존에 등록된 연락처로 본인 요청인지
         확인해주세요.
@@ -62,7 +62,8 @@ export default function KakaoLinkReview({
             }}
           >
             <p>
-              <strong>{r.name}</strong> · {r.phone} · 카카오 표시명 {r.nickname}
+              <strong>{r.name}</strong> · {r.phone} · 간편 로그인 표시명{" "}
+              {r.nickname}
             </p>
             <Field>
               연결할 참여자

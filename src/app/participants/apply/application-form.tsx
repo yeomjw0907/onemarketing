@@ -11,6 +11,7 @@ import {
 } from "@/lib/participant-application-schema";
 import styles from "./application.module.css";
 import ChannelIcon from "@/components/channel-icon";
+import { SocialSignupOptions } from "@/components/social-login-buttons";
 import { applicationReadiness } from "@/lib/application-readiness";
 export default function ApplicationForm({
   rewards,
@@ -124,7 +125,8 @@ export default function ApplicationForm({
           website: websiteRef.current,
           key,
           requireKakao:
-            new URLSearchParams(location.search).get("kakao") === "1",
+            new URLSearchParams(location.search).get("kakao") === "1" ||
+            new URLSearchParams(location.search).get("social") === "1",
         }),
       });
       const body = await r.json();
@@ -179,6 +181,7 @@ export default function ApplicationForm({
           ) : !draft ? (
             <>
               <h2>체험단 참여 신청</h2>
+              <SocialSignupOptions />
               <p className="hint">채널별 보수와 참여 조건을 확인해주세요.</p>
               <div
                 ref={termsRef}

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       !identity
     )
       throw new Error(
-        "카카오 로그인 시간이 만료되었어요. 카카오로 다시 로그인한 뒤 신청해주세요.",
+        "로그인 시간이 만료되었어요. 간편 로그인 후 다시 신청해주세요.",
       );
     let kakaoId: string | undefined;
     if (identity) kakaoId = String((await pendingKakao(identity)).kakaoId);

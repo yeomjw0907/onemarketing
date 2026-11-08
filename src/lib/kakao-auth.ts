@@ -11,6 +11,7 @@ import {
   query,
 } from "./db";
 import { portalLinkParticipant } from "./portal-auth";
+import { identityProvider, validIdentityKey } from "./social-identity";
 const hash = (v: string) => createHash("sha256").update(v).digest("hex");
 const live = (r: Record<string, unknown>) =>
   !r.revokedAt && Date.parse(String(r.expiresAt)) > Date.now();
@@ -105,11 +106,21 @@ export async function completeKakao(
     nickname = String(
       user.kakao_account?.profile?.nickname || "카카오 사용자",
     ).slice(0, 100);
+  return completeSocialIdentity(kakaoId, nickname, attempt);
+}
+export async function completeSocialIdentity(
+  kakaoId: string,
+  nickname: string,
+  attempt: Record<string, unknown>,
+) {
+  if (!validIdentityKey(kakaoId))
+    throw new Error("로그인 계정을 확인해주세요.");
   if (attempt.role === "advertiser") {
     const identity = randomBytes(32).toString("hex");
     await create("portal_links", {
       purpose: "advertiser-kakao-login",
       kakaoId,
+      provider: identityProvider(kakaoId),
       nickname,
       tokenHash: hash(identity),
       expiresAt: new Date(Date.now() + 1800000).toISOString(),
@@ -126,13 +137,14 @@ export async function completeKakao(
   );
   if (binding && !(await get(String(binding.participantId)))?.deletedAt)
     return {
-      session: await issueKakaoSession(String(binding.participantId)),
+      session: await issueKakaoSession(String(binding.participantId), kakaoId),
       identity: undefined,
     };
   const identity = randomBytes(32).toString("hex");
   await create("portal_links", {
     purpose: "kakao-login",
     kakaoId,
+    provider: identityProvider(kakaoId),
     nickname,
     candidateId: attempt.candidateId,
     tokenHash: hash(identity),
@@ -145,10 +157,13 @@ export async function pendingKakao(identity: string) {
     (l) =>
       l.purpose === "kakao-login" && l.tokenHash === hash(identity) && live(l),
   );
-  if (!r) throw new Error("카카오 로그인을 다시 진행해주세요.");
+  if (!r) throw new Error("간편 로그인을 다시 진행해주세요.");
   return r;
 }
-export async function issueKakaoSession(participantId: string) {
+export async function issueKakaoSession(
+  participantId: string,
+  identityKey?: string,
+) {
   return transaction(async () => {
     await lock("portal:" + participantId);
     const p = await get(participantId);
@@ -160,9 +175,10 @@ export async function issueKakaoSession(participantId: string) {
       (l) =>
         l.purpose === "kakao-account" &&
         l.participantId === participantId &&
+        (!identityKey || l.kakaoId === identityKey) &&
         !l.revokedAt,
     );
-    if (!binding) throw new Error("카카오 계정 연결을 다시 확인해주세요.");
+    if (!binding) throw new Error("간편 로그인 계정 연결을 다시 확인해주세요.");
     if (!p.referralCode)
       await update(p.id, { referralCode: randomBytes(6).toString("hex") });
     const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
@@ -174,7 +190,7 @@ export async function issueKakaoSession(participantId: string) {
     const session = randomBytes(32).toString("hex");
     await create("portal_links", {
       purpose: "session",
-      provider: "kakao",
+      provider: identityProvider(binding.kakaoId),
       bindingId: binding.id,
       participantId,
       parentId: parent.id,
@@ -191,8 +207,8 @@ export async function bindKakao(
   actor: string,
   evidence: string,
 ) {
-  if (!/^[1-9]\d*$/.test(kakaoId))
-    throw new Error("카카오 계정을 다시 확인해주세요.");
+  if (!validIdentityKey(kakaoId))
+    throw new Error("간편 로그인 계정을 다시 확인해주세요.");
   return transaction(async () => {
     await lock("save:participants");
     await lock("kakao-bind");
@@ -211,17 +227,21 @@ export async function bindKakao(
     }
     const old = bindings.find((l) => l.kakaoId === kakaoId);
     if (old && old.participantId !== participantId)
-      throw new Error("이미 다른 참여자와 연결된 카카오 계정이에요.");
+      throw new Error("이미 다른 참여자와 연결된 간편 로그인 계정이에요.");
     if (
       bindings.some(
-        (l) => l.participantId === participantId && l.kakaoId !== kakaoId,
+        (l) =>
+          l.participantId === participantId &&
+          identityProvider(l.kakaoId) === identityProvider(kakaoId) &&
+          l.kakaoId !== kakaoId,
       )
     )
-      throw new Error("이미 다른 카카오 계정이 연결된 참여자예요.");
+      throw new Error("이미 다른 간편 로그인 계정이 연결된 참여자예요.");
     if (!old)
       await create("portal_links", {
         purpose: "kakao-account",
         kakaoId,
+        provider: identityProvider(kakaoId),
         participantId,
       });
     await audit(actor, "kakao-account-linked", participantId, { evidence });
@@ -333,6 +353,7 @@ export async function kakaoOnboarding(identity: string) {
   const linked =
     !!binding && !(await get(String(binding.participantId)))?.deletedAt;
   return {
+    provider: identityProvider(r.kakaoId),
     nickname: r.nickname,
     hasCandidate: !!r.candidateId,
     applicationStatus: application?.status,
