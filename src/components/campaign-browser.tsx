@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import useAccountFavorites from "./use-account-favorites";
 import PublicShell from "./public-shell";
+import PublicBreadcrumbs from "./public-breadcrumbs";
+import { publicBreadcrumbs } from "@/lib/public-seo";
 import { ServiceBanner } from "./service-overview";
 import { marketFetch } from "./public-fetch";
 import {
@@ -132,11 +134,18 @@ export function CampaignCard({ c }: { c: CampaignSummary }) {
     </article>
   );
 }
-export default function CampaignBrowser({ home = false }: { home?: boolean }) {
-  const [data, setData] = useState<{
-      campaigns: CampaignSummary[];
-      counts: { recruiting: number; selecting: number; active: number };
-    } | null>(null),
+type Catalog = {
+  campaigns: CampaignSummary[];
+  counts: { recruiting: number; selecting: number; active: number };
+};
+export default function CampaignBrowser({
+  home = false,
+  initialData,
+}: {
+  home?: boolean;
+  initialData?: Catalog;
+}) {
+  const [data, setData] = useState<Catalog | null>(initialData || null),
     [error, setError] = useState(""),
     [q, setQ] = useState(""),
     [category, setCategory] = useState("all"),
@@ -213,7 +222,7 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
       return;
     }
     readLocation();
-    load();
+    if (!initialData) load();
     window.addEventListener("popstate", readLocation);
     return () => window.removeEventListener("popstate", readLocation);
   }, []);
@@ -456,6 +465,9 @@ export default function CampaignBrowser({ home = false }: { home?: boolean }) {
         }
       >
         <div className="wrap">
+          {!home && (
+            <PublicBreadcrumbs items={publicBreadcrumbs("/campaigns")} />
+          )}
           {home ? (
             <>
               <ServiceBanner />

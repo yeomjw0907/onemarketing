@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { serviceOfferings } from "@/lib/service-offerings";
+import PublicBreadcrumbs from "./public-breadcrumbs";
 import BrandVisual from "./brand-visual";
 import DiscoverButton from "./discover-button";
 import PublicShell from "./public-shell";
@@ -108,6 +110,15 @@ export default function ProductOverview({
   return (
     <PublicShell>
       <div className="service-page">
+        <PublicBreadcrumbs
+          items={[
+            { name: "홈", path: "/" },
+            {
+              name: about ? "서비스 소개" : "마케팅 상품",
+              path: about ? "/about" : "/marketing",
+            },
+          ]}
+        />
         {about ? (
           <ServiceBanner variant="about" />
         ) : (
@@ -146,61 +157,21 @@ export default function ProductOverview({
             </div>
           </div>
           <div className="service-product-list">
-            <article>
-              <div className="service-product-heading">
-                <span className="service-number">01 / RECRUIT</span>
-              </div>
-              <h3>셀프 모집</h3>
-              <p>
-                캠페인을 직접 만들고,
-                <br />
-                우리 브랜드에 맞는 체험단을 고르세요.
-              </p>
-              <ul>
-                <li>현금 리워드 또는 제품·서비스 제공</li>
-                <li>지원자 비교와 직접 선정</li>
-                <li>게시물 확인과 진행 현황 관리</li>
-              </ul>
-              <span className="service-for">직접 운영하고 싶은 광고주에게</span>
-            </article>
-            <article>
-              <div className="service-product-heading">
-                <span className="service-number">02 / CONTENTS</span>
-              </div>
-              <h3>콘텐츠 제작·게시 패키지</h3>
-              <p>
-                AI로 소재를 만들고,
-                <br />
-                체험단의 채널에 게시해요.
-              </p>
-              <ul>
-                <li>블로그 게시용 이미지 3장과 원고 1개 / 1명</li>
-                <li>블로그 5건·클립 5건 구성</li>
-                <li>제작부터 게시 확인까지 최소 2주</li>
-              </ul>
-              <span className="service-for">
-                소재 제작부터 필요한 광고주에게
-              </span>
-            </article>
-            <article>
-              <div className="service-product-heading">
-                <span className="service-number">03 / MANAGED</span>
-              </div>
-              <h3>운영 대행 옵션</h3>
-              <p>
-                모집 이후의 진행도,
-                <br />
-                담당자와 함께 챙기세요.
-              </p>
-              <ul>
-                <li>지원자 선정 지원</li>
-                <li>참여자 안내와 일정 조율</li>
-                <li>약정 범위 내 수정 요청과 게시 확인</li>
-              </ul>
-              <span className="service-for">
-                운영할 시간이 부족한 광고주에게
-              </span>
-            </article>
+            {serviceOfferings.map((service) => (
+              <article key={service.id} id={service.id}>
+                <div className="service-product-heading">
+                  <span className="service-number">{service.number}</span>
+                </div>
+                <h3>{service.name}</h3>
+                <p>{service.description}</p>
+                <ul>
+                  {service.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+                <span className="service-for">{service.audience}</span>
+              </article>
+            ))}
           </div>
         </section>
         <section className="service-login">

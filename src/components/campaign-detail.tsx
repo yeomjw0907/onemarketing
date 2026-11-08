@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Lock, Heart, Share2, Check, ArrowLeft } from "lucide-react";
 import useAccountFavorites from "./use-account-favorites";
 import PublicShell from "./public-shell";
+import PublicBreadcrumbs from "./public-breadcrumbs";
+import { publicBreadcrumbs, campaignPath } from "@/lib/public-seo";
 import { CampaignImage } from "./campaign-browser";
 import { marketFetch } from "./public-fetch";
 import {
@@ -16,8 +18,24 @@ import {
 import { appStates, money } from "@/lib/commerce-policy";
 import { accountAssignable } from "@/lib/participant-account-policy";
 type Row = Record<string, any>;
-export default function CampaignDetail({ id }: { id: string }) {
-  const [data, setData] = useState<Row | null>(null),
+export default function CampaignDetail({
+  id,
+  initialSummary,
+}: {
+  id: string;
+  initialSummary?: CampaignSummary;
+}) {
+  const initial = () =>
+    initialSummary
+      ? {
+          summary: initialSummary,
+          locked: true,
+          viewerRole: null,
+          details: null,
+          application: null,
+        }
+      : null;
+  const [data, setData] = useState<Row | null>(initial),
     [member, setMember] = useState<Row | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -42,7 +60,7 @@ export default function CampaignDetail({ id }: { id: string }) {
     }
   }
   useEffect(() => {
-    setData(null);
+    setData(initial());
     setMember(null);
     setApplying(false);
     setNotice("");
@@ -140,18 +158,12 @@ export default function CampaignDetail({ id }: { id: string }) {
     <PublicShell>
       <div className="campaign-experience detailbg">
         <div className="wrap">
-          <div className="breadcrumb">
-            <Link href="/">홈</Link>　›　
-            <Link href="/campaigns">캠페인 찾기</Link>
-            {c && (
-              <>
-                　›　
-                {campaignCategories[
-                  c.category as keyof typeof campaignCategories
-                ] || "기타"}
-              </>
-            )}
-          </div>
+          <PublicBreadcrumbs
+            items={[
+              ...publicBreadcrumbs("/campaigns"),
+              ...(c ? [{ name: c.title, path: campaignPath(c) }] : []),
+            ]}
+          />
           {error && (
             <div role="alert" className="feedback">
               <p>{error}</p>

@@ -12,7 +12,7 @@ export default async function Page() {
   );
   return (
     <>
-      <PublicStructuredData path="/marketing" />
+      <PublicStructuredData path="/marketing" services={!advertiser} />
       {advertiser ? (
         <AdvertiserPriceAccess>
           <CommerceShop />
