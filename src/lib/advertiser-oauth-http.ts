@@ -5,11 +5,12 @@ import {
   OAuthError,
   ensureMcpEnabled,
 } from "./advertiser-oauth";
-import { oauthHeaders } from "./mcp-http";
+import { oauthHeaders, oauthError } from "./mcp-http";
 export function advertiserChallenge(scope = "campaigns:read") {
   return `Bearer resource_metadata="${mcpOrigin()}/.well-known/oauth-protected-resource/api/advertiser-mcp", scope="${scope}"`;
 }
 export function advertiserOAuthError(e: unknown) {
+  if (!(e instanceof OAuthError)) return oauthError(e);
   return Response.json(
     {
       error: e instanceof OAuthError ? e.code : "invalid_request",

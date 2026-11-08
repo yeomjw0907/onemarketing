@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { databaseUnavailable } from "./database-errors";
 import {
   OAuthError,
   mcpOrigin,
@@ -20,6 +21,15 @@ export const oauthHeaders = {
   "Access-Control-Expose-Headers": "WWW-Authenticate",
 };
 export function oauthError(e: unknown) {
+  if (databaseUnavailable(e))
+    return Response.json(
+      {
+        error: "temporarily_unavailable",
+        error_description:
+          "서버 연결이 잠시 지연되고 있어요. 연결을 해제하지 말고 잠시 후 다시 시도해주세요.",
+      },
+      { status: 503, headers: { ...oauthHeaders, "Retry-After": "5" } },
+    );
   const known = e instanceof OAuthError;
   return Response.json(
     {
@@ -30,7 +40,13 @@ export function oauthError(e: unknown) {
           ? "입력 내용을 확인해주세요."
           : "요청을 처리하지 못했어요. 연결 정보를 확인해주세요.",
     },
-    { status: known ? e.status : 400, headers: oauthHeaders },
+    {
+      status: known ? e.status : 400,
+      headers: {
+        ...oauthHeaders,
+        ...(known && e.status === 429 ? { "Retry-After": "60" } : {}),
+      },
+    },
   );
 }
 export async function boundedBody(request: Request, max = 32768) {

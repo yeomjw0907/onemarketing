@@ -13,7 +13,11 @@ export const mcpOrigin = () =>
 export const mcpResource = () => mcpOrigin() + "/api/mcp";
 export function ensureMcpEnabled() {
   if (process.env.MCP_ENABLED === "false")
-    throw new Error("연결 기능이 꺼져 있어요.");
+    throw new OAuthError(
+      "temporarily_unavailable",
+      "연결 기능이 꺼져 있어요.",
+      503,
+    );
 }
 export class OAuthError extends Error {
   constructor(

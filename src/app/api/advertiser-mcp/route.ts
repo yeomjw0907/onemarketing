@@ -1,8 +1,12 @@
 import {
   mcpIdentity as oauthIdentity,
   ensureMcpEnabled,
+  mcpOrigin,
 } from "@/lib/advertiser-oauth";
-import { advertiserChallenge } from "@/lib/advertiser-oauth-http";
+import {
+  advertiserChallenge,
+  advertiserOAuthError,
+} from "@/lib/advertiser-oauth-http";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import {
@@ -18,28 +22,39 @@ import { boundedBody, oauthHeaders } from "@/lib/mcp-http";
 import { mcpRateLimit } from "@/lib/mcp-oauth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+function invalidOrigin(req: Request) {
+  const origin = req.headers.get("origin");
+  return Boolean(
+    origin && ![mcpOrigin(), "https://chatgpt.com"].includes(origin),
+  );
+}
+async function credentials(req: Request) {
+  const token = req.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  const keyIdentity = token ? await advertiserKeyIdentity(token) : null;
+  const oauth = token && !keyIdentity ? await oauthIdentity(token) : null;
+  return {
+    oauth,
+    identity:
+      keyIdentity ||
+      (oauth ? { id: oauth.grantId, advertiser_id: oauth.advertiserId } : null),
+  };
+}
+function unauthorized() {
+  return Response.json(
+    { error: "unauthorized" },
+    {
+      status: 401,
+      headers: { ...oauthHeaders, "WWW-Authenticate": advertiserChallenge() },
+    },
+  );
+}
 export async function POST(req: Request) {
   try {
     ensureMcpEnabled();
-    const token = req.headers
-      .get("authorization")
-      ?.match(/^Bearer (\S+)$/i)?.[1];
-    const keyIdentity = token ? await advertiserKeyIdentity(token) : null;
-    const oauth = token && !keyIdentity ? await oauthIdentity(token) : null;
-    const identity =
-      keyIdentity ||
-      (oauth ? { id: oauth.grantId, advertiser_id: oauth.advertiserId } : null);
-    if (!identity)
-      return Response.json(
-        { error: "unauthorized" },
-        {
-          status: 401,
-          headers: {
-            ...oauthHeaders,
-            "WWW-Authenticate": advertiserChallenge(),
-          },
-        },
-      );
+    if (invalidOrigin(req))
+      return new Response(null, { status: 403, headers: oauthHeaders });
+    const { identity, oauth } = await credentials(req);
+    if (!identity) return unauthorized();
     await mcpRateLimit("advertiser:" + identity.id, 60);
     const parsedBody = JSON.parse(await boundedBody(req, 65536));
     const server = new Server(
@@ -119,22 +134,26 @@ export async function POST(req: Request) {
     } finally {
       await server.close();
     }
-  } catch {
-    return Response.json(
-      { error: "invalid_request" },
-      { status: 400, headers: oauthHeaders },
-    );
+  } catch (e) {
+    return advertiserOAuthError(e);
   }
 }
 export function OPTIONS() {
   return new Response(null, { status: 204, headers: oauthHeaders });
 }
-export function GET() {
-  return Response.json(
-    { error: "unauthorized" },
-    {
-      status: 401,
-      headers: { ...oauthHeaders, "WWW-Authenticate": advertiserChallenge() },
-    },
-  );
+export async function GET(req: Request) {
+  try {
+    ensureMcpEnabled();
+    if (invalidOrigin(req))
+      return new Response(null, { status: 403, headers: oauthHeaders });
+    if (!(await credentials(req)).identity) return unauthorized();
+    // This stateless server does not offer a standalone SSE stream. A valid
+    // client's optional GET probe must not trigger an OAuth reconnect loop.
+    return new Response(null, {
+      status: 405,
+      headers: { ...oauthHeaders, Allow: "POST, OPTIONS" },
+    });
+  } catch (e) {
+    return advertiserOAuthError(e);
+  }
 }
