@@ -10,6 +10,11 @@ process.env.SUPABASE_STORAGE_PREFIX = process.env.DB_SCHEMA + "/";
 process.env.APP_URL = "http://127.0.0.1:3109";
 process.env.JOB_RUNNER = "worker";
 process.env.SENS_ENABLED = "false";
+process.env.SENS_SMS_ENABLED = "false";
+process.env.SENS_BRAND_ENABLED = "false";
+process.env.SENS_RECRUITMENT_ENABLED = "false";
+process.env.MCP_ENABLED = "true";
+process.env.ADVERTISER_MCP_ENABLED = "true";
 const { applyMigrations, dropSchema } = await import("../src/lib/migrate");
 const { execute, create, closeDb } = await import("../src/lib/db");
 const { save } = await import("../src/lib/domain");
@@ -50,7 +55,11 @@ try {
     assert.ok(r.ok, `${path}: ${JSON.stringify(value)}`);
     return {
       value,
-      cookie: r.headers.get("set-cookie")?.split(";")[0] || cookie,
+      cookie:
+        r.headers
+          .getSetCookie()
+          .map((value) => value.split(";")[0])
+          .join("; ") || cookie,
     };
   }
   const adminToken = randomBytes(32).toString("hex"),
@@ -76,6 +85,13 @@ try {
   );
   const registered = await call("/api/advertiser-auth", {
     action: "register",
+    businessType: "preparing",
+    businessNumber: "",
+    companyName: "격리 검증 업체",
+    brand: "격리 검증 브랜드",
+    industry: "생활용품",
+    description: "실제 영업이 아닌 격리 인수 검증입니다.",
+    address: "서울",
     email: randomUUID() + "@test.local",
     password: randomBytes(20).toString("hex"),
     name: "검증 광고주",
@@ -360,6 +376,25 @@ try {
       await mcp("tools/call", { name: "list_my_campaigns", arguments: {} }, 3)
     ).result.content[0].text.includes(c.id),
   );
+  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+  const { StreamableHTTPClientTransport } =
+    await import("@modelcontextprotocol/sdk/client/streamableHttp.js");
+  const sdk = new Client({ name: "launch-acceptance", version: "1" });
+  const sdkErrors: Error[] = [];
+  sdk.onerror = (e) => sdkErrors.push(e);
+  await sdk.connect(
+    new StreamableHTTPClientTransport(new URL(base + "/api/advertiser-mcp"), {
+      requestInit: { headers: { Authorization: "Bearer " + key.token } },
+    }),
+  );
+  assert.equal((await sdk.listTools()).tools.length, 4);
+  const ownCampaigns = await sdk.callTool({
+    name: "list_my_campaigns",
+    arguments: {},
+  });
+  assert.ok(JSON.stringify(ownCampaigns).includes(c.id));
+  await sdk.close();
+  assert.equal(sdkErrors.length, 0, sdkErrors.map((e) => e.message).join("; "));
   await call(
     "/api/advertiser-connections",
     { action: "revoke", id: key.id },
