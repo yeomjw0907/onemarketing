@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       body.reselect === true,
       silent,
       body.role === "advertiser" ? "advertiser" : "participant",
+      typeof body.referralCode === "string" ? body.referralCode : undefined,
     );
     (await cookies()).set(
       "om_kakao_role",

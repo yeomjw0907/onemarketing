@@ -1,5 +1,7 @@
 # Google / Naver social login — 2026-11-08
 
+> Current user decision: expose Kakao and Google only. Naver buttons and pending-review copy are removed, and NAVER_LOGIN_ENABLED is disabled in Production. Earlier approval/activation instructions below are historical; do not reactivate Naver merely because review later passes without a new user request. Referral preservation fixes and validation are documented in `kakao-google-referral-2026-11-08.md`.
+
 ## Product behavior
 
 Advertisers and participants can enter registration or sign in using Google and Naver alongside existing Kakao. New advertisers supply the existing business/contact profile without choosing another password. Existing advertisers explicitly authenticate their email/password before linking; a provider email never causes automatic account merging. Participants enter the existing application/approval flow. Existing users and existing Kakao bindings remain compatible.

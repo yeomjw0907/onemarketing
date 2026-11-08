@@ -51,7 +51,15 @@ export async function POST(request: Request) {
         "로그인 시간이 만료되었어요. 간편 로그인 후 다시 신청해주세요.",
       );
     let kakaoId: string | undefined;
-    if (identity) kakaoId = String((await pendingKakao(identity)).kakaoId);
+    if (identity) {
+      const pending = await pendingKakao(identity);
+      kakaoId = String(pending.kakaoId);
+      if (pending.referralCode && input?.data && typeof input.data === "object")
+        input.data = {
+          ...input.data,
+          referralCode: String(pending.referralCode),
+        };
+    }
     return Response.json(
       { ...(await submitApplication(input, kakaoId)), kakaoLinked: !!kakaoId },
       {

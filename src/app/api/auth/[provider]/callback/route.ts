@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { additionalProvider, completeSocial } from "@/lib/social-oauth";
 import { advertiserKakaoLogin } from "@/lib/advertiser-social";
 import { kakaoOnboarding } from "@/lib/kakao-auth";
+import { socialSignupPath } from "@/lib/social-referral";
 export async function GET(
   request: Request,
   context: { params: Promise<{ provider: string }> },
@@ -66,8 +67,12 @@ export async function GET(
         onboarding.status !== "application_pending" &&
         onboarding.status !== "approved"
       ) {
-        destination.pathname = "/participants/apply";
-        destination.search = "?social=1";
+        const signup = new URL(
+          socialSignupPath(provider, result.referralCode),
+          destination,
+        );
+        destination.pathname = signup.pathname;
+        destination.search = signup.search;
       }
     }
   } catch {

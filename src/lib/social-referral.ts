@@ -1,0 +1,17 @@
+/** Referral input is context, not authentication; submitApplication validates ownership and eligibility. */
+export function referralContext(value: unknown) {
+  return typeof value === "string" && value.trim().length <= 40
+    ? value.trim()
+    : "";
+}
+export function socialSignupPath(
+  provider: "kakao" | "google" | "naver",
+  referral: unknown,
+) {
+  const params = new URLSearchParams(
+    provider === "kakao" ? { kakao: "1" } : { social: "1" },
+  );
+  const code = referralContext(referral);
+  if (code) params.set("ref", code);
+  return "/participants/apply?" + params.toString();
+}

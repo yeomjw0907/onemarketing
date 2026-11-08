@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import BrandOrb from "./brand-orb";
 import SocialLoginButtons from "./social-login-buttons";
 import type { SocialProvider } from "@/lib/social-identity";
+import { socialSignupPath } from "@/lib/social-referral";
 import { Button, Feedback } from "./ui/workflow-ui";
 type Pending = {
   provider?: SocialProvider;
@@ -40,7 +41,12 @@ export default function KakaoPortalLogin({
     if (d.pending) {
       if (d.pending.status === "approved") await action("continue");
       else if (d.pending.status !== "application_pending")
-        location.replace("/participants/apply?social=1");
+        location.replace(
+          socialSignupPath(
+            d.pending.provider || "kakao",
+            d.pending.referralCode,
+          ),
+        );
       return;
     }
     const params = new URL(location.href).searchParams;
@@ -59,7 +65,12 @@ export default function KakaoPortalLogin({
         const response = await fetch("/api/auth/kakao/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ silent: true, access: access || undefined }),
+          body: JSON.stringify({
+            silent: true,
+            access: access || undefined,
+            referralCode:
+              new URLSearchParams(location.search).get("ref") || undefined,
+          }),
         });
         const result = await response.json();
         if (response.ok) location.assign(result.url);
@@ -92,6 +103,8 @@ export default function KakaoPortalLogin({
             action: type,
             access: access || undefined,
             reselect: !!pending,
+            referralCode:
+              new URLSearchParams(location.search).get("ref") || undefined,
           }),
         },
       );

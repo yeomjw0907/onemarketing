@@ -12,6 +12,7 @@ import {
 } from "./db";
 import { portalLinkParticipant } from "./portal-auth";
 import { identityProvider, validIdentityKey } from "./social-identity";
+import { referralContext } from "./social-referral";
 const hash = (v: string) => createHash("sha256").update(v).digest("hex");
 const live = (r: Record<string, unknown>) =>
   !r.revokedAt && Date.parse(String(r.expiresAt)) > Date.now();
@@ -30,6 +31,7 @@ export async function beginKakao(
   reselect = false,
   silent = false,
   role: "participant" | "advertiser" = "participant",
+  referralCode?: string,
 ) {
   if (!kakaoConfigured()) throw new Error("카카오 로그인을 준비 중이에요.");
   const participantId = access
@@ -41,6 +43,7 @@ export async function beginKakao(
     role,
     tokenHash: hash(state),
     candidateId: participantId,
+    referralCode: role === "participant" ? referralContext(referralCode) : "",
     expiresAt: new Date(Date.now() + 10 * 60000).toISOString(),
   });
   const url = new URL("https://kauth.kakao.com/oauth/authorize");
@@ -106,7 +109,10 @@ export async function completeKakao(
     nickname = String(
       user.kakao_account?.profile?.nickname || "카카오 사용자",
     ).slice(0, 100);
-  return completeSocialIdentity(kakaoId, nickname, attempt);
+  return {
+    ...(await completeSocialIdentity(kakaoId, nickname, attempt)),
+    referralCode: referralContext(attempt.referralCode),
+  };
 }
 export async function completeSocialIdentity(
   kakaoId: string,
@@ -143,6 +149,7 @@ export async function completeSocialIdentity(
   const identity = randomBytes(32).toString("hex");
   await create("portal_links", {
     purpose: "kakao-login",
+    referralCode: referralContext(attempt.referralCode),
     kakaoId,
     provider: identityProvider(kakaoId),
     nickname,
@@ -354,6 +361,7 @@ export async function kakaoOnboarding(identity: string) {
     !!binding && !(await get(String(binding.participantId)))?.deletedAt;
   return {
     provider: identityProvider(r.kakaoId),
+    referralCode: referralContext(r.referralCode),
     nickname: r.nickname,
     hasCandidate: !!r.candidateId,
     applicationStatus: application?.status,

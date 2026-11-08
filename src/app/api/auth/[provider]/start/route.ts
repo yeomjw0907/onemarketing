@@ -16,6 +16,7 @@ export async function POST(
       provider,
       role,
       typeof body.access === "string" ? body.access : undefined,
+      typeof body.referralCode === "string" ? body.referralCode : undefined,
     );
     const jar = await cookies(),
       options = {

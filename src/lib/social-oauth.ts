@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { create, list, lock, transaction, update } from "./db";
 import { portalLinkParticipant } from "./portal-auth";
 import { completeSocialIdentity } from "./kakao-auth";
+import { referralContext } from "./social-referral";
 import {
   socialIdentityKey,
   socialProviderLabels,
@@ -35,6 +36,7 @@ export async function beginSocial(
   provider: AdditionalProvider,
   role: "participant" | "advertiser",
   access?: string,
+  referralCode?: string,
 ) {
   if (!socialConfigured(provider))
     throw new Error(
@@ -68,6 +70,7 @@ export async function beginSocial(
     provider,
     role,
     candidateId,
+    referralCode: role === "participant" ? referralContext(referralCode) : "",
     tokenHash: hash(state),
     verifier: provider === "google" ? verifier : undefined,
     expiresAt: new Date(Date.now() + 600000).toISOString(),
@@ -118,7 +121,7 @@ export async function completeSocial(
       usedAt: new Date().toISOString(),
       verifier: null,
     });
-    return { ...claimed, verifier: row.verifier };
+    return { ...claimed, verifier: row.verifier, referralCode: row.referralCode };
   });
   const prefix = provider.toUpperCase();
   const body = new URLSearchParams({
@@ -167,9 +170,10 @@ export async function completeSocial(
       : typeof profile?.nickname === "string"
         ? profile.nickname
         : socialProviderLabels[provider] + " 사용자";
-  return completeSocialIdentity(
+  const result = await completeSocialIdentity(
     socialIdentityKey(provider, subject),
     nickname.slice(0, 100),
     attempt,
   );
+  return { ...result, referralCode: referralContext(attempt.referralCode) };
 }

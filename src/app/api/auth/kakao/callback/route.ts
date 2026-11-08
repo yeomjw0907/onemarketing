@@ -1,6 +1,7 @@
 import { advertiserKakaoLogin } from "@/lib/advertiser-social";
 import { cookies } from "next/headers";
 import { completeKakao, kakaoOnboarding } from "@/lib/kakao-auth";
+import { socialSignupPath } from "@/lib/social-referral";
 export async function GET(request: Request) {
   const url = new URL(request.url),
     store = await cookies();
@@ -67,8 +68,12 @@ export async function GET(request: Request) {
         onboarding.status !== "application_pending" &&
         onboarding.status !== "approved"
       ) {
-        destination.pathname = "/participants/apply";
-        destination.searchParams.set("kakao", "1");
+        const signup = new URL(
+          socialSignupPath("kakao", result.referralCode),
+          destination,
+        );
+        destination.pathname = signup.pathname;
+        destination.search = signup.search;
       }
     }
   } catch {

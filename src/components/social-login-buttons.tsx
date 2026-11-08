@@ -11,7 +11,6 @@ export default function SocialLoginButtons({
   access = "",
   disabled = false,
   includeKakao = false,
-  naverReviewPending = false,
   onError,
 }: {
   providers: Partial<Record<SocialProvider, boolean>>;
@@ -23,16 +22,11 @@ export default function SocialLoginButtons({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const naverBlocked =
-    naverReviewPending &&
-    (typeof window === "undefined" ||
-      new URLSearchParams(window.location.search).get("providerReview") !==
-        "naver");
   return (
     <div style={{ display: "grid", gap: 10 }}>
       {(includeKakao
-        ? (["kakao", "google", "naver"] as const)
-        : (["google", "naver"] as const)
+        ? (["kakao", "google"] as const)
+        : (["google"] as const)
       ).map(
         (provider) =>
           providers[provider] && (
@@ -41,25 +35,13 @@ export default function SocialLoginButtons({
               type="button"
               aria-label={`${socialProviderLabels[provider]}로 가입·로그인`}
               className="ui-button secondary"
-              disabled={
-                disabled || busy || (provider === "naver" && naverBlocked)
-              }
-              title={
-                provider === "naver" && naverBlocked
-                  ? "네이버 검수 완료 후 이용할 수 있어요."
-                  : undefined
-              }
+              disabled={disabled || busy}
               style={{
-                background:
-                  provider === "kakao"
-                    ? "#fee500"
-                    : provider === "naver"
-                      ? "#03A94D"
-                      : "#fff",
-                color: provider === "naver" ? "#fff" : "#1f1f1f",
-                border: provider === "naver" ? "0" : "1px solid #747775",
+                background: provider === "kakao" ? "#fee500" : "#fff",
+                color: "#1f1f1f",
+                border: "1px solid #747775",
                 minHeight: 48,
-                padding: provider === "naver" ? 0 : "12px",
+                padding: 12,
                 gap: 10,
                 fontFamily:
                   provider === "google"
@@ -73,7 +55,15 @@ export default function SocialLoginButtons({
                   const response = await fetch(`/api/auth/${provider}/start`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ role, access: access || undefined }),
+                    body: JSON.stringify({
+                      role,
+                      access: access || undefined,
+                      referralCode:
+                        role === "participant"
+                          ? new URLSearchParams(location.search).get("ref") ||
+                            undefined
+                          : undefined,
+                    }),
                   });
                   const result = await response.json();
                   if (!response.ok)
@@ -92,43 +82,20 @@ export default function SocialLoginButtons({
                 }
               }}
             >
-              {provider === "naver" ? (
+              {provider === "google" && (
                 <Image
-                  src="/brands/naver-login.png"
+                  src="/brands/google-login.png"
                   alt=""
-                  width={1472}
-                  height={192}
-                  style={{
-                    width: "100%",
-                    maxWidth: 368,
-                    height: "auto",
-                    maxHeight: 48,
-                    objectFit: "contain",
-                  }}
+                  width={200}
+                  height={204}
+                  style={{ width: 20, height: "auto" }}
                 />
-              ) : (
-                <>
-                  {provider === "google" && (
-                    <Image
-                      src="/brands/google-login.png"
-                      alt=""
-                      width={200}
-                      height={204}
-                      style={{ width: 20, height: "auto" }}
-                    />
-                  )}
-                  {provider === "google"
-                    ? "Google로 계속하기"
-                    : "카카오로 시작하기"}
-                </>
               )}
+              {provider === "google"
+                ? "Google로 계속하기"
+                : "카카오로 시작하기"}
             </button>
           ),
-      )}
-      {providers.naver && naverBlocked && (
-        <p className="muted">
-          네이버 로그인은 검수 중입니다. 카카오 또는 Google로 시작해주세요.
-        </p>
       )}
     </div>
   );
