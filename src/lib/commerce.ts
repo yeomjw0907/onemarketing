@@ -969,6 +969,8 @@ export async function campaignAction(actor: CommerceActor, raw: unknown) {
         d.status = d.status === "completed" ? "completed" : "cancelled";
       }
     }
+    if (d.status === "completed" && c.data.status !== "completed")
+      d.completedAt = now();
     d.history = [
       ...(d.history || []),
       { at: now(), action: b.action, note: b.note || "", actor: actor.id },
@@ -1032,6 +1034,7 @@ export async function participantCommerceAction(
         throw new Error("수락 가능한 제안이 아닙니다.");
       d.status = b.action === "accept" ? "accepted" : "declined";
       d.respondedAt = now();
+      if (b.action === "accept") d.acceptedAt = d.respondedAt;
     } else {
       if (!["accepted", "revision"].includes(d.status))
         throw new Error("참여 확정·수정 중인 작업만 제출할 수 있습니다.");
@@ -1051,6 +1054,7 @@ export async function participantCommerceAction(
       d.links = links;
       d.status = "submitted";
       d.submittedAt = now();
+      d.firstSubmittedAt ||= a.data.submittedAt || d.submittedAt;
     }
     await persist("commerce_campaigns", c, { ...c.data });
     await audit("participant:" + participantId, "commerce-" + b.action, a.id);

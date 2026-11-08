@@ -238,6 +238,7 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                 결제 계좌 설정
               </button>
               <Link href="/admin">제작·회원·정산 관리</Link>
+              <Link href="/admin/platform/analytics">가입·전환·정산 분석</Link>
             </>
           )}
         </nav>
@@ -357,10 +358,41 @@ export function CommerceBoard({ admin = false }: { admin?: boolean }) {
                       계좌: {o.data.bank?.bank} {o.data.bank?.account} ·{" "}
                       {o.data.bank?.holder}
                     </p>
-                    <p>
-                      이체 시 주문번호 끝 8자리를 알려주세요. 입금 확인 후
-                      모집을 시작합니다.
-                    </p>
+                    {o.data.status === "awaiting_payment" && (
+                      <p>
+                        이체 시 주문번호 끝 8자리를 알려주세요. 입금 확인 후
+                        모집을 시작합니다. 이미 이체했다면 다시 결제하지 말고
+                        입금 확인을 기다려주세요.
+                      </p>
+                    )}
+                    {o.data.status === "paid" && (
+                      <p>
+                        입금 확인이 완료됐어요. 아래 캠페인에서 모집·자료
+                        전달·검수 진행 상황을 확인하세요.
+                      </p>
+                    )}
+                    {o.data.status === "cancelled" && (
+                      <p>
+                        취소된 주문입니다. 이 주문의 계좌로 입금하지 마세요.
+                      </p>
+                    )}
+                    {o.data.status === "paid" && (
+                      <div className={s.actions}>
+                        {data.campaigns
+                          .filter((c: Row) => c.order_id === o.id)
+                          .map((c: Row) => (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                changeTab("overview");
+                                setSelected(c.id);
+                              }}
+                            >
+                              캠페인 진행 확인 · {c.data.input.title}
+                            </button>
+                          ))}
+                      </div>
+                    )}
                     {o.data.status === "awaiting_payment" && (
                       <p>
                         <button

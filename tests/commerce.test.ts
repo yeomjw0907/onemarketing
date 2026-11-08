@@ -193,6 +193,28 @@ test("selection capacity, participant ownership, submission, review and refund l
   });
   c = (await commerceView(actor)).campaigns[0];
   av = c.applications[0];
+  assert.ok((av.data as any).acceptedAt);
+  assert.equal((av.data as any).firstSubmittedAt, (av.data as any).submittedAt);
+  const firstSubmittedAt = (av.data as any).firstSubmittedAt;
+  await campaignAction(actor, {
+    campaignId: c.id,
+    version: c.version,
+    action: "review",
+    applicationId: av.id,
+    decision: "revision",
+    note: "게시 내용 보완 요청",
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  av = c.applications[0];
+  await participantCommerceAction(p.id, {
+    id: av.id,
+    version: av.version,
+    action: "submit",
+    links: { blog: "https://blog.naver.com/test-commerce/123456" },
+  });
+  c = (await commerceView(actor)).campaigns[0];
+  av = c.applications[0];
+  assert.equal((av.data as any).firstSubmittedAt, firstSubmittedAt);
   assert.equal(av.participant_id, undefined);
   assert.equal(av.data.referrerSnapshot, undefined);
   await campaignAction(actor, {
@@ -249,6 +271,7 @@ test("selection capacity, participant ownership, submission, review and refund l
   c = (await commerceView(actor)).campaigns[0];
   assert.equal(c.data.refunds[0].status, "paid");
   assert.equal(c.data.status, "completed");
+  assert.ok(c.data.completedAt);
   await assert.rejects(() =>
     campaignAction(admin, {
       campaignId: c.id,

@@ -252,6 +252,34 @@ export function CommerceParticipant({ focusId = "" }: { focusId?: string }) {
                   <strong>{appStates[a.data.status] || a.data.status}</strong> ·
                   약정 리워드 {money(a.data.amount)}
                 </p>
+                {a.data.status === "applied" && (
+                  <p>
+                    지원이 접수됐어요. 선정되면 이 화면에서 조건을 확인하고
+                    참여를 수락해주세요. 지원 접수만으로 참여가 확정되지는
+                    않습니다.
+                  </p>
+                )}
+                {a.data.status === "submitted" && (
+                  <p>
+                    게시 링크를 제출했어요. 검수 결과를 기다려주세요. 수정
+                    요청이 오면 안내에 따라 다시 제출할 수 있어요.
+                  </p>
+                )}
+                {a.data.status === "verified" && (
+                  <p>
+                    검수가 승인됐고 리워드 지급을 기다리고 있어요. 지급이
+                    기록되면 이 화면에서 확인할 수 있습니다.{" "}
+                    <Link href="/account">정산 문의</Link>
+                  </p>
+                )}
+                {["rejected", "declined", "expired", "withdrawn"].includes(
+                  a.data.status,
+                ) && (
+                  <p>
+                    이번 참여는 진행되지 않습니다.{" "}
+                    <Link href="/campaigns">다른 모집 캠페인 찾기</Link>
+                  </p>
+                )}
                 {a.data.expiresAt && a.data.status === "selected" && (
                   <p>
                     수락 기한{" "}
@@ -322,7 +350,12 @@ export function CommerceParticipant({ focusId = "" }: { focusId?: string }) {
                   >
                     {Object.keys(a.data.accounts).map((channel) => (
                       <label key={channel}>
-                        {channel} 게시 URL
+                        {channel === "blog"
+                          ? "블로그"
+                          : channel === "clip"
+                            ? "클립"
+                            : channel}{" "}
+                        게시 URL
                         <input
                           name={channel}
                           type="url"
