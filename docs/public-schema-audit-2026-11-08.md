@@ -23,7 +23,9 @@
 - 익명 HTML에는 비공개 가이드·제품 상세가 없으며 익명 상세 API도 `details:null`이다. 인증된 참여자의 기존 API 가이드 접근은 유지되는 것을 확인했다.
 - Yeti User-Agent 요청에서 제목·대표 URL이 초기 `<head>`에 들어가는 것을 확인했다.
 - 서비스·상품·공개 상세 화면과 모바일 화면을 확인했다. 390px 캠페인 상세에서 페이지 가로 넘침이 없었다.
-- Schema.org 공식 검사기에 서비스 소개의 실제 JSON-LD 코드를 제출해 오류 0개·경고 0개를 확인했다. Google URL 기반 리치 결과 검사는 배포 후 별도 확인한다.
+- Schema.org 공식 검사기에 서비스 소개의 실제 JSON-LD 코드를 제출해 오류 0개·경고 0개를 확인했다. 배포된 상품 URL도 CollectionPage 기준 오류 0개·경고 0개를 확인했다.
+- 배포 후 Google 스마트폰 검사 도구가 운영 URL을 직접 수집했다. 서비스 소개·상품·캠페인 목록 모두 탐색경로 1개가 유효하다고 확인했다: [서비스 소개 결과](https://search.google.com/test/rich-results/result?id=oqG7yMvYVX3vggXHime4sw), [상품 결과](https://search.google.com/test/rich-results/result?id=8PjOzkNuk0vNscdsk-BQXQ), [캠페인 목록 결과](https://search.google.com/test/rich-results/result?id=m8PXs4Wh2xY2IsUBCqmXjg).
+- 운영 HTTP 재점검에서 세 페이지의 canonical/초기 HTML/JSON-LD, 잘못된 캠페인 주소의 404/noindex, 필터 URL의 noindex, 사이트맵 선별을 확인했다. 기존 공개 7페이지와 비공개 로그인·가입·참여자·관리자 페이지의 검색 설정도 통과했다.
 
 운영의 익명 캠페인 목록은 점검 당시 0건이었다. 실제 모집 캠페인이 생기면 같은 공개 판정으로 목록·상세·사이트맵에 반영된다. 가짜 목록 항목이나 현재 시각을 이용한 허위 수정일을 생성하지 않는다. 홈페이지의 조직/사이트 정보와 기존 비공개 페이지의 noindex·인증 설정은 유지한다.
 
