@@ -5,6 +5,7 @@ import PublicShell from "./public-shell";
 import { marketFetch } from "./public-fetch";
 import type { AccountRequest } from "@/lib/account-requests";
 import s from "./account-help.module.css";
+import { ownershipHelpPath } from "@/lib/application-account-readiness";
 const categories = {
   withdrawal: "회원 탈퇴",
   privacy: "개인정보·자료 삭제",
@@ -30,7 +31,18 @@ export default function AccountHelp({ admin = false }: { admin?: boolean }) {
     [unauthorized, setUnauthorized] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [ownership, setOwnership] = useState(false);
+  const [initialCategory, setInitialCategory] = useState("withdrawal");
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get("category");
+    if (!admin && category && Object.hasOwn(categories, category))
+      setInitialCategory(category);
+    setOwnership(
+      !admin &&
+        params.get("role") === "participant" &&
+        params.get("intent") === "ownership",
+    );
     if (
       !admin &&
       new URLSearchParams(location.search).get("role") === "participant"
@@ -176,7 +188,12 @@ export default function AccountHelp({ admin = false }: { admin?: boolean }) {
                     admin
                       ? "/admin"
                       : role === "participant"
-                        ? "/login?role=participant&next=%2Faccount%3Frole%3Dparticipant"
+                        ? "/login?role=participant&next=" +
+                          encodeURIComponent(
+                            ownership
+                              ? ownershipHelpPath
+                              : "/account?role=participant",
+                          )
                         : "/login?role=advertiser&next=%2Faccount"
                   }
                 >
@@ -209,7 +226,12 @@ export default function AccountHelp({ admin = false }: { admin?: boolean }) {
                 <form onSubmit={submit} className={s.form}>
                   <label>
                     요청 유형
-                    <select name="category" disabled={busy} required>
+                    <select
+                      name="category"
+                      defaultValue={ownership ? "profile" : initialCategory}
+                      disabled={busy}
+                      required
+                    >
                       {Object.entries(categories).map(([key, label]) => (
                         <option key={key} value={key}>
                           {label}
@@ -227,6 +249,11 @@ export default function AccountHelp({ admin = false }: { admin?: boolean }) {
                       rows={5}
                       disabled={busy}
                       placeholder="도움이 필요한 내용이나 관련 캠페인을 알려주세요."
+                      defaultValue={
+                        ownership
+                          ? "활동 계정의 소유·관리 권한 확인을 요청합니다. 확인이 필요한 활동 계정 URL과 확인 가능한 방법을 아래에 적겠습니다.\n"
+                          : ""
+                      }
                     />
                   </label>
                   <label className={s.consent}>

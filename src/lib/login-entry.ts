@@ -3,6 +3,9 @@ import { safeReturnPath } from "./campaign-display";
 export function safeLoginReturnPath(value: unknown) {
   return (
     safeReturnPath(value) ||
+    (value === "/account" || value === "/account?role=advertiser"
+      ? value
+      : "") ||
     (typeof value === "string" &&
     /^\/advertisers(?:\?tab=(?:overview|orders|products))?$/.test(value)
       ? value
@@ -16,6 +19,11 @@ export function advertiserLoginPath(tab = "overview") {
 }
 
 export function safeParticipantPortalReturn(value: unknown) {
+  if (
+    value === "/account?role=participant" ||
+    value === "/account?role=participant&category=profile&intent=ownership"
+  )
+    return value;
   return typeof value === "string" &&
     /^\/participants\/portal(?:\?tab=(?:offers|tasks|availability|payments|applications))?$/.test(
       value,
@@ -58,5 +66,9 @@ export function loginEntryRole(
 ): "advertiser" | "participant" {
   if (role === "participant" || role === "advertiser") return role;
   if (signup === "1" || next === "/marketing") return "advertiser";
-  return next.startsWith("/campaigns/") ? "participant" : "advertiser";
+  return next.startsWith("/campaigns/") ||
+    next.startsWith("/participants/portal") ||
+    next.startsWith("/account?role=participant")
+    ? "participant"
+    : "advertiser";
 }

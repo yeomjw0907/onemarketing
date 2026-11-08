@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdvertiserAccess } from "./market-public";
 import KakaoPortalLogin from "./kakao-portal-login";
+import { safeReturnPath } from "@/lib/campaign-display";
+import { safeParticipantPortalReturn } from "@/lib/login-entry";
 export default function LoginScreen({
   next,
   register,
@@ -16,7 +18,7 @@ export default function LoginScreen({
   const [onboarding, setOnboarding] = useState(false);
   useEffect(() => {
     try {
-      if (next && role === "participant")
+      if (safeReturnPath(next) && role === "participant")
         sessionStorage.setItem("om_campaign_return", next);
       else if (sessionStorage.getItem("om_campaign_return") === next)
         sessionStorage.removeItem("om_campaign_return");
@@ -58,7 +60,11 @@ export default function LoginScreen({
           <KakaoPortalLogin
             access=""
             onAuthenticated={async () => {
-              location.assign(next || "/participants/portal");
+              location.assign(
+                safeParticipantPortalReturn(next) ||
+                  safeReturnPath(next) ||
+                  "/participants/portal",
+              );
             }}
           />
         </div>

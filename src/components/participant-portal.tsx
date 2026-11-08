@@ -5,6 +5,10 @@ import {
   refreshAfterSaveMessage,
 } from "@/lib/save-and-refresh";
 import { initialPortalTab, portalTab } from "@/lib/portal-navigation";
+import {
+  verifiedApplicationAccounts,
+  ownershipHelpPath,
+} from "@/lib/application-account-readiness";
 import { ArrowRight } from "lucide-react";
 import { ParticipantSteps } from "./public-progress";
 import styles from "./public-experience.module.css";
@@ -289,6 +293,17 @@ export default function ParticipantPortal() {
           />
         ) : (
           <>
+            {verifiedApplicationAccounts(data.participant.accounts) <
+              data.participant.accounts.length && (
+              <Feedback>
+                <strong>활동 계정 확인이 필요해요.</strong>
+                <p>
+                  가입 접수와 계정 소유 확인은 별개입니다. 일부 캠페인은
+                  담당자의 소유·관리 권한 확인 후 지원·참여할 수 있어요.
+                </p>
+                <Link href={ownershipHelpPath}>활동 계정 확인 요청</Link>
+              </Feedback>
+            )}
             {next && (
               <section
                 className={styles.nextAction}

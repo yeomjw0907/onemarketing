@@ -16,7 +16,11 @@ import {
   type CampaignSummary,
 } from "@/lib/campaign-display";
 import { appStates, money } from "@/lib/commerce-policy";
-import { accountAssignable } from "@/lib/participant-account-policy";
+import {
+  eligibleApplicationAccounts,
+  missingApplicationChannels,
+  ownershipHelpPath,
+} from "@/lib/application-account-readiness";
 type Row = Record<string, any>;
 export default function CampaignDetail({
   id,
@@ -151,6 +155,9 @@ export default function CampaignDetail({
     }
   }
   const c = data?.summary as CampaignSummary | undefined;
+  const missingChannels = member
+    ? missingApplicationChannels(member.accounts || [], type)
+    : [];
   const status = c
     ? discoveryStates[c.status as keyof typeof discoveryStates] || "모집 종료"
     : "";
@@ -410,30 +417,57 @@ export default function CampaignDetail({
                                     활동 계정
                                     <select name={ch + "AccountId"} required>
                                       <option value="">계정 선택</option>
-                                      {(member.accounts || [])
-                                        .filter(
-                                          (a: Row) =>
-                                            accountAssignable(
-                                              a as any,
-                                              ch as any,
-                                            ) && a.ownershipVerifiedAt,
-                                        )
-                                        .map((a: Row) => (
-                                          <option key={a.id} value={a.id}>
-                                            {a.label || a.url}
-                                          </option>
-                                        ))}
+                                      {eligibleApplicationAccounts(
+                                        member.accounts || [],
+                                        ch,
+                                      ).map((a: Row) => (
+                                        <option key={a.id} value={a.id}>
+                                          {a.label || a.url}
+                                        </option>
+                                      ))}
                                     </select>
                                   </label>
                                 ))}
                               <p className="muted small">
                                 승인되고 소유 확인된 활동 계정만 선택할 수
-                                있어요. 계정 확인은{" "}
-                                <Link href="/participants/portal">
-                                  나의 활동
+                                있어요. 담당자가 프로필 확인 문구 등으로
+                                소유·관리 권한을 확인합니다.{" "}
+                                <Link href={ownershipHelpPath}>
+                                  활동 계정 확인 요청
                                 </Link>
-                                에서 진행해주세요.
                               </p>
+                              {!!missingChannels.length && (
+                                <div className="feedback">
+                                  <p role="status">
+                                    {missingChannels
+                                      .map(
+                                        (ch) =>
+                                          channelNames[
+                                            ch as keyof typeof channelNames
+                                          ] || ch,
+                                      )
+                                      .join(" · ")}{" "}
+                                    계정 확인이 필요해요. 위 링크에서 확인을
+                                    요청하고 완료 후 다시 지원해주세요.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={async () => {
+                                      setBusy(true);
+                                      try {
+                                        await load();
+                                      } catch (e) {
+                                        setError((e as Error).message);
+                                      } finally {
+                                        setBusy(false);
+                                      }
+                                    }}
+                                  >
+                                    계정 확인 상태 다시 확인
+                                  </button>
+                                </div>
+                              )}
                               <label>
                                 지원 한마디
                                 <textarea name="message" maxLength={1000} />
@@ -442,7 +476,10 @@ export default function CampaignDetail({
                                 <input type="checkbox" required />
                                 리워드, 일정, 참여 가이드를 확인했어요.
                               </label>
-                              <button className="primary" disabled={busy}>
+                              <button
+                                className="primary"
+                                disabled={busy || missingChannels.length > 0}
+                              >
                                 지원하기
                               </button>
                             </form>

@@ -2,7 +2,11 @@ import Link from "next/link";
 import styles from "./signup-shell.module.css";
 import PublicShell from "@/components/public-shell";
 import LoginScreen from "@/components/login-screen";
-import { loginEntryRole, safeLoginReturnPath } from "@/lib/login-entry";
+import {
+  loginEntryRole,
+  safeLoginReturnPath,
+  safeParticipantPortalReturn,
+} from "@/lib/login-entry";
 export const metadata = { title: "로그인 | 원마케팅" };
 export default async function Page({
   searchParams,
@@ -10,7 +14,7 @@ export default async function Page({
   searchParams: Promise<{ signup?: string; next?: string; role?: string }>;
 }) {
   const p = await searchParams,
-    next = safeLoginReturnPath(p.next);
+    next = safeLoginReturnPath(p.next) || safeParticipantPortalReturn(p.next);
   const role = loginEntryRole(p.role, p.signup, next);
   if (p.signup === "1" && role === "advertiser")
     return (
