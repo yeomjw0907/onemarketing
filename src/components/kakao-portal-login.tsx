@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import BrandOrb from "./brand-orb";
-import Image from "next/image";
+import SocialOnboardingChoice from "./social-onboarding-choice";
 import SocialLoginButtons from "./social-login-buttons";
 import type { SocialProvider } from "@/lib/social-identity";
 import { socialSignupPath } from "@/lib/social-referral";
@@ -13,6 +13,7 @@ type Pending = {
   hasCandidate: boolean;
   status?: string;
   applicationStatus?: string;
+  referralCode?: string;
 };
 export default function KakaoPortalLogin({
   access,
@@ -30,6 +31,7 @@ export default function KakaoPortalLogin({
     >({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [linking, setLinking] = useState(false);
   const autoAttempted = useRef(false);
   async function refresh() {
     const r = await fetch("/api/auth/kakao/account");
@@ -42,13 +44,6 @@ export default function KakaoPortalLogin({
     setReady(true);
     if (d.pending) {
       if (d.pending.status === "approved") await action("continue");
-      else if (d.pending.status !== "application_pending")
-        location.replace(
-          socialSignupPath(
-            d.pending.provider || "kakao",
-            d.pending.referralCode,
-          ),
-        );
       return;
     }
     const params = new URL(location.href).searchParams;
@@ -132,7 +127,14 @@ export default function KakaoPortalLogin({
   return (
     <section className="portal-auth">
       {error && <Feedback tone="error">{error}</Feedback>}
-      <h2>{pending ? "참여 신청 확인" : "간편 로그인으로 시작하세요"}</h2>
+      {!pending && (
+        <>
+          <h2>체험단 로그인·회원가입</h2>
+          <p className="muted">
+            연결된 계정은 바로 로그인되고, 처음이라면 가입을 이어가요.
+          </p>
+        </>
+      )}
       {!ready ? (
         <p className="muted">
           <BrandOrb
@@ -143,9 +145,6 @@ export default function KakaoPortalLogin({
         </p>
       ) : pending ? (
         <>
-          <p className="muted">
-            {pending.nickname}님, 참여 신청 상태를 확인하고 있어요.
-          </p>
           {pending.status === "application_pending" ? (
             <>
               <Feedback tone="info">
@@ -163,8 +162,103 @@ export default function KakaoPortalLogin({
             >
               내 작업으로 이동
             </Button>
+          ) : pending.status === "pending" ? (
+            <>
+              <Feedback tone="info">
+                기존 계정 연결 요청을 접수했어요. 담당자가 등록 연락처로 본인
+                확인 후 연결합니다.
+              </Feedback>
+              <Button
+                busy={busy}
+                onClick={() => void refresh().catch((e) => setError(e.message))}
+              >
+                연결 상태 확인
+              </Button>
+            </>
+          ) : linking ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = new FormData(e.currentTarget);
+                setBusy(true);
+                setError("");
+                try {
+                  const response = await fetch("/api/auth/kakao/account", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      action: "request",
+                      name: form.get("name"),
+                      phone: form.get("phone"),
+                    }),
+                  });
+                  const result = await response.json();
+                  if (!response.ok)
+                    throw new Error(
+                      result.error || "연결 요청을 접수하지 못했어요.",
+                    );
+                  setLinking(false);
+                  await refresh();
+                } catch (e) {
+                  setError(
+                    e instanceof Error ? e.message : "다시 시도해주세요.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <h2>기존 체험단 계정 연결</h2>
+              <p>
+                기존 가입 시 등록한 이름과 휴대폰 번호를 입력해주세요. 담당자가
+                본인 확인 후 연결하며, 입력만으로 계정이 연결되지는 않아요.
+              </p>
+              <label>
+                등록 이름
+                <input
+                  name="name"
+                  required
+                  maxLength={100}
+                  autoComplete="name"
+                  disabled={busy}
+                />
+              </label>
+              <label>
+                등록 휴대폰 번호
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  maxLength={20}
+                  autoComplete="tel"
+                  disabled={busy}
+                />
+              </label>
+              <Button variant="primary" busy={busy}>
+                연결 확인 요청하기
+              </Button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setLinking(false)}
+              >
+                시작 방법으로 돌아가기
+              </button>
+            </form>
           ) : (
-            <p className="muted">참여 신청 화면으로 이동하고 있어요.</p>
+            <SocialOnboardingChoice
+              role="participant"
+              busy={busy}
+              onNew={() =>
+                location.assign(
+                  socialSignupPath(
+                    pending.provider || "kakao",
+                    pending.referralCode,
+                  ),
+                )
+              }
+              onExisting={() => setLinking(true)}
+            />
           )}
           <Button
             variant="text"
@@ -187,25 +281,12 @@ export default function KakaoPortalLogin({
           <p className="muted">
             참여 제안부터 게시·정산까지, 내 작업을 한곳에서 확인하세요.
           </p>
-          <Button
-            className="kakao-login-button"
-            busy={busy}
-            disabled={!enabled}
-            onClick={() => void action("login")}
-          >
-            <Image
-              src="/brands/kakao-login.svg"
-              alt=""
-              width={20}
-              height={20}
-            />
-            카카오 로그인
-          </Button>
           {!enabled && (
             <p className="muted">카카오 로그인 연결을 준비 중이에요.</p>
           )}
           <SocialLoginButtons
-            providers={providers}
+            providers={{ ...providers, kakao: enabled }}
+            includeKakao
             naverReviewPending={naverReviewPending}
             role="participant"
             access={access}

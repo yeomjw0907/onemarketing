@@ -16,7 +16,7 @@ export default async function Page({
   const p = await searchParams,
     next = safeLoginReturnPath(p.next) || safeParticipantPortalReturn(p.next);
   const role = loginEntryRole(p.role, p.signup, next);
-  if (p.signup === "1" && role === "advertiser")
+  if (p.signup === "1")
     return (
       <main className={styles.root}>
         <Link href="/" className={styles.brand}>

@@ -166,8 +166,8 @@ export default function ApplicationForm({
                 가입이 완료되었습니다.
               </h2>
               <p>
-                자동 승인되어 바로 참여할 수 있어요. 등록 정보는 운영자가 추후
-                검수합니다.
+                가입 정보를 접수했어요. 캠페인 지원에는 활동 계정의 소유 확인이
+                필요할 수 있어요. 나의 활동에서 확인 상태를 확인해주세요.
               </p>
               <p className="hint">접수번호: {receipt}</p>
               {kakaoLinked && (

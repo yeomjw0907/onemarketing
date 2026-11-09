@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { additionalProvider, completeSocial } from "@/lib/social-oauth";
 import { advertiserKakaoLogin } from "@/lib/advertiser-social";
 import { kakaoOnboarding } from "@/lib/kakao-auth";
-import { socialSignupPath } from "@/lib/social-referral";
+import { participantSocialOnboardingPath } from "@/lib/social-referral";
 import {
   applyAdvertiserReturn,
   applyParticipantReturn,
@@ -81,7 +81,7 @@ export async function GET(
         onboarding.status !== "approved"
       ) {
         const signup = new URL(
-          socialSignupPath(provider, result.referralCode),
+          participantSocialOnboardingPath(result.referralCode, next),
           destination,
         );
         destination.pathname = signup.pathname;

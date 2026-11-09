@@ -9,7 +9,11 @@ import {
   kakaoOnboarding,
 } from "../src/lib/kakao-auth";
 import { beginSocial, completeSocial } from "../src/lib/social-oauth";
-import { socialSignupPath, referralContext } from "../src/lib/social-referral";
+import {
+  socialSignupPath,
+  referralContext,
+  participantSocialOnboardingPath,
+} from "../src/lib/social-referral";
 import {
   submitApplication,
   listApplications,
@@ -72,6 +76,20 @@ for (const provider of ["kakao", "google"] as const)
     const pending = await pendingKakao(signed.identity!);
     assert.equal(pending.referralCode, code);
     assert.equal((await kakaoOnboarding(signed.identity!)).referralCode, code);
+    const choice = new URL(
+      participantSocialOnboardingPath(
+        signed.referralCode,
+        "/participants/portal?tab=applications",
+      ),
+      "https://example.com",
+    );
+    assert.equal(choice.pathname, "/login");
+    assert.equal(choice.searchParams.get("role"), "participant");
+    assert.equal(choice.searchParams.get("ref"), code);
+    assert.equal(
+      choice.searchParams.get("next"),
+      "/participants/portal?tab=applications",
+    );
     const callback = new URL(
       socialSignupPath(provider, signed.referralCode),
       "https://example.com",

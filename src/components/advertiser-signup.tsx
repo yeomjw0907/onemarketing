@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import QuestionFlow, { type Question } from "./question-flow";
 import { marketFetch } from "./public-fetch";
 import styles from "./advertiser-signup.module.css";
+import SocialOnboardingChoice from "./social-onboarding-choice";
 const questions: Question[] = [
   {
     key: "businessType",
@@ -144,6 +145,23 @@ export default function AdvertiserSignup({
   const [values, setValues] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  if (!started && social)
+    return (
+      <>
+        <SocialOnboardingChoice
+          role="advertiser"
+          busy={entryBusy}
+          onNew={() => setStarted(true)}
+          onExisting={onLogin}
+          onRestart={onCancelSocial ? () => void onCancelSocial() : undefined}
+        />
+        {externalError && (
+          <p role="alert" className={styles.error}>
+            {externalError}
+          </p>
+        )}
+      </>
+    );
   if (!started)
     return (
       <section className={styles.entry} aria-label="가입 방식 선택">

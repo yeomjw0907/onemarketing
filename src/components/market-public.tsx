@@ -162,11 +162,13 @@ function Account({
     );
   return (
     <section className={styles.panel}>
-      <h2>{social ? "기존 계정에 간편 로그인 연결" : "광고주 로그인"}</h2>
+      <h2>
+        {social ? "기존 계정에 간편 로그인 연결" : "광고주 로그인·회원가입"}
+      </h2>
       <p className={styles.muted}>
         {social
           ? "기존 이메일·비밀번호로 본인 확인 후 연결해요."
-          : "신청 내역과 캠페인 진행 상황을 확인하세요."}
+          : "연결된 계정은 바로 로그인되고, 처음이라면 가입을 이어가요."}
       </p>
       {kakao}
       <form
@@ -213,7 +215,7 @@ function Account({
         </label>
         <div className={`${styles.row} ${styles.wide}`}>
           <button className={styles.primary} disabled={busy}>
-            {busy ? "확인 중…" : social ? "카카오 연결하기" : "로그인"}
+            {busy ? "확인 중…" : social ? "간편 로그인 연결하기" : "로그인"}
           </button>
           <button
             type="button"
@@ -238,10 +240,12 @@ function Account({
 export function AdvertiserAccess({
   register = false,
   returnTo = "",
+  defaultReturn = "",
   onOnboardingChange,
 }: {
   register?: boolean;
   returnTo?: string;
+  defaultReturn?: string;
   onOnboardingChange?: (active: boolean) => void;
 }) {
   const [account, setAccount] = useState<Row | null>(null);
@@ -249,11 +253,12 @@ export function AdvertiserAccess({
     marketFetch("/api/advertiser-auth")
       .then((d) => {
         setAccount(d.account);
-        const next = safeLoginReturnPath(returnTo);
+        const next =
+          safeLoginReturnPath(returnTo) || safeLoginReturnPath(defaultReturn);
         if (d.account && next) location.assign(next);
       })
       .catch(() => {});
-  }, [returnTo]);
+  }, [returnTo, defaultReturn]);
   return (
     <>
       <Account
@@ -261,7 +266,9 @@ export function AdvertiserAccess({
         onChange={(a) => {
           setAccount(a);
           window.dispatchEvent(new Event("om-auth-change"));
-          if (a && safeLoginReturnPath(returnTo)) location.assign(returnTo);
+          const next =
+            safeLoginReturnPath(returnTo) || safeLoginReturnPath(defaultReturn);
+          if (a && next) location.assign(next);
         }}
         initialRegister={register}
         onOnboardingChange={onOnboardingChange}
