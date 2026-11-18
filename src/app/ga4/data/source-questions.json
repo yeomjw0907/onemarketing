@@ -1,0 +1,3118 @@
+[
+  {
+    "id": 1,
+    "question": "If you’re a business owner who wants to analyze how users arrive at your website and app, as well as the user journeys across both of these platforms, what should you use to generate insights?",
+    "options": [
+      "Use Firebase.",
+      "Use Universal Analytics properties.",
+      "Use Google Analytics 4 properties.",
+      "Use Google Marketing Platform."
+    ],
+    "correctAnswer": "Use Google Analytics 4 properties.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-youre-a-business-owner-who-wants-to-analyze-how-users-arrive-at-your-website-and-app-as-well-as-the-user-journeys-across-both-of-these-platforms-what-should-you-use-to-generate-insights/"
+  },
+  {
+    "id": 2,
+    "question": "A business owner wants to see the total number of times an item was added to the shopping cart on their website. In a Google Analytics Report, which of the following represents the numerical count of these actions?",
+    "options": [
+      "A user property",
+      "A dimension",
+      "A metric",
+      "An event parameter"
+    ],
+    "correctAnswer": "A metric",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-business-owner-wants-to-see-the-total-number-of-times-an-item-was-added-to-the-shopping-cart-on-their-website-in-a-google-analytics-report-which-of-the-following-represents-the-numerical-count-of/"
+  },
+  {
+    "id": 3,
+    "question": "A marketing manager wants to compare different attribution models to understand how credit for conversions is distributed across their various ad campaigns. Which workspace in Google Analytics is specifically designed for this type of performance and ROI analysis?",
+    "options": [
+      "The Admin workspace",
+      "The Explore workspace",
+      "The Reports workspace",
+      "The Advertising workspace"
+    ],
+    "correctAnswer": "The Advertising workspace",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-manager-wants-to-compare-different-attribution-models-to-understand-how-credit-for-conversions-is-distributed-across-their-various-ad-campaigns-which-workspace-in-google-analytics-is-spec/"
+  },
+  {
+    "id": 4,
+    "question": "An eCommerce analyst uses a path exploration to see where new users go immediately after landing on the homepage. The exploration reveals that 70% of new users navigate to the New Spring Collection page, while a highly-promoted link to the company blog page receives less than 1% of clicks. Based on this insight, which of the following is a logical, data-driven action to take?",
+    "options": [
+      "Increase advertising spend on campaigns that lead new users to the homepage.",
+      "Swap the company blog link with the link to the New Spring Collection.",
+      "Change the path exploration’s sharing settings to give colleagues edit access.",
+      "Conclude that the New Spring Collection is the only page that generates revenue."
+    ],
+    "correctAnswer": "Swap the company blog link with the link to the New Spring Collection.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-ecommerce-analyst-uses-a-path-exploration-to-see-where-new-users-go-immediately-after-landing-on-the-homepage-the-exploration-reveals-that-70-of-new-users-navigate-to-the-new-spring-collection-pag/"
+  },
+  {
+    "id": 5,
+    "question": "An analyst wants to use the form_submission event for bidding optimization in a linked Google Ads account. According to the recommended workflow in Google Analytics, what’s the required first step before this event can be used as a conversion for advertising?",
+    "options": [
+      "The event property must be linked to Google Search Console.",
+      "The event must be designated as a key event.",
+      "The event’s parameters must be marked as custom dimensions",
+      "The event data must be analyzed in a custom exploration."
+    ],
+    "correctAnswer": "The event must be designated as a key event.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-analyst-wants-to-use-the-form_submission-event-for-bidding-optimization-in-a-linked-google-ads-account-according-to-the-recommended-workflow-in-google-analytics-whats-the-required-first-step-be/"
+  },
+  {
+    "id": 6,
+    "question": "A marketing manager needs to grant a colleague access to their Google Analytics property. The colleague’s responsibility is to build custom reports in the Explore workspace, but they shouldn’t have permission to manage other users or alter property-level settings. Which user role should the manager assign to this colleague?",
+    "options": ["Viewer", "Editor", "Administrator", "Analyst"],
+    "correctAnswer": "Analyst",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-manager-needs-to-grant-a-colleague-access-to-their-google-analytics-property-the-colleagues-responsibility-is-to-build-custom-reports-in-the-explore-workspace-but-they-shouldnt-have/"
+  },
+  {
+    "id": 7,
+    "question": "Which of the following accurately describes a benefit of linking a Google Ads account with a Google Analytics property?",
+    "options": [
+      "It replaces the need to use the Google Ads interface for campaign management.",
+      "It allows you to see the full customer journey, from ad interactions to onsite key events.",
+      "It automatically reallocates advertising budget to campaigns with higher conversion rates.",
+      "It offers the only method available for viewing the total number of ad clicks."
+    ],
+    "correctAnswer": "It allows you to see the full customer journey, from ad interactions to onsite key events.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-the-following-accurately-describes-a-benefit-of-linking-a-google-ads-account-with-a-google-analytics-property/"
+  },
+  {
+    "id": 8,
+    "question": "A marketing team uses Google Ads for paid search and also runs paid campaigns on a third-party social media platform. They’ve linked their Google Ads account but haven’t imported cost data for their social media campaigns. What will happen when they use the Scenario Planner to optimize their future budget?",
+    "options": [
+      "The tool will be unavailable, showing a screen that explains the eligibility requirements, including the need to import non-Google campaign data.",
+      "The tool will recommend allocating 0% of the budget to the social media channel because it interprets the missing cost data as zero investment.",
+      "The tool will provide accurate recommendations by using Google’s machine learning to estimate the missing cost data from the social media channel.",
+      "The tool will overestimate the return on investment (ROI) from social media, as it will see conversions from that channel without any associated costs."
+    ],
+    "correctAnswer": "The tool will be unavailable, showing a screen that explains the eligibility requirements, including the need to import non-Google campaign data.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-team-uses-google-ads-for-paid-search-and-also-runs-paid-campaigns-on-a-third-party-social-media-platform-theyve-linked-their-google-ads-account-but-havent-imported-cost-data-for-their/"
+  },
+  {
+    "id": 9,
+    "question": "How does the Data-Driven Attribution (DDA) model differ from models that assign all credit to a single touchpoint?",
+    "options": [
+      "It uses machine learning to calculate the actual contribution of each touchpoint.",
+      "It’s simpler to understand because it gives all credit to one channel.",
+      "It processes reports faster by focusing only on Google Ads channels.",
+      "It makes sure the final interaction in a user’s journey receives the most credit."
+    ],
+    "correctAnswer": "It uses machine learning to calculate the actual contribution of each touchpoint.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/how-does-the-data-driven-attribution-dda-model-differ-from-models-that-assign-all-credit-to-a-single-touchpoint/"
+  },
+  {
+    "id": 10,
+    "question": "An analyst is reviewing a standard report for a large eCommerce site and notices a significant portion of their data for the Page path dimension has been grouped into an (other) row. However, when they check the data quality icon, it indicates that the report is 100% unsampled. What’s the cause of the (other) row appearing in this report?",
+    "options": [
+      "A secondary dimension was added, which automatically groups less common results.",
+      "The query exceeded the event quota limit, triggering data sampling.",
+      "The date range selected for the report is too short to populate all the data.",
+      "The Page path dimension has too many unique values, exceeding the report’s row limit."
+    ],
+    "correctAnswer": "The Page path dimension has too many unique values, exceeding the report’s row limit.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-analyst-is-reviewing-a-standard-report-for-a-large-ecommerce-site-and-notices-a-significant-portion-of-their-data-for-the-page-path-dimension-has-been-grouped-into-an-other-row-however-when-the/"
+  },
+  {
+    "id": 11,
+    "question": "Which of the following statements describes the role of Google Analytics for a business?",
+    "options": [
+      "It’s a website builder and hosting platform that provides design templates to create a complete online presence.",
+      "It’s a tool used only for debugging code and monitoring application crashes in real time.",
+      "It measures user interactions across web and app, providing insights on marketing channel performance and helping to optimize investments.",
+      "It replaces the need for a CRM system by managing customer contact information and sales pipelines."
+    ],
+    "correctAnswer": "It measures user interactions across web and app, providing insights on marketing channel performance and helping to optimize investments.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-the-following-statements-describes-the-role-of-google-analytics-for-a-business/"
+  },
+  {
+    "id": 12,
+    "question": "What’s the direct result of sharing key events from Google Analytics with a linked Google Ads account?",
+    "options": [
+      "They increase the total number of users reported in Google Analytics.",
+      "They unlock new demographic reports in the Google Analytics Admin section.",
+      "They can be used as conversions for bidding optimization and consistent reporting.",
+      "They automatically pause underperforming ad campaigns in Google Ads."
+    ],
+    "correctAnswer": "They can be used as conversions for bidding optimization and consistent reporting.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whats-the-direct-result-of-sharing-key-events-from-google-analytics-with-a-linked-google-ads-account/"
+  },
+  {
+    "id": 13,
+    "question": "A user’s journey to a purchase involves three steps: First they click a paid social media ad; then a paid search ad; and finally they convert after clicking a tagged link in an email campaign. If the Google Analytics property is using the Paid and Organic Last Click attribution model, which channel will receive 100% of the credit for the conversion?",
+    "options": ["Paid Search", "Paid Social Media", "Direct", "Email Campaign"],
+    "correctAnswer": "Email Campaign",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-users-journey-to-a-purchase-involves-three-steps-first-they-click-a-paid-social-media-ad-then-a-paid-search-ad-and-finally-they-convert-after-clicking-a-tagged-link-in-an-email-campaign-if-the/"
+  },
+  {
+    "id": 14,
+    "question": "You have Ads Personalization turned on for your property but want to exclude specific events. What does this mean for the data from those specific events?",
+    "options": [
+      "That data will only be available in the Advertising section.",
+      "That data will only be used for audiences in Google Ads.",
+      "That data will only be used for measurement purposes.",
+      "That data will only be available in the Reports and Explore sections."
+    ],
+    "correctAnswer": "That data will only be used for measurement purposes.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-ads-personalization-turned-on-for-your-property-but-want-to-exclude-specific-events-what-does-this-mean-for-the-data-from-those-specific-events/"
+  },
+  {
+    "id": 15,
+    "question": "How does digital analytics help a business move from making assumptions to making data-driven decisions?",
+    "options": [
+      "It allows for changes to be made to historical, processed data.",
+      "It directly causes an increase in website traffic and sales.",
+      "It suggests which business objectives a company should prioritize.",
+      "It provides specific, factual data about user interactions."
+    ],
+    "correctAnswer": "It provides specific, factual data about user interactions.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/how-does-digital-analytics-help-a-business-move-from-making-assumptions-to-making-data-driven-decisions/"
+  },
+  {
+    "id": 16,
+    "question": "Which Google Analytics feature lets you associate your own identifiers with your individual customers so you can connect their behavior across different interactions on various devices and platforms?",
+    "options": [
+      "Predictive audiences",
+      "User-ID",
+      "Device ID",
+      "Audience triggers"
+    ],
+    "correctAnswer": "User-ID",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-google-analytics-feature-lets-you-associate-your-own-identifiers-with-your-individual-customers-so-you-can-connect-their-behavior-across-different-interactions-on-various-devices-and-platforms/"
+  },
+  {
+    "id": 17,
+    "question": "A marketing manager wants to measure the return on investment (ROI) for a Google Ads campaign based on how many users complete a request_demo form. Where in Google Analytics should they go to find the attribution reports specifically designed for this purpose?",
+    "options": [
+      "The Campaigns section within the Reports workspace",
+      "The Advertising workspace",
+      "The Admin workspace",
+      "The Explore workspace"
+    ],
+    "correctAnswer": "The Advertising workspace",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-manager-wants-to-measure-the-return-on-investment-roi-for-a-google-ads-campaign-based-on-how-many-users-complete-a-request_demo-form-where-in-google-analytics-should-they-go-to-find-the/"
+  },
+  {
+    "id": 18,
+    "question": "An analyst changes the attribution model for their Google Analytics property from Last click to Data-driven. Which dimensions will reflect this new attribution setting?",
+    "options": [
+      "Dimensions with the First user prefix (e.g., First user source)",
+      "Dimensions with the Session prefix (e.g., Session source)",
+      "Dimensions related to Google Ads campaigns only (e.g., Google Ads campaign)",
+      "Dimensions without a scope prefix (e.g., Source, Medium)"
+    ],
+    "correctAnswer": "Dimensions without a scope prefix (e.g., Source, Medium)",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-analyst-changes-the-attribution-model-for-their-google-analytics-property-from-last-click-to-data-driven-which-dimensions-will-reflect-this-new-attribution-setting/"
+  },
+  {
+    "id": 19,
+    "question": "A new user discovers a website for the first time by clicking a sponsored link on a search engine results page. One week later, the same user returns to the site by clicking a link from an email campaign. In a report analyzing this second session, what will the dimension First user source display?",
+    "options": ["Organic Search", "Paid Search", "Email", "(not set)"],
+    "correctAnswer": "Paid Search",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-new-user-discovers-a-website-for-the-first-time-by-clicking-a-sponsored-link-on-a-search-engine-results-page-one-week-later-the-same-user-returns-to-the-site-by-clicking-a-link-from-an-email-campa/"
+  },
+  {
+    "id": 20,
+    "question": "An analyst is reviewing a standard Traffic Acquisition Report and notices that a significant amount of data is grouped into an (other) row. What’s the next step to investigate the specific traffic sources hidden within this row?",
+    "options": [
+      "Create an Exploration to query the raw, granular data.",
+      "Change the property’s attribution model in the Admin settings.",
+      "Refresh the standard report until the (other) row disappears.",
+      "Delete the report and wait 24 hours for it to be recalculated."
+    ],
+    "correctAnswer": "Create an Exploration to query the raw, granular data.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-analyst-is-reviewing-a-standard-traffic-acquisition-report-and-notices-that-a-significant-amount-of-data-is-grouped-into-an-other-row-whats-the-next-step-to-investigate-the-specific-traffic-so/"
+  },
+  {
+    "id": 21,
+    "question": "A marketing manager observes that the number of conversions attributed to Paid Search in their Advertising workspace reports is higher than the number attributed to Paid Search in the standard Traffic Acquisition Report. What’s the reason for this discrepancy?",
+    "options": [
+      "Thresholding is hiding data from the Traffic Acquisition Report.",
+      "The Advertising workspace reports on users, while the Acquisition Report tracks sessions.",
+      "The reports use different attribution models based on their scope.",
+      "The Traffic Acquisition Report is sampled, while the Advertising Report is not."
+    ],
+    "correctAnswer": "The reports use different attribution models based on their scope.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-manager-observes-that-the-number-of-conversions-attributed-to-paid-search-in-their-advertising-workspace-reports-is-higher-than-the-number-attributed-to-paid-search-in-the-standard-traffic/"
+  },
+  {
+    "id": 22,
+    "question": "It’s the beginning of a new fiscal year, and a marketing director is allocating a $1 million budget across paid search, social media, and display advertising for the upcoming quarter. Their goal is to find the optimal spending mix that will maximize the total number of conversions. Which tool in Google Analytics is specifically designed to simulate different budget allocations and recommend an effective future strategy?",
+    "options": [
+      "The projection plan",
+      "The Model Comparison Report",
+      "The Scenario Planner",
+      "The User Acquisition Report"
+    ],
+    "correctAnswer": "The Scenario Planner",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/its-the-beginning-of-a-new-fiscal-year-and-a-marketing-director-is-allocating-a-1-million-budget-across-paid-search-social-media-and-display-advertising-for-the-upcoming-quarter-their-goal-is-t/"
+  },
+  {
+    "id": 23,
+    "question": "An online clothing retailer is already collecting eCommerce events (like item_id and price) in Google Analytics. They now want to upload a single file containing additional product attributes from their inventory system — like color, style, and material — to enrich their existing reports. Which Google Analytics feature is specifically designed for this type of bulk upload to join offline information with online records?",
+    "options": [
+      "Measurement Protocol",
+      "The Explore workspace",
+      "Event modification",
+      "Data Import"
+    ],
+    "correctAnswer": "Data Import",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-online-clothing-retailer-is-already-collecting-ecommerce-events-like-item_id-and-price-in-google-analytics-they-now-want-to-upload-a-single-file-containing-additional-product-attributes-from-the/"
+  },
+  {
+    "id": 24,
+    "question": "A business owner’s objective is to increase profit from their eCommerce website by promoting their most profitable products. Which set of metrics should they track in Google Analytics to measure progress toward this specific goal?",
+    "options": [
+      "Product page views, popular items, and purchase revenue",
+      "App downloads, feature usage, and subscription rates",
+      "User language, browser type, and operating system",
+      "Website leads, referral sources, and cost per lead"
+    ],
+    "correctAnswer": "Product page views, popular items, and purchase revenue",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-business-owners-objective-is-to-increase-profit-from-their-ecommerce-website-by-promoting-their-most-profitable-products-which-set-of-metrics-should-they-track-in-google-analytics-to-measure-prog/"
+  },
+  {
+    "id": 25,
+    "question": "A website manager sees that the newsletter_signup event is firing correctly. To make this action easier to find and analyze in their standard behavioral reports, they decide to mark it as a key event. What’s the direct benefit of marking this event as key?",
+    "options": [
+      "It creates a new, custom event that’s specific to the business.",
+      "It ensures the interaction is processed and stored by the platform.",
+      "It makes the event data available for ad campaign bidding strategies.",
+      "It highlights the event as important for understanding user behavior in standard reports."
+    ],
+    "correctAnswer": "It highlights the event as important for understanding user behavior in standard reports.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-website-manager-sees-that-the-newsletter_signup-event-is-firing-correctly-to-make-this-action-easier-to-find-and-analyze-in-their-standard-behavioral-reports-they-decide-to-mark-it-as-a-key-event/"
+  },
+  {
+    "id": 26,
+    "question": "A marketing manager wants to understand which of their recent campaigns are most effective at bringing new users to their website for the very first time. They need to identify the original marketing channels for these first-time visitors. Which standard report in Google Analytics is specifically designed to answer this question?",
+    "options": [
+      "The User Acquisition Report",
+      "The Engagement Overview Report",
+      "The Monetization Report",
+      "The Traffic Acquisition Report"
+    ],
+    "correctAnswer": "The User Acquisition Report",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-manager-wants-to-understand-which-of-their-recent-campaigns-are-most-effective-at-bringing-new-users-to-their-website-for-the-very-first-time-they-need-to-identify-the-original-marketing/"
+  },
+  {
+    "id": 27,
+    "question": "You’ve already set up your web data stream and data is flowing into your Google Analytics property from your website. You notice that enhanced measurement is enabled for the web data stream. What happens when this setting is enabled?",
+    "options": [
+      "Events can be associated with signed-in users to activate cross-device reporting.",
+      "Additional events are collected from your website without the need to change your website’s code.",
+      "Conversion reporting for the web data stream uses machine learning to distribute credit across channels.",
+      "Events from your mobile app can be combined with your existing website data."
+    ],
+    "correctAnswer": "Additional events are collected from your website without the need to change your website’s code.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-already-set-up-your-web-data-stream-and-data-is-flowing-into-your-google-analytics-property-from-your-website-you-notice-that-enhanced-measurement-is-enabled-for-the-web-data-stream-what-hap/"
+  },
+  {
+    "id": 28,
+    "question": "An analyst is building a report to compare the total revenue generated from users on mobile devices vs. users on desktop computers. How are Device Category and Total Revenue functioning in this report?",
+    "options": [
+      "Both Device Category and Total Revenue are metrics.",
+      "Device Category is the dimension, and Total Revenue is the metric.",
+      "Device Category is the metric, and Total Revenue is the dimension.",
+      "Both Device Category and Total Revenue are dimensions."
+    ],
+    "correctAnswer": "Device Category is the dimension, and Total Revenue is the metric.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-analyst-is-building-a-report-to-compare-the-total-revenue-generated-from-users-on-mobile-devices-vs-users-on-desktop-computers-how-are-device-category-and-total-revenue-functioning-in-this-report/"
+  },
+  {
+    "id": 29,
+    "question": "An eCommerce manager creates an audience in Google Analytics for users who’ve visited a specific product page more than three times in a single week. How does linking with Google Ads allow the manager to act on this behavioral data?",
+    "options": [
+      "It sends an automatic email report about that audience to the marketing team.",
+      "It prevents that audience from seeing any more ads to avoid overexposure.",
+      "It allows them to reach that specific audience with remarketing campaigns in Google Ads.",
+      "It provides a detailed report on this audience’s activity within the Google Ads interface."
+    ],
+    "correctAnswer": "It allows them to reach that specific audience with remarketing campaigns in Google Ads.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-ecommerce-manager-creates-an-audience-in-google-analytics-for-users-whove-visited-a-specific-product-page-more-than-three-times-in-a-single-week-how-does-linking-with-google-ads-allow-the-manage/"
+  },
+  {
+    "id": 30,
+    "question": "What’s something you can do with your data when you export your Google Analytics data to BigQuery?",
+    "options": [
+      "You can use conversions for ad campaign bidding, and audiences to target ad campaigns.",
+      "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels.",
+      "You can use app-specific reports like crash data, notification effectiveness, and deep-link performance.",
+      "You can use audiences to target website experiments and test variants of your web pages."
+    ],
+    "correctAnswer": "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whats-something-you-can-do-with-your-data-when-you-export-your-google-analytics-data-to-bigquery/"
+  },
+  {
+    "id": 31,
+    "question": "A fashion blogger is reviewing a Google Analytics Report to see which countries her website visitors are coming from. What role does Country play in this report?",
+    "options": [
+      "It’s a dimension because it’s a descriptive attribute.",
+      "It’s a configuration property for backend definitions.",
+      "It’s a metric because it’s being measured.",
+      "It’s an event because it’s a user interaction."
+    ],
+    "correctAnswer": "It’s a dimension because it’s a descriptive attribute.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-fashion-blogger-is-reviewing-a-google-analytics-report-to-see-which-countries-her-website-visitors-are-coming-from-what-role-does-country-play-in-this-report/"
+  },
+  {
+    "id": 32,
+    "question": "An analyst has been asked to prepare an event to be used for bidding optimization in a linked Google Ads account. According to the recommended workflow, what action must be taken after identifying the important event but before creating the conversion for ads?",
+    "options": [
+      "The event must be designated as a key event.",
+      "The event’s parameters must be marked as custom definitions.",
+      "The event data must be exported to BigQuery.",
+      "The event must be analyzed in a custom exploration."
+    ],
+    "correctAnswer": "The event must be designated as a key event.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/an-analyst-has-been-asked-to-prepare-an-event-to-be-used-for-bidding-optimization-in-a-linked-google-ads-account-according-to-the-recommended-workflow-what-action-must-be-taken-after-identifying-the/"
+  },
+  {
+    "id": 33,
+    "question": "You’re setting up Google Analytics and are asked to set up a data stream as part of the process. Which of these describes a data stream?",
+    "options": [
+      "A data stream lives within an account and is the container for the data you collect from your apps and sites.",
+      "A data stream lives within Explore and, once defined, can be added to any exploration.",
+      "A data stream lives within Reports and lets you segment and compare your data.",
+      "A data stream lives within a property and is a source of data from your app or website."
+    ],
+    "correctAnswer": "A data stream lives within a property and is a source of data from your app or website.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-setting-up-google-analytics-and-are-asked-to-set-up-a-data-stream-as-part-of-the-process-which-of-these-describes-a-data-stream/"
+  },
+  {
+    "id": 34,
+    "question": "You have many events on your website that are highly valuable, like when users purchase items or sign up for your newsletter. You’d like to mark these events as important. What should you mark these events as in your Google Analytics property?",
+    "options": [
+      "Automatic events",
+      "Key events",
+      "Custom events",
+      "Recommended events"
+    ],
+    "correctAnswer": "Key events",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-many-events-on-your-website-that-are-highly-valuable-like-when-users-purchase-items-or-sign-up-for-your-newsletter-youd-like-to-mark-these-events-as-important-what-should-you-mark-these/"
+  },
+  {
+    "id": 35,
+    "question": "A marketing manager has already marked newsletter_signup as a conversion. Now, they want to understand how different channels (like Paid Search, Social Media, and Email) work together to drive those signups. Specifically, they want to compare how credit is assigned using different attribution models. Which Google Analytics workspace is specifically designed for this type of attribution and conversion path analysis?",
+    "options": ["Advertising", "Explore", "Reports", "Admin"],
+    "correctAnswer": "Advertising",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-marketing-manager-has-already-marked-newsletter_signup-as-a-conversion-now-they-want-to-understand-how-different-channels-like-paid-search-social-media-and-email-work-together-to-drive-those-s/"
+  },
+  {
+    "id": 36,
+    "question": "A business manager sets up Google Analytics but doesn’t apply a filter to exclude internal company traffic. After a month of data collection, they correct the setup by adding the filter. What’s the status of the data collected during that first month?",
+    "options": [
+      "The data from the first month will be deleted, and data collection will restart.",
+      "The new setting will retroactively cleanse the data from the first month’s reports.",
+      "The internal traffic from the first month will be automatically moved to a separate report.",
+      "The data from the first month will permanently include the internal traffic."
+    ],
+    "correctAnswer": "The data from the first month will permanently include the internal traffic.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/a-business-manager-sets-up-google-analytics-but-doesnt-apply-a-filter-to-exclude-internal-company-traffic-after-a-month-of-data-collection-they-correct-the-setup-by-adding-the-filter-whats-the/"
+  },
+  {
+    "id": 37,
+    "question": "Your business has a website and an app, and you want to analyze user journeys across these two platforms, as well as see how new users arrive at your website and app. Which of the following should you use for these insights?",
+    "options": [
+      "Google Marketing Platform",
+      "Google Analytics Admin API",
+      "Firebase",
+      "Google Analytics properties"
+    ],
+    "correctAnswer": "Google Analytics properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-business-has-a-website-and-an-app-and-you-want-to-analyze-user-journeys-across-these-two-platforms-as-well-as-see-how-new-users-arrive-at-your-website-and-app-which-of-the-following-should-you/"
+  },
+  {
+    "id": 41,
+    "question": "You’ve just customized a report and want it to appear in the left-hand navigation. To do this, which section should you add the report to?",
+    "options": [
+      "You should add the report to Explore.",
+      "You should add the report to Library.",
+      "You should add the report to Admin.",
+      "You should add the report to Collection."
+    ],
+    "correctAnswer": "You should add the report to the Collection",
+    "status": "보기 매칭 확인 필요",
+    "note": "정답('You should add the report to the Collection')이 추출된 4개 보기와 문구가 일부 다릅니다. 상세 URL에서 확인 권장.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-just-customized-a-report-and-want-it-to-appear-in-the-left-hand-navigation-to-do-this-which-section-should-you-add-the-report-to/"
+  },
+  {
+    "id": 42,
+    "question": "Your colleague has customized a report and wants it to be easily viewable. Where should they add the report so it appears in the left-hand navigation?",
+    "options": [
+      "Add it to Admin.",
+      "Add it to Library.",
+      "Add it to Explore.",
+      "Add it to Collection."
+    ],
+    "correctAnswer": "Add it to the Collection",
+    "status": "보기 매칭 확인 필요",
+    "note": "정답('Add it to the Collection')이 추출된 4개 보기와 문구가 일부 다릅니다. 상세 URL에서 확인 권장.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-colleague-has-customized-a-report-and-wants-it-to-be-easily-viewable-where-should-they-add-the-report-so-it-appears-in-the-left-hand-navigation/"
+  },
+  {
+    "id": 43,
+    "question": "Once you’ve customized a report, where does it need to be added to in order to appear in the left-hand navigation?",
+    "options": ["Admin", "Library", "Explore", "Collection"],
+    "correctAnswer": "Collection",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/once-youve-customized-a-report-where-does-it-need-to-be-added-to-in-order-to-appear-in-the-left-hand-navigation/"
+  },
+  {
+    "id": 44,
+    "question": "Which of these Google Analytics features would allow you to develop a dashboard to view analytics data alongside in-store customer purchase data that lives in another business application?",
+    "options": [
+      "The Firebase SDK feature",
+      "The Measurement Protocol feature",
+      "The Admin API feature",
+      "The Data API feature"
+    ],
+    "correctAnswer": "The Data API feature",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-google-analytics-features-would-allow-you-to-develop-a-dashboard-to-view-analytics-data-alongside-in-store-customer-purchase-data-that-lives-in-another-business-application/"
+  },
+  {
+    "id": 45,
+    "question": "You want to develop a dashboard to view your analytics data alongside your in-store customer purchase data, which lives in another business application. Which of these Google Analytics features can you use to achieve this?",
+    "options": [
+      "Firebase SDK",
+      "Measurement Protocol",
+      "Admin API",
+      "Data API"
+    ],
+    "correctAnswer": "Data API",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-develop-a-dashboard-to-view-your-analytics-data-alongside-your-in-store-customer-purchase-data-which-lives-in-another-business-application-which-of-these-google-analytics-features-can-yo/"
+  },
+  {
+    "id": 46,
+    "question": "Your team is developing a dashboard to view analytics data alongside in-store customer purchase data that’s located in another business application. Which of these Google Analytics features would they use to do this?",
+    "options": [
+      "They would use Firebase SDK.",
+      "They would use Measurement Protocol.",
+      "They would use Admin API.",
+      "They would use Data API."
+    ],
+    "correctAnswer": "They would use Data API.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-team-is-developing-a-dashboard-to-view-analytics-data-alongside-in-store-customer-purchase-data-thats-located-in-another-business-application-which-of-these-google-analytics-features-would-the/"
+  },
+  {
+    "id": 47,
+    "question": "You need to review several sets of data, and decide to create a table report so you can see them side by side. Which component of the Analytics interface helps you do that?",
+    "options": [
+      "The Date Picker component",
+      "The Segments component",
+      "The Filters component",
+      "The Comparisons component"
+    ],
+    "correctAnswer": "The Comparison component",
+    "status": "보기 매칭 확인 필요",
+    "note": "정답('The Comparison component')이 추출된 4개 보기와 문구가 일부 다릅니다. 상세 URL에서 확인 권장.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-need-to-review-several-sets-of-data-and-decide-to-create-a-table-report-so-you-can-see-them-side-by-side-which-component-of-the-analytics-interface-helps-you-do-that/"
+  },
+  {
+    "id": 48,
+    "question": "If you wanted to view multiple groups of data side by side in a table report, which component of the Google Analytics interface would you select?",
+    "options": [
+      "Select Filters.",
+      "Select Segments.",
+      "Select Date Picker.",
+      "Select Comparisons."
+    ],
+    "correctAnswer": "Select Comparisons",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-view-multiple-groups-of-data-side-by-side-in-a-table-report-which-component-of-the-google-analytics-interface-would-you-select/"
+  },
+  {
+    "id": 49,
+    "question": "Which component of the Analytics interface allows you to see multiple groups of data side by side in a table report?",
+    "options": ["Date Picker", "Filters", "Segments", "Comparisons"],
+    "correctAnswer": "Comparisons",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-component-of-the-analytics-interface-allows-you-to-see-multiple-groups-of-data-side-by-side-in-a-table-report/"
+  },
+  {
+    "id": 50,
+    "question": "What types of visualizations are available in the Free-Form Report?",
+    "options": [
+      "Pie chart, donut chart, geo map, circle chart",
+      "Line chart, bar chart, histogram, geo map",
+      "Table, line chart, circle chart, donut chart",
+      "Table, line chart, scatterplot, bar chart"
+    ],
+    "correctAnswer": "Table, line chart, scatterplot, bar chart",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-types-of-visualizations-are-available-in-the-free-form-report/"
+  },
+  {
+    "id": 51,
+    "question": "You’d like to pull a Free-Form Report for an upcoming meeting. Which types of visualizations are available to include in this report?",
+    "options": [
+      "The available visualizations include pie charts, donut charts, geo maps, and circle charts.",
+      "The available visualizations include tables, line charts, circle charts, and donut charts.",
+      "The available visualizations include line charts, bar charts, histograms, and geo maps.",
+      "The available visualizations include tables, line charts, scatterplots, and bar charts."
+    ],
+    "correctAnswer": "The available visualizations include tables, line charts, scatterplots, and bar charts",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youd-like-to-pull-a-free-form-report-for-an-upcoming-meeting-which-types-of-visualizations-are-available-to-include-in-this-report/"
+  },
+  {
+    "id": 52,
+    "question": "When creating a Free-Form Report, which types of visualizations are available for you to include?",
+    "options": [
+      "You can include line charts, bar charts, histograms, and geo maps.",
+      "You can include pie charts, donut charts, geo maps, and circle charts.",
+      "You can include tables, line charts, circle charts, and donut charts.",
+      "You can include tables, line charts, scatterplots, and bar charts."
+    ],
+    "correctAnswer": "You can include tables, line charts, scatterplots, and bar charts",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-creating-a-free-form-report-which-types-of-visualizations-are-available-for-you-to-include/"
+  },
+  {
+    "id": 53,
+    "question": "Your team needs to change the default primary dimension for the User Acquisition Report within their Google Analytics property. Which action can they take to accomplish this?",
+    "options": [
+      "They can add a custom dimension to the report.",
+      "They can create an exploration with the new primary dimension.",
+      "They can select a new primary dimension.",
+      "They can use the customization feature to edit the built-in report."
+    ],
+    "correctAnswer": "They can use the customization feature to edit the built-in report",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-team-needs-to-change-the-default-primary-dimension-for-the-user-acquisition-report-within-their-google-analytics-property-which-action-can-they-take-to-accomplish-this/"
+  },
+  {
+    "id": 54,
+    "question": "You want to permanently change the default primary dimension for the User Acquisition Report within your property. How can you achieve this?",
+    "options": [
+      "Select a new primary dimension.",
+      "Create an exploration with the new primary dimension.",
+      "Add a custom dimension to the report.",
+      "Edit the built-in report using the customization feature."
+    ],
+    "correctAnswer": "Edit the built-in report using the customization feature",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-permanently-change-the-default-primary-dimension-for-the-user-acquisition-report-within-your-property-how-can-you-achieve-this/"
+  },
+  {
+    "id": 55,
+    "question": "If you want to permanently switch the default primary dimension for the User Acquisition Report within your Google Analytics property, which action should you take to do this?",
+    "options": [
+      "You should select a new primary dimension.",
+      "You should create an exploration with the new primary dimension.",
+      "You should add a custom dimension to the report.",
+      "You should edit the built-in report using the customization feature."
+    ],
+    "correctAnswer": "You should edit the built-in report using the customization feature.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-want-to-permanently-switch-the-default-primary-dimension-for-the-user-acquisition-report-within-your-google-analytics-property-which-action-should-you-take-to-do-this/"
+  },
+  {
+    "id": 56,
+    "question": "When your team wants to troubleshoot data discrepancies or unexpected trends in your Google Analytics property, which dimensions should they use to identify anomalies or potential issues?",
+    "options": [
+      "They should use page path, screen resolution, item name.",
+      "They should use OS version, operating system with version, key event.",
+      "They should use item name, device category, date.",
+      "They should use country, OS version, operating system with version."
+    ],
+    "correctAnswer": "They should use country, OS version, operating system with version",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-your-team-wants-to-troubleshoot-data-discrepancies-or-unexpected-trends-in-your-google-analytics-property-which-dimensions-should-they-use-to-identify-anomalies-or-potential-issues/"
+  },
+  {
+    "id": 57,
+    "question": "You’ve noticed some discrepancies in your Google Analytics property and are trying to troubleshoot. Which of the following dimensions can you use to help identify anomalies or potential issues?",
+    "options": [
+      "Use page path, screen resolution, item name.",
+      "Use OS version, operating system with version, key event.",
+      "Use item name, device category, date.",
+      "Use country, OS version, operating system with version."
+    ],
+    "correctAnswer": "Use country, OS version, operating system with version.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-noticed-some-discrepancies-in-your-google-analytics-property-and-are-trying-to-troubleshoot-which-of-the-following-dimensions-can-you-use-to-help-identify-anomalies-or-potential-issues/"
+  },
+  {
+    "id": 58,
+    "question": "When troubleshooting data discrepancies or unexpected trends in your Google Analytics property, which dimensions are commonly used to identify potential issues or anomalies?",
+    "options": [
+      "OS version, operating system with version, key event",
+      "Page path, screen resolution, item name",
+      "Item name, device category, date",
+      "Country, OS version, operating system with version"
+    ],
+    "correctAnswer": "Country, OS version, operating system with version",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-troubleshooting-data-discrepancies-or-unexpected-trends-in-your-google-analytics-property-which-dimensions-are-commonly-used-to-identify-potential-issues-or-anomalies/"
+  },
+  {
+    "id": 59,
+    "question": "What’s the key difference between the User Acquisition Report and the Traffic Acquisition Report?",
+    "options": [
+      "The User Acquisition Report looks at the very first campaign/source/medium of the session, whereas the Traffic Acquisition Report looks at the campaign/source/medium of the last touch.",
+      "",
+      "",
+      ""
+    ],
+    "correctAnswer": "The User Acquisition Report looks at the very first campaign/source/medium the user arrived at your site with, whereas the Traffic Acquisition Report looks at the campaign/source/medium for the session.",
+    "status": "보기 매칭 확인 필요",
+    "note": "정답('The User Acquisition Report looks at the very first campaign/source/medium the user arrived at your site with, whereas the Traffic Acquisition Report looks at the campaign/source/medium for the session.')이 추출된 4개 보기와 문구가 일부 다릅니다. 상세 URL에서 확인 권장.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whats-the-key-difference-between-the-user-acquisition-report-and-the-traffic-acquisition-report/"
+  },
+  {
+    "id": 60,
+    "question": "When you view a User Acquisition Report and a Traffic Acquisition Report, what are the key differences in the information each report will highlight for you?",
+    "options": [
+      "A User Acquisition Report shows you the very first campaign/source/medium of the session. And the Traffic Acquisition Report shows you the campaign/source/medium of the last touch.",
+      "A Traffic Acquisition Report shows you the very first campaign/source/medium the user arrived at the site with. And the User Acquisition Report shows you the campaign/source/medium for the session.",
+      "A User Acquisition Report shows you the very first campaign/source/medium the user arrived at the site with. And the Traffic Acquisition Report shows you the campaign/source/medium for the session.",
+      ""
+    ],
+    "correctAnswer": "A User Acquisition Report shows you the very first campaign/source/medium the user arrived at the site with. And the Traffic Acquisition Report shows you the campaign/source/medium for the session.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-you-view-a-user-acquisition-report-and-a-traffic-acquisition-report-what-are-the-key-differences-in-the-information-each-report-will-highlight-for-you/"
+  },
+  {
+    "id": 61,
+    "question": "Your team wants more clarification around what information is covered in the User Acquisition Report and the Traffic Acquisition Report. What would you highlight for your team as the key differences between the two reports?",
+    "options": [
+      "The Traffic Acquisition Report covers the very first campaign/source/medium the user arrived at your site with. The User Acquisition Report covers the campaign/source/medium for the session.",
+      "The User Acquisition Report covers the very first campaign/source/medium of the session. The Traffic Acquisition Report covers the campaign/source/medium of the last touch.",
+      "The User Acquisition Report covers the very first campaign/source/medium the user arrived at your site with. The Traffic Acquisition Report covers the campaign/source/medium for the session.",
+      ""
+    ],
+    "correctAnswer": "The User Acquisition Report covers the very first campaign/source/medium the user arrived at your site with. The Traffic Acquisition Report covers the campaign/source/medium for the session.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-team-wants-more-clarification-around-what-information-is-covered-in-the-user-acquisition-report-and-the-traffic-acquisition-report-what-would-you-highlight-for-your-team-as-the-key-differences-b/"
+  },
+  {
+    "id": 62,
+    "question": "You’re building a purchase funnel in Explore and want to select a homepage view. Which dimension would you use to do this?",
+    "options": [
+      "You’d use Page type.",
+      "You’d use Purchase.",
+      "You’d use Homepage name.",
+      "You’d use Page path and screen class."
+    ],
+    "correctAnswer": "You’d use Page path and screen class.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-building-a-purchase-funnel-in-explore-and-want-to-select-a-homepage-view-which-dimension-would-you-use-to-do-this/"
+  },
+  {
+    "id": 63,
+    "question": "When building a purchase funnel in Explore, which of these dimensions allow you to select a homepage view?",
+    "options": [
+      "Homepage name allows you to select a homepage view.",
+      "Purchase allows you to select a homepage view.",
+      "Page type allows you to select a homepage view.",
+      "Page path and screen class allow you to select a homepage view."
+    ],
+    "correctAnswer": "Page path and screen class allow you to select a homepage view.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-building-a-purchase-funnel-in-explore-which-of-these-dimensions-allow-you-to-select-a-homepage-view/"
+  },
+  {
+    "id": 64,
+    "question": "Which dimension would you use to select a homepage view when building a purchase funnel in Explore?",
+    "options": [
+      "Page type",
+      "Homepage name",
+      "Purchase",
+      "Page path and screen class"
+    ],
+    "correctAnswer": "Page path and screen class",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-dimension-would-you-use-to-select-a-homepage-view-when-building-a-purchase-funnel-in-explore/"
+  },
+  {
+    "id": 65,
+    "question": "Which of these reports highlight how users behave on product detail pages based on the type of device they’re using?",
+    "options": [
+      "The Events Report",
+      "The Pages and Screens Report",
+      "The User Acquisition Report",
+      "The Tech Details Report"
+    ],
+    "correctAnswer": "The Tech Details Report",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-reports-highlight-how-users-behave-on-product-detail-pages-based-on-the-type-of-device-theyre-using/"
+  },
+  {
+    "id": 66,
+    "question": "You want to compare whether users behave differently on your product detail pages based on the type of device they’re using. Which report can you use to find this information?",
+    "options": [
+      "Pages and Screens Report",
+      "Events Report",
+      "User Acquisition Report",
+      "Tech Details Report"
+    ],
+    "correctAnswer": "Tech Details Report",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-compare-whether-users-behave-differently-on-your-product-detail-pages-based-on-the-type-of-device-theyre-using-which-report-can-you-use-to-find-this-information/"
+  },
+  {
+    "id": 67,
+    "question": "Which of these reports should you pull when you want to determine whether users behave differently on your product detail pages based on the type of device they’re using?",
+    "options": [
+      "You should pull the Events Report.",
+      "You should pull the User Acquisition Report.",
+      "You should pull the Pages and Screens Report.",
+      "You should pull the Tech Details Report."
+    ],
+    "correctAnswer": "You should pull the Tech Details Report.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-reports-should-you-pull-when-you-want-to-determine-whether-users-behave-differently-on-your-product-detail-pages-based-on-the-type-of-device-theyre-using/"
+  },
+  {
+    "id": 68,
+    "question": "Your team is looking to add a net-new report to the left-hand nav that shows the source / medium filtered to desktop users only. Which new report template should they use to create this?",
+    "options": [
+      "They should use the Landing Page template.",
+      "They should use the Demographic Details template.",
+      "They should use the Traffic Acquisition template.",
+      "They should use the Tech Details template."
+    ],
+    "correctAnswer": "They should use the Tech Details template",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-team-is-looking-to-add-a-net-new-report-to-the-left-hand-nav-that-shows-the-source-medium-filtered-to-desktop-users-only-which-new-report-template-should-they-use-to-create-this/"
+  },
+  {
+    "id": 69,
+    "question": "You want to create a net-new report to add to your left-hand nav that shows source / medium filtered down to just desktop users. Which new report template should you start from?",
+    "options": [
+      "Demographic Details",
+      "Traffic Acquisition",
+      "Landing Page",
+      "Tech Details"
+    ],
+    "correctAnswer": "Tech Details",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-create-a-net-new-report-to-add-to-your-left-hand-nav-that-shows-source-medium-filtered-down-to-just-desktop-users-which-new-report-template-should-you-start-from/"
+  },
+  {
+    "id": 70,
+    "question": "Which new report template should you use when you want to create a net-new report to add to the left-hand nav that details source / medium filtered to desktop users only?",
+    "options": [
+      "Use the Demographic Details template.",
+      "Use the Landing Page template.",
+      "Use the Traffic Acquisition template.",
+      "Use the Tech Details template."
+    ],
+    "correctAnswer": "Use the Tech Details template",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-new-report-template-should-you-use-when-you-want-to-create-a-net-new-report-to-add-to-the-left-hand-nav-that-details-source-medium-filtered-to-desktop-users-only/"
+  },
+  {
+    "id": 71,
+    "question": "Which feature allows you to further break down and analyze the data displayed in a standard table report?",
+    "options": ["Filters", "Comparisons", "Breakdowns", "Secondary Dimension"],
+    "correctAnswer": "Secondary Dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-feature-allows-you-to-further-break-down-and-analyze-the-data-displayed-in-a-standard-table-report/"
+  },
+  {
+    "id": 72,
+    "question": "You’d like to further break down and analyze the data shown in a standard table report. Which feature would you select to do that?",
+    "options": [
+      "Select Comparisons.",
+      "Select Breakdowns.",
+      "Select Filters.",
+      "Select Secondary Dimension."
+    ],
+    "correctAnswer": "Select Secondary Dimension.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youd-like-to-further-break-down-and-analyze-the-data-shown-in-a-standard-table-report-which-feature-would-you-select-to-do-that/"
+  },
+  {
+    "id": 73,
+    "question": "As a business owner, you’d like to do a deeper breakdown and analysis of the data that’s displayed in your standard table report. Which feature would help you do that?",
+    "options": [
+      "Filters would help you do a deeper breakdown and analysis of the data.",
+      "Comparisons would help you do a deeper breakdown and analysis of the data.",
+      "Breakdowns would help you do a deeper breakdown and analysis of the data.",
+      "Secondary Dimension would help you do a deeper breakdown and analysis of the data."
+    ],
+    "correctAnswer": "Secondary Dimension would help you do a deeper breakdown and analysis of the data",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/as-a-business-owner-youd-like-to-do-a-deeper-breakdown-and-analysis-of-the-data-thats-displayed-in-your-standard-table-report-which-feature-would-help-you-do-that/"
+  },
+  {
+    "id": 74,
+    "question": "Your team wants to monitor for any unexpected spikes or declines in traffic to your website. Which built-in Google Analytics function highlights these events?",
+    "options": [
+      "Google AI highlights these events.",
+      "Machine learning highlights these events.",
+      "Data-driven attribution highlights these events.",
+      "Anomaly detection highlights these events."
+    ],
+    "correctAnswer": "Anomaly detection highlights these events.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-team-wants-to-monitor-for-any-unexpected-spikes-or-declines-in-traffic-to-your-website-which-built-in-google-analytics-function-highlights-these-events/"
+  },
+  {
+    "id": 75,
+    "question": "What’s the name of the built-in function that highlights when there’s been an unexpected spike or decrease in website traffic?",
+    "options": [
+      "Google AI",
+      "Machine learning",
+      "Data-driven attribution",
+      "Anomaly detection"
+    ],
+    "correctAnswer": "Anomaly detection",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whats-the-name-of-the-built-in-function-that-highlights-when-theres-been-an-unexpected-spike-or-decrease-in-website-traffic/"
+  },
+  {
+    "id": 76,
+    "question": "Which built-in function in Google Analytics displays unexpected decreases or increases in your website traffic?",
+    "options": [
+      "The machine learning function",
+      "The Google AI function",
+      "The data-driven attribution function",
+      "The anomaly detection function"
+    ],
+    "correctAnswer": "The anomaly detection function",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-built-in-function-in-google-analytics-displays-unexpected-decreases-or-increases-in-your-website-traffic/"
+  },
+  {
+    "id": 77,
+    "question": "Whenever a website visitor views any page on your site, they trigger the page_view event. But your team wants to define a new event to trigger when visitors land on a particular page, such as the homepage. Once they go to Events in the Google Analytics interface, which option should they choose to accomplish this?",
+    "options": [
+      "They should choose Import event.",
+      "They should choose Mark as key event.",
+      "They should choose Modify event.",
+      "They should choose Create event."
+    ],
+    "correctAnswer": "They should choose Create event.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whenever-a-website-visitor-views-any-page-on-your-site-they-trigger-the-page_view-event-but-your-team-wants-to-define-a-new-event-to-trigger-when-visitors-land-on-a-particular-page-such-as-the-home/"
+  },
+  {
+    "id": 78,
+    "question": "The page_view event is triggered whenever a website visitor views any page on your site. But if you want to set up a new event to trigger when visitors land on a particular page (e.g., the homepage), which option would you choose once you’ve navigated to Events in the Google Analytics interface?",
+    "options": [
+      "You would choose Import event.",
+      "You would choose Mark as key event.",
+      "You would choose Modify event.",
+      "You would choose Create event."
+    ],
+    "correctAnswer": "You would choose Create event.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/the-page_view-event-is-triggered-whenever-a-website-visitor-views-any-page-on-your-site-but-if-you-want-to-set-up-a-new-event-to-trigger-when-visitors-land-on-a-particular-page-e-g-the-homepage/"
+  },
+  {
+    "id": 79,
+    "question": "Which of the following scopes would be set for a custom dimension reporting membership status for a customer rewards program?",
+    "options": [
+      "The Event scope would be set.",
+      "The Session scope would be set.",
+      "The Item scope would be set.",
+      "The User scope would be set."
+    ],
+    "correctAnswer": "The User scope would be set.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-the-following-scopes-would-be-set-for-a-custom-dimension-reporting-membership-status-for-a-customer-rewards-program/"
+  },
+  {
+    "id": 80,
+    "question": "You want to link your Google Analytics property to BigQuery. What two options will you find when deciding how often data is exported to BigQuery?",
+    "options": [
+      "Weekly and Streaming",
+      "Daily and Weekly",
+      "Hourly and Streaming",
+      "Daily and Streaming"
+    ],
+    "correctAnswer": "Daily and Streaming",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-link-your-google-analytics-property-to-bigquery-what-two-options-will-you-find-when-deciding-how-often-data-is-exported-to-bigquery/"
+  },
+  {
+    "id": 81,
+    "question": "When linking your Google Analytics property to BigQuery, what are two options you’ll see when choosing how frequently data is exported to BigQuery?",
+    "options": [
+      "Daily and Weekly",
+      "Hourly and Streaming",
+      "Weekly and Streaming",
+      "Daily and Streaming"
+    ],
+    "correctAnswer": "Daily and Streaming",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-linking-your-google-analytics-property-to-bigquery-what-are-two-options-youll-see-when-choosing-how-frequently-data-is-exported-to-bigquery/"
+  },
+  {
+    "id": 82,
+    "question": "You create a report to show the types of devices users have been coming from over the past 30 days — whether they were on computers or mobile phones, for example. In this report, which of these is a “metric” in Google Analytics?",
+    "options": [
+      "The device types, desktops and mobile phones",
+      "Where users came from before reaching your site",
+      "The date range setting for the last 30 days",
+      "How many users were on mobile phones"
+    ],
+    "correctAnswer": "How many users were on mobile phones",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-create-a-report-to-show-the-types-of-devices-users-have-been-coming-from-over-the-past-30-days-whether-they-were-on-computers-or-mobile-phones-for-example-in-this-report-which-of-thes-2/"
+  },
+  {
+    "id": 83,
+    "question": "You want to know how various ads you’ve placed work together on the path to conversions, so you decide to look at the Attribution Paths Report. Where in your Google Analytics 4 property can you find this report?",
+    "options": [
+      "To view the report, go to Explore.",
+      "To view the report, go to Reports.",
+      "To view the report, go to Admin.",
+      "To view the report, go to Advertising."
+    ],
+    "correctAnswer": "To view the report, go to Advertising",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-know-how-various-ads-youve-placed-work-together-on-the-path-to-conversions-so-you-decide-to-look-at-the-attribution-paths-report-where-in-your-google-analytics-4-property-can-you-find/"
+  },
+  {
+    "id": 84,
+    "question": "You’ve placed multiple ads to help drive traffic to your website. Now, you want to look at the Attribution Paths Report to see how they’ve been working together on the path to conversions. To do this, where can you find the Attribution Paths Report in your Google Analytics 4 property?",
+    "options": [
+      "You can find it in Reports.",
+      "You can find it in Explore.",
+      "You can find it in Admin.",
+      "You can find it in Advertising."
+    ],
+    "correctAnswer": "You can find it in Advertising",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-placed-multiple-ads-to-help-drive-traffic-to-your-website-now-you-want-to-look-at-the-attribution-paths-report-to-see-how-theyve-been-working-together-on-the-path-to-conversions-to-do-thi/"
+  },
+  {
+    "id": 85,
+    "question": "Which section would you open in your Google Analytics property to find advanced techniques that can help you uncover deeper insights about your customers’ engagement?",
+    "options": [
+      "Open the Admin section.",
+      "Open the Reports section.",
+      "Open the Advertising section.",
+      "Open the Explore section."
+    ],
+    "correctAnswer": "Open the Explore section",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-section-would-you-open-in-your-google-analytics-property-to-find-advanced-techniques-that-can-help-you-uncover-deeper-insights-about-your-customers-engagement/"
+  },
+  {
+    "id": 86,
+    "question": "You want to find techniques that go beyond standard reports so you can uncover deeper insights about customer engagement. Which section of your Google Analytics property contains this?",
+    "options": [
+      "It’s in the Advertising section.",
+      "It’s in the Admin section.",
+      "It’s in the Reports section.",
+      "It’s in the Explore section."
+    ],
+    "correctAnswer": "It’s in the Explore section",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-find-techniques-that-go-beyond-standard-reports-so-you-can-uncover-deeper-insights-about-customer-engagement-which-section-of-your-google-analytics-property-contains-this/"
+  },
+  {
+    "id": 87,
+    "question": "You want to find ready-made cards that address typical questions about how users are interacting with your app or website. Which section do you go to in order to find this?",
+    "options": [
+      "You’d find it in the Explore section.",
+      "You’d find it in the Admin section.",
+      "You’d find it in the Advertising section.",
+      "You’d find it in the Reports section."
+    ],
+    "correctAnswer": "You’d find it in the Reports section",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-find-ready-made-cards-that-address-typical-questions-about-how-users-are-interacting-with-your-app-or-website-which-section-do-you-go-to-in-order-to-find-this/"
+  },
+  {
+    "id": 88,
+    "question": "Which of these Google Analytics features relies on Google AI and machine learning to measure conversions that you can’t directly observe?",
+    "options": [
+      "Conversion window measures these conversions.",
+      "Conversion events measures these conversions.",
+      "Attribution paths measures these conversions.",
+      "Key event modeling measures these conversions."
+    ],
+    "correctAnswer": "Key event modeling measures these conversions.",
+    "status": "용어 변형 (정상)",
+    "note": "공식 기능명은 'Conversion modeling(전환 모델링)'이나 사이트에서 Key event modeling으로 표기함. 정답 로직은 유효합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-google-analytics-features-relies-on-google-ai-and-machine-learning-to-measure-conversions-that-you-cant-directly-observe/"
+  },
+  {
+    "id": 89,
+    "question": "Which Google Analytics feature relies on machine learning and Google AI for measuring conversions that can’t be spotted through direct observation?",
+    "options": [
+      "The Conversion window feature",
+      "The Conversion events feature",
+      "The Attribution paths feature",
+      "The Key event modeling feature"
+    ],
+    "correctAnswer": "The Key event modeling feature",
+    "status": "용어 변형 (정상)",
+    "note": "공식 기능명은 'Conversion modeling(전환 모델링)'이나 사이트에서 Key event modeling으로 표기함. 정답 로직은 유효합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-google-analytics-feature-relies-on-machine-learning-and-google-ai-for-measuring-conversions-that-cant-be-spotted-through-direct-observation/"
+  },
+  {
+    "id": 90,
+    "question": "Which Google Analytics feature uses machine learning and Google AI to measure conversions that aren’t directly observable?",
+    "options": [
+      "Conversion window",
+      "Conversion events",
+      "Attribution paths",
+      "Key event modelling"
+    ],
+    "correctAnswer": "Key event modelling",
+    "status": "용어 변형 (정상)",
+    "note": "공식 기능명은 'Conversion modeling(전환 모델링)'이나 사이트에서 Key event modeling으로 표기함. 정답 로직은 유효합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-google-analytics-feature-uses-machine-learning-and-google-ai-to-measure-conversions-that-arent-directly-observable/"
+  },
+  {
+    "id": 91,
+    "question": "To link a Google Analytics property to BIgQuery, you’ll see two options for selecting how frequently that data should be exported. What are those two options?",
+    "options": [
+      "Hourly and Streaming",
+      "Weekly and Streaming",
+      "Daily and Weekly",
+      "Daily and Streaming"
+    ],
+    "correctAnswer": "Daily and Streaming",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/to-link-a-google-analytics-property-to-bigquery-youll-see-two-options-for-selecting-how-frequently-that-data-should-be-exported-what-are-those-two-options/"
+  },
+  {
+    "id": 92,
+    "question": "What model represents the hierarchical structure of a Google Analytics account?",
+    "options": [
+      "Data stream > Account > Property",
+      "Property > Data stream > Account",
+      "Property > Account > Data stream",
+      "Account > Property > Data stream"
+    ],
+    "correctAnswer": "Account > Property > Data stream",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-model-represents-the-hierarchical-structure-of-a-google-analytics-account-2/"
+  },
+  {
+    "id": 93,
+    "question": "Which of these structures represents a Google Analytics account’s hierarchy?",
+    "options": [
+      "Data stream > Account > Property",
+      "Property > Account > Data stream",
+      "Property > Data stream > Account",
+      "Account > Property > Data stream"
+    ],
+    "correctAnswer": "Account > Property > Data stream",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-structures-represents-a-google-analytics-accounts-hierarchy/"
+  },
+  {
+    "id": 94,
+    "question": "Which of these configurations show a Google Analytics account’s hierarchical structure?",
+    "options": [
+      "Property > Data stream > Account",
+      "Property > Account > Data stream",
+      "Data stream > Account > Property",
+      "Account > Property > Data stream"
+    ],
+    "correctAnswer": "Account > Property > Data stream",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-configurations-show-a-google-analytics-accounts-hierarchical-structure/"
+  },
+  {
+    "id": 95,
+    "question": "If you wanted a custom dimension that reports membership status for a customer rewards program, which of these scopes would be set?",
+    "options": ["Session", "Event", "Product", "User"],
+    "correctAnswer": "User",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-a-custom-dimension-that-reports-membership-status-for-a-customer-rewards-program-which-of-these-scopes-would-be-set/"
+  },
+  {
+    "id": 96,
+    "question": "What scope would be set for a custom dimension that reports membership status for a customer rewards program?",
+    "options": ["Event", "Product", "Session", "User"],
+    "correctAnswer": "User",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-scope-would-be-set-for-a-custom-dimension-that-reports-membership-status-for-a-customer-rewards-program-2/"
+  },
+  {
+    "id": 97,
+    "question": "Which of these scopes would be set for a custom dimension reporting membership status for a customer rewards program?",
+    "options": ["Event", "Product", "Session", "User"],
+    "correctAnswer": "User",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-scopes-would-be-set-for-a-custom-dimension-reporting-membership-status-for-a-customer-rewards-program/"
+  },
+  {
+    "id": 98,
+    "question": "You manage a retail website and customers arrive from many different places, like search engines, ads, and social media. You’re interested in gaining insight to which of these is driving the most new customers and the most conversions. Which dimension shows you where your website users arrived from, such as “organic search” or “referral”?",
+    "options": [
+      "Google Ads campaign",
+      "Event name",
+      "Page title",
+      "Default channel grouping"
+    ],
+    "correctAnswer": "Default channel grouping",
+    "status": "정상 (용어 참고)",
+    "note": "현재 GA4 보고서 기본 측정기준 명칭은 'Session primary channel group (기본 채널 그룹)'입니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-retail-website-and-customers-arrive-from-many-different-places-like-search-engines-ads-and-social-media-youre-interested-in-gaining-insight-to-which-of-these-is-driving-the-most-new/"
+  },
+  {
+    "id": 99,
+    "question": "Your team manages a retail website that customers arrive at from a variety of places including social media, ads, and search engines. Which of these dimensions would you look at to determine whether your website traffic was coming from “organic search,” “referral,” or other areas?",
+    "options": [
+      "Event name",
+      "Google Ads campaign",
+      "Page title",
+      "Default channel grouping/Session primary channel group (Default Channel Group)"
+    ],
+    "correctAnswer": "Session primary channel group (Default Channel Group)/Default channel grouping",
+    "status": "정상 (용어 참고)",
+    "note": "현재 GA4 보고서 기본 측정기준 명칭은 'Session primary channel group (기본 채널 그룹)'입니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-team-manages-a-retail-website-that-customers-arrive-at-from-a-variety-of-places-including-social-media-ads-and-search-engines-which-of-these-dimensions-would-you-look-at-to-determine-whether-y/"
+  },
+  {
+    "id": 100,
+    "question": "If you wanted to gain insight into the traffic to your retail website, which dimension would you look at to determine whether it was coming from “organic search,” “referral,” or other places?",
+    "options": [
+      "Event name",
+      "Google Ads campaign",
+      "Page title",
+      "Default channel grouping"
+    ],
+    "correctAnswer": "Default channel grouping",
+    "status": "정상 (용어 참고)",
+    "note": "현재 GA4 보고서 기본 측정기준 명칭은 'Session primary channel group (기본 채널 그룹)'입니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-gain-insight-into-the-traffic-to-your-retail-website-which-dimension-would-you-look-at-to-determine-whether-it-was-coming-from-organic-search-referral/"
+  },
+  {
+    "id": 101,
+    "question": "Which of these sections of Google Analytics Reports provides insights into where users are coming from e g social media before visiting your website (URL 제목 추출)",
+    "options": ["Demographics", "Engagement", "Monetization", "Acquisition"],
+    "correctAnswer": "Acquisition",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-sections-of-google-analytics-reports-provides-insights-into-where-users-are-coming-from-e-g-social-media-before-visiting-your-website/"
+  },
+  {
+    "id": 102,
+    "question": "Users are finding and visiting your website from a variety of different places including search engine results and social media which section within Reports in Google Analytics can give you insight (URL 제목 추출)",
+    "options": ["Demographics", "Monetization", "Engagement", "Acquisition"],
+    "correctAnswer": "Acquisition",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/users-are-finding-and-visiting-your-website-from-a-variety-of-different-places-including-search-engine-results-and-social-media-which-section-within-reports-in-google-analytics-can-give-you-insight/"
+  },
+  {
+    "id": 103,
+    "question": "Where in Google Analytics Reports can you find insights into where users are coming from e g search engine results before visiting your website (URL 제목 추출)",
+    "options": ["Demographics", "Monetization", "Engagement", "Acquisition"],
+    "correctAnswer": "Acquisition",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/where-in-google-analytics-reports-can-you-find-insights-into-where-users-are-coming-from-e-g-search-engine-results-before-visiting-your-website/"
+  },
+  {
+    "id": 104,
+    "question": "You manage a hardware store and you post a new how to video on your website so that customers can learn how to properly use the tools that you sell Google Analytics has a lot of data about user inter (URL 제목 추출)",
+    "options": [
+      "Name of the video users can watch on your site",
+      "How many users watched the video on your site",
+      "How many users opened the page containing the video on your site",
+      "The language preference of users watching the video on your site"
+    ],
+    "correctAnswer": "The language preference of users watching the video on your site",
+    "status": "주의/오류 의심 (Mismatch)",
+    "note": "질문 의도가 '비디오 이벤트 매개변수(Event parameter)'라면 'Name of the video(비디오 이름)'가 정답이며, '사용자 속성(User property)'을 묻는 문항이라면 'The language preference(언어 설정)'가 정답입니다. 문제 원문 확인 필요.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-hardware-store-and-you-post-a-new-how-to-video-on-your-website-so-that-customers-can-learn-how-to-properly-use-the-tools-that-you-sell-google-analytics-has-a-lot-of-data-about-user-inter/"
+  },
+  {
+    "id": 105,
+    "question": "You manage a company that installs swimming pools you post a new how to video on your website about proper pool maintenance Google Analytics has a lot of data about user interactions with this video (URL 제목 추출)",
+    "options": [
+      "How many users opened the page containing the video on your site",
+      "How many users watched the video on your site",
+      "Name of the video users can watch on your site",
+      "The language preference of users watching the video on your site"
+    ],
+    "correctAnswer": "The language preference of users watching the video on your site",
+    "status": "주의/오류 의심 (Mismatch)",
+    "note": "질문 의도가 '비디오 이벤트 매개변수(Event parameter)'라면 'Name of the video(비디오 이름)'가 정답이며, '사용자 속성(User property)'을 묻는 문항이라면 'The language preference(언어 설정)'가 정답입니다. 문제 원문 확인 필요.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-company-that-installs-swimming-pools-you-post-a-new-how-to-video-on-your-website-about-proper-pool-maintenance-google-analytics-has-a-lot-of-data-about-user-interactions-with-this-video/"
+  },
+  {
+    "id": 106,
+    "question": "You manage a gardening company and you post a new how to video on your website for your customers in Google Analytics you find lots of data about the user interactions with this video while looking (URL 제목 추출)",
+    "options": [
+      "How many users opened the page containing the video on your site",
+      "Name of the video users can watch on your site",
+      "How many users watched the video on your site",
+      "The language preference of users watching the video on your site"
+    ],
+    "correctAnswer": "The language preference of users watching the video on your site",
+    "status": "주의/오류 의심 (Mismatch)",
+    "note": "질문 의도가 '비디오 이벤트 매개변수(Event parameter)'라면 'Name of the video(비디오 이름)'가 정답이며, '사용자 속성(User property)'을 묻는 문항이라면 'The language preference(언어 설정)'가 정답입니다. 문제 원문 확인 필요.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-gardening-company-and-you-post-a-new-how-to-video-on-your-website-for-your-customers-in-google-analytics-you-find-lots-of-data-about-the-user-interactions-with-this-video-while-looking/"
+  },
+  {
+    "id": 107,
+    "question": "Your website visitors already trigger the page_view event when they view any page on your site but you want to define a new event to trigger when visitors land on a specific page like the homepage (URL 제목 추출)",
+    "options": [
+      "Import event",
+      "Modify event",
+      "Mark event as conversion",
+      "Create event"
+    ],
+    "correctAnswer": "Create event",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-website-visitors-already-trigger-the-page_view-event-when-they-view-any-page-on-your-site-but-you-want-to-define-a-new-event-to-trigger-when-visitors-land-on-a-specific-page-like-the-homepage/"
+  },
+  {
+    "id": 108,
+    "question": "The page_view event is triggered whenever a website visitor views any page on your site if you wanted to set up a new event to trigger when visitors land on a particular page e g the homepage wh (URL 제목 추출)",
+    "options": [
+      "Modify event",
+      "Import event",
+      "Mark event as conversion",
+      "Create event"
+    ],
+    "correctAnswer": "Create event",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/the-page_view-event-is-triggered-whenever-a-website-visitor-views-any-page-on-your-site-if-you-wanted-to-set-up-a-new-event-to-trigger-when-visitors-land-on-a-particular-page-e-g-the-homepage-wh/"
+  },
+  {
+    "id": 109,
+    "question": "Whenever a website visitor views any page on your site they trigger the page_view event what if you wanted to define a new event to trigger when visitors land on a particular page e g the homepag (URL 제목 추출)",
+    "options": [
+      "Import event",
+      "Modify event",
+      "Mark event as conversion",
+      "Create event"
+    ],
+    "correctAnswer": "Create event",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whenever-a-website-visitor-views-any-page-on-your-site-they-trigger-the-page_view-event-what-if-you-wanted-to-define-a-new-event-to-trigger-when-visitors-land-on-a-particular-page-e-g-the-homepag/"
+  },
+  {
+    "id": 110,
+    "question": "You have already set up your web data stream and data is flowing into your Google Analytics property from your website you notice that enhanced measurement is enabled for the web data stream what ha (URL 제목 추출)",
+    "options": [
+      "Events from your mobile app can be combined with your existing website data",
+      "Conversion reporting for the web data stream uses machine learning to distributes credit across channels",
+      "Events can be associated with signed-in users to enable cross-device reporting",
+      "Additional events are collected from your website without you needing to change your website’s code"
+    ],
+    "correctAnswer": "Additional events are collected from your website without you needing to change your website’s code",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-already-set-up-your-web-data-stream-and-data-is-flowing-into-your-google-analytics-property-from-your-website-you-notice-that-enhanced-measurement-is-enabled-for-the-web-data-stream-what-ha/"
+  },
+  {
+    "id": 111,
+    "question": "You're setting up your web data stream so that your website is feeding your Google Analytics property with data while setting up this web data stream what happens when you leave the enhanced (URL 제목 추출)",
+    "options": [
+      "Events can be associated with signed-in users to enable cross-device reporting",
+      "Events from your mobile app can be combined with your existing website data",
+      "Conversion reporting for the web data stream uses machine learning to distributes credit across channels",
+      "Additional events are collected from your website without you needing to change your website’s code"
+    ],
+    "correctAnswer": "Additional events are collected from your website without you needing to change your website’s code",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-setting-up-your-web-data-stream-so-that-your-website-is-feeding-your-google-analytics-property-with-data-while-setting-up-this-web-data-stream-what-happens-when-you-leave-the-enhanced/"
+  },
+  {
+    "id": 112,
+    "question": "Because you've set up your web data stream your website is already feeding data to your Google Analytics property you notice that enhanced measurement is enabled for the web data stream wha (URL 제목 추출)",
+    "options": [
+      "Events from your mobile app can be combined with your existing website data",
+      "Conversion reporting for the web data stream uses machine learning to distributes credit across channels",
+      "Events can be associated with signed-in users to enable cross-device reporting",
+      "Additional events are collected from your website without you needing to change your website’s code"
+    ],
+    "correctAnswer": "Additional events are collected from your website without you needing to change your website’s code",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/because-youve-set-up-your-web-data-stream-your-website-is-already-feeding-data-to-your-google-analytics-property-you-notice-that-enhanced-measurement-is-enabled-for-the-web-data-stream-wha/"
+  },
+  {
+    "id": 113,
+    "question": "You're asked to set up a data stream in accordance with setting up Google Analytics what is a data stream (URL 제목 추출)",
+    "options": [
+      "A data stream lives within Reports and lets you segment and compare your data",
+      "A data stream lives within Explore and, once defined, can be added to any exploration",
+      "A data stream lives within an account and is the container for the data you collect from your apps and sites",
+      "A data stream lives within a property and is a source of data from your app or website"
+    ],
+    "correctAnswer": "A data stream lives within a property and is a source of data from your app or website",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-asked-to-set-up-a-data-stream-in-accordance-with-setting-up-google-analytics-what-is-a-data-stream/"
+  },
+  {
+    "id": 114,
+    "question": "You are setting up Google Analytics and are asked to set up a data stream as part of the process which of these describes a data stream (URL 제목 추출)",
+    "options": [
+      "A data stream lives within Reports and lets you segment and compare your data",
+      "A data stream lives within an account and is the container for the data you collect from your apps and sites",
+      "A data stream lives within Explore and, once defined, can be added to any exploration",
+      "A data stream lives within a property and is a source of data from your app or website"
+    ],
+    "correctAnswer": "A data stream lives within a property and is a source of data from your app or website",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-are-setting-up-google-analytics-and-are-asked-to-set-up-a-data-stream-as-part-of-the-process-which-of-these-describes-a-data-stream/"
+  },
+  {
+    "id": 115,
+    "question": "Which of these definitions describe a data stream as it relates to Google Analytics (URL 제목 추출)",
+    "options": [
+      "A data stream lives within an account and is the container for the data you collect from your apps and sites",
+      "A data stream lives within Explore and, once defined, can be added to any exploration",
+      "A data stream lives within Reports and lets you segment and compare your data",
+      "A data stream lives within a property and is a source of data from your app or website"
+    ],
+    "correctAnswer": "A data stream lives within a property and is a source of data from your app or website",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-definitions-describe-a-data-stream-as-it-relates-to-google-analytics/"
+  },
+  {
+    "id": 116,
+    "question": "Which Google Analytics feature relies on machine learning for measuring conversions that can't be spotted through direct observation (URL 제목 추출)",
+    "options": [
+      "Conversion window",
+      "Conversion events",
+      "Conversion paths",
+      "Conversion modeling"
+    ],
+    "correctAnswer": "Conversion modeling",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-google-analytics-feature-relies-on-machine-learning-for-measuring-conversions-that-cant-be-spotted-through-direct-observation/"
+  },
+  {
+    "id": 117,
+    "question": "Which of these Google Analytics features relies on machine learning to measure conversions that you can't directly observe (URL 제목 추출)",
+    "options": [
+      "Conversion events",
+      "Conversion window",
+      "Conversion paths",
+      "Conversion modeling"
+    ],
+    "correctAnswer": "Conversion modeling",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-google-analytics-features-relies-on-machine-learning-to-measure-conversions-that-you-cant-directly-observe/"
+  },
+  {
+    "id": 118,
+    "question": "Which Google Analytics feature uses machine learning to measure conversions that aren't directly observable (URL 제목 추출)",
+    "options": [
+      "Conversion paths",
+      "Conversion events",
+      "Conversion window",
+      "Conversion modeling"
+    ],
+    "correctAnswer": "Conversion modeling",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-google-analytics-feature-uses-machine-learning-to-measure-conversions-that-arent-directly-observable/"
+  },
+  {
+    "id": 119,
+    "question": "Which data collection feature allows you to control the amount of time user level and event level data is stored by Google Analytics (URL 제목 추출)",
+    "options": [
+      "Consent Mode",
+      "IP address settings",
+      "Disable data collection",
+      "Data retention period"
+    ],
+    "correctAnswer": "Data retention period",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-data-collection-feature-allows-you-to-control-the-amount-of-time-user-level-and-event-level-data-is-stored-by-google-analytics/"
+  },
+  {
+    "id": 120,
+    "question": "Which features lets you set the amount of time that event level and user level data is stored by Google Analytics (URL 제목 추출)",
+    "options": [
+      "IP address settings",
+      "Disable data collection",
+      "Consent Mode",
+      "Data retention period"
+    ],
+    "correctAnswer": "Data retention period",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-features-lets-you-set-the-amount-of-time-that-event-level-and-user-level-data-is-stored-by-google-analytics/"
+  },
+  {
+    "id": 121,
+    "question": "Which of these features lets you control how long user level and event level data is stored by Google Analytics (URL 제목 추출)",
+    "options": [
+      "Disable data collection",
+      "Consent Mode",
+      "IP address settings",
+      "Data retention period"
+    ],
+    "correctAnswer": "Data retention period",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-features-lets-you-control-how-long-user-level-and-event-level-data-is-stored-by-google-analytics/"
+  },
+  {
+    "id": 122,
+    "question": "What can Google Ads do with audiences from Google Analytics when these two services are linked (URL 제목 추출)",
+    "options": [
+      "Audiences in Google Ads can be contacted for customer research",
+      "Audiences in Google Ads can be used to see industry benchmarking data",
+      "Audiences in Google Ads can be used to adjust geotargeting of ad campaigns",
+      "Audiences in Google Ads can be used to target ad campaigns"
+    ],
+    "correctAnswer": "Audiences in Google Ads can be used to target ad campaigns",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-can-google-ads-do-with-audiences-from-google-analytics-when-these-two-services-are-linked/"
+  },
+  {
+    "id": 123,
+    "question": "How can Google Ads use audiences from Google Analytics when the two are linked (URL 제목 추출)",
+    "options": [
+      "Audiences in Google Ads can be used to see industry benchmarking data",
+      "Audiences in Google Ads can be used to adjust geotargeting of ad campaigns",
+      "Audiences in Google Ads can be contacted for customer research",
+      "Audiences in Google Ads can be used to target ad campaigns"
+    ],
+    "correctAnswer": "Audiences in Google Ads can be used to target ad campaigns",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/how-can-google-ads-use-audiences-from-google-analytics-when-the-two-are-linked/"
+  },
+  {
+    "id": 124,
+    "question": "When Google Ads is linked to Google Analytics how can it leverage audiences from Google Analytics (URL 제목 추출)",
+    "options": [
+      "Audiences in Google Ads can be contacted for customer research",
+      "Audiences in Google Ads can be used to adjust geotargeting of ad campaigns",
+      "Audiences in Google Ads can be used to see industry benchmarking data",
+      "Audiences in Google Ads can be used to target ad campaigns"
+    ],
+    "correctAnswer": "Audiences in Google Ads can be used to target ad campaigns",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-google-ads-is-linked-to-google-analytics-how-can-it-leverage-audiences-from-google-analytics/"
+  },
+  {
+    "id": 125,
+    "question": "What platform can you connect with analytics in order to get insights into organic search queries that are directing users to your website (URL 제목 추출)",
+    "options": [
+      "Search Ads 360",
+      "Google Ads",
+      "Google Optimize",
+      "Search Console"
+    ],
+    "correctAnswer": "Search Console",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-platform-can-you-connect-with-analytics-in-order-to-get-insights-into-organic-search-queries-that-are-directing-users-to-your-website/"
+  },
+  {
+    "id": 126,
+    "question": "To get insights into the organic search queries that are leading users to your website you can connect analytics with which platform (URL 제목 추출)",
+    "options": [
+      "Google Optimize",
+      "Search Ads 360",
+      "Google Ads",
+      "Search Console"
+    ],
+    "correctAnswer": "Search Console",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/to-get-insights-into-the-organic-search-queries-that-are-leading-users-to-your-website-you-can-connect-analytics-with-which-platform/"
+  },
+  {
+    "id": 127,
+    "question": "If you wanted to gain insights into the organic search queries that are taking users to your website which platform should you connect with analytics (URL 제목 추출)",
+    "options": [
+      "Search Ads 362",
+      "Google Ads",
+      "Google Optimize",
+      "Search Console"
+    ],
+    "correctAnswer": "Search Console",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-gain-insights-into-the-organic-search-queries-that-are-taking-users-to-your-website-which-platform-should-you-connect-with-analytics/"
+  },
+  {
+    "id": 128,
+    "question": "Which platform can be connected to analytics to let you test different versions of web pages with specific audiences (URL 제목 추출)",
+    "options": [
+      "Firebase",
+      "Modify event",
+      "Search Console",
+      "Google Optimize"
+    ],
+    "correctAnswer": "Google Optimize",
+    "status": "구버전 문항 (Deprecated)",
+    "note": "Google Optimize는 2023년 9월 서비스 종료되었습니다. 최신 시험에서는 출제되지 않는 구버전 문항입니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-platform-can-be-connected-to-analytics-to-let-you-test-different-versions-of-web-pages-with-specific-audiences/"
+  },
+  {
+    "id": 129,
+    "question": "Which of these platforms can be connected to analytics so that you can test variants of your web pages with specifically tailored audiences (URL 제목 추출)",
+    "options": [
+      "Search Console",
+      "Modify event",
+      "Firebase",
+      "Google Optimize"
+    ],
+    "correctAnswer": "Google Optimize",
+    "status": "구버전 문항 (Deprecated)",
+    "note": "Google Optimize는 2023년 9월 서비스 종료되었습니다. 최신 시험에서는 출제되지 않는 구버전 문항입니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-platforms-can-be-connected-to-analytics-so-that-you-can-test-variants-of-your-web-pages-with-specifically-tailored-audiences/"
+  },
+  {
+    "id": 130,
+    "question": "Connecting which platform to analytics allows you to direct experiments toward specific audiences to test variants of your web pages (URL 제목 추출)",
+    "options": [
+      "Search Console",
+      "Modify event",
+      "Firebase",
+      "Google Optimize"
+    ],
+    "correctAnswer": "Google Optimize",
+    "status": "구버전 문항 (Deprecated)",
+    "note": "Google Optimize는 2023년 9월 서비스 종료되었습니다. 최신 시험에서는 출제되지 않는 구버전 문항입니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/connecting-which-platform-to-analytics-allows-you-to-direct-experiments-toward-specific-audiences-to-test-variants-of-your-web-pages/"
+  },
+  {
+    "id": 131,
+    "question": "You have a mobile app and want to collect and send data from the app to your Google Analytics 4 property which of these should you use (URL 제목 추출)",
+    "options": [
+      "Google Marketing Platform",
+      "Google Ads",
+      "Website tag",
+      "Firebase SDK"
+    ],
+    "correctAnswer": "Firebase SDK",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-a-mobile-app-and-want-to-collect-and-send-data-from-the-app-to-your-google-analytics-4-property-which-of-these-should-you-use/"
+  },
+  {
+    "id": 132,
+    "question": "If you have a mobile app what can you use to collect and send data from the app to your Google Analytics 4 property (URL 제목 추출)",
+    "options": [
+      "Google Ads",
+      "Website tag",
+      "Google Marketing Platform",
+      "Firebase SDK"
+    ],
+    "correctAnswer": "Firebase SDK",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-have-a-mobile-app-what-can-you-use-to-collect-and-send-data-from-the-app-to-your-google-analytics-4-property/"
+  },
+  {
+    "id": 133,
+    "question": "Which of the following tools could you use in order to collect and send data from a mobile app to a Google Analytics 4 property (URL 제목 추출)",
+    "options": [
+      "Google Ads",
+      "Website tag",
+      "Google Marketing Platform",
+      "Firebase SDK"
+    ],
+    "correctAnswer": "Firebase SDK",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-the-following-tools-could-you-use-in-order-to-collect-and-send-data-from-a-mobile-app-to-a-google-analytics-4-property/"
+  },
+  {
+    "id": 134,
+    "question": "You have a website and want to start gathering and reporting insights for it in Google Analytics what should you set up first (URL 제목 추출)",
+    "options": ["Firebase SDK", "Google Ads", "Analytics SDK", "Analytics tag"],
+    "correctAnswer": "Analytics tag",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-a-website-and-want-to-start-gathering-and-reporting-insights-for-it-in-google-analytics-what-should-you-set-up-first/"
+  },
+  {
+    "id": 135,
+    "question": "What do you need to implement first in order to start gathering insights for your website to be reported via Google Analytics (URL 제목 추출)",
+    "options": ["Analytics SDK", "Firebase SDK", "Google Ads", "Analytics tag"],
+    "correctAnswer": "Analytics tag",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-do-you-need-to-implement-first-in-order-to-start-gathering-insights-for-your-website-to-be-reported-via-google-analytics/"
+  },
+  {
+    "id": 136,
+    "question": "You want to start collecting and reporting insights in Google Analytics for your website what do you need to implement in order to start collecting and sending this data to Google Analytics (URL 제목 추출)",
+    "options": ["Google Ads", "Analytics SDK", "Firebase SDK", "Analytics tag"],
+    "correctAnswer": "Analytics tag",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-start-collecting-and-reporting-insights-in-google-analytics-for-your-website-what-do-you-need-to-implement-in-order-to-start-collecting-and-sending-this-data-to-google-analytics/"
+  },
+  {
+    "id": 137,
+    "question": "If you delete a property from your Google Analytics account how many days do you have until the property is permanently deleted (URL 제목 추출)",
+    "options": ["14", "7", "60", "35"],
+    "correctAnswer": "35",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-delete-a-property-from-your-google-analytics-account-how-many-days-do-you-have-until-the-property-is-permanently-deleted/"
+  },
+  {
+    "id": 138,
+    "question": "Once you've deleted a property from your Google Analytics account how many days does it take for the property to be permanently deleted (URL 제목 추출)",
+    "options": ["7", "14", "60", "35"],
+    "correctAnswer": "35",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/once-youve-deleted-a-property-from-your-google-analytics-account-how-many-days-does-it-take-for-the-property-to-be-permanently-deleted/"
+  },
+  {
+    "id": 139,
+    "question": "How many days does it take for a property to be permanently deleted once you have deleted it from your Google Analytics account (URL 제목 추출)",
+    "options": ["14", "7", "60", "35"],
+    "correctAnswer": "35",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/how-many-days-does-it-take-for-a-property-to-be-permanently-deleted-once-you-have-deleted-it-from-your-google-analytics-account/"
+  },
+  {
+    "id": 140,
+    "question": "If you want to analyze events and users across your businesss website as well as its separate apps for iOS and Android how should you set up your account (URL 제목 추출)",
+    "options": [
+      "One property with a web data stream for your website and one property with two app data streams, one for iOS and the other for Android",
+      "One property with one web data stream for your website and one app data stream for your app",
+      "One property with a web data stream for your website and one property with an app data stream for your app",
+      "One property with one web data stream for your website and two app data streams, one for iOS and the other for Android"
+    ],
+    "correctAnswer": "One property with one web data stream for your website and two app data streams, one for iOS and the other for Android",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-want-to-analyze-events-and-users-across-your-businesss-website-as-well-as-its-separate-apps-for-ios-and-android-how-should-you-set-up-your-account/"
+  },
+  {
+    "id": 141,
+    "question": "Your business has a website and an app for both iOS and Android if you want to analyze events and users together across these three what would your account setup look like (URL 제목 추출)",
+    "options": [
+      "One property with a web data stream for your website and one property with two app data streams, one for iOS and the other for Android",
+      "One property with a web data stream for your website and one property with an app data stream for your app",
+      "One property with one web data stream for your website and one app data stream for your app",
+      "One property with one web data stream for your website and two app data streams, one for iOS and the other for Android"
+    ],
+    "correctAnswer": "One property with one web data stream for your website and two app data streams, one for iOS and the other for Android",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-business-has-a-website-and-an-app-for-both-ios-and-android-if-you-want-to-analyze-events-and-users-together-across-these-three-what-would-your-account-setup-look-like/"
+  },
+  {
+    "id": 142,
+    "question": "You run a small company that has a website as well as an app for iOS and an app for Android if your objective is to analyze events and users across all three of these how should you set up your acco (URL 제목 추출)",
+    "options": [
+      "One property with a web data stream for your website and one property with two app data streams, one for iOS and the other for Android",
+      "One property with one web data stream for your website and one app data stream for your app",
+      "One property with a web data stream for your website and one property with an app data stream for your app",
+      "One property with one web data stream for your website and two app data streams, one for iOS and the other for Android"
+    ],
+    "correctAnswer": "One property with one web data stream for your website and two app data streams, one for iOS and the other for Android",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-run-a-small-company-that-has-a-website-as-well-as-an-app-for-ios-and-an-app-for-android-if-your-objective-is-to-analyze-events-and-users-across-all-three-of-these-how-should-you-set-up-your-acco/"
+  },
+  {
+    "id": 143,
+    "question": "This analytics feature allows you to connect individual customers behavior across various interactions on different platforms and devices by letting you associate your own identifiers with yo (URL 제목 추출)",
+    "options": [
+      "Audience triggers",
+      "Device-ID",
+      "Predictive audiences",
+      "User-ID"
+    ],
+    "correctAnswer": "User-ID",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/this-analytics-feature-allows-you-to-connect-individual-customers-behavior-across-various-interactions-on-different-platforms-and-devices-by-letting-you-associate-your-own-identifiers-with-yo/"
+  },
+  {
+    "id": 144,
+    "question": "If your goal was to connect individual customers behavior across different interactions on different platforms and devices which analytics feature allows you to do that by associating your own iden (URL 제목 추출)",
+    "options": [
+      "Device-ID",
+      "Predictive audiences",
+      "Audience triggers",
+      "User-ID"
+    ],
+    "correctAnswer": "User-ID",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-your-goal-was-to-connect-individual-customers-behavior-across-different-interactions-on-different-platforms-and-devices-which-analytics-feature-allows-you-to-do-that-by-associating-your-own-iden/"
+  },
+  {
+    "id": 145,
+    "question": "Which analytics feature lets you associate your own identifiers with your individual customers so you can connect their behavior across different interactions on various devices and platforms (URL 제목 추출)",
+    "options": [
+      "Device-ID",
+      "Predictive audiences",
+      "Audience triggers",
+      "User-ID"
+    ],
+    "correctAnswer": "User-ID",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-analytics-feature-lets-you-associate-your-own-identifiers-with-your-individual-customers-so-you-can-connect-their-behavior-across-different-interactions-on-various-devices-and-platforms/"
+  },
+  {
+    "id": 146,
+    "question": "Your goal is to export your Google Analytics data to BigQuery so that you can run queries and combine some of your offline data with analytics data which analytics properties can export data to bigqu (URL 제목 추출)",
+    "options": [
+      "Only Analytics 360 properties in GA4 or Universal Analytics",
+      "Only Standard properties in GA4 or Universal Analytics",
+      "Standard or Analytics 360 properties using Universal Analytics",
+      "Standard or Analytics 360 properties using GA4"
+    ],
+    "correctAnswer": "Standard or Analytics 360 properties using GA4",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-goal-is-to-export-your-google-analytics-data-to-bigquery-so-that-you-can-run-queries-and-combine-some-of-your-offline-data-with-analytics-data-which-analytics-properties-can-export-data-to-bigqu/"
+  },
+  {
+    "id": 147,
+    "question": "You would like to export your Google Analytics data to BigQuery to run queries and combine some of your offline data with analytics data what type of analytics property can export data to BigQuery (URL 제목 추출)",
+    "options": [
+      "Only Analytics 360 properties in GA4 or Universal Analytics",
+      "Standard or Analytics 360 properties using Universal Analytics",
+      "Only Standard properties in GA4 or Universal Analytics",
+      "Standard or Analytics 360 properties using GA4"
+    ],
+    "correctAnswer": "Standard or Analytics 360 properties using GA4",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-would-like-to-export-your-google-analytics-data-to-bigquery-to-run-queries-and-combine-some-of-your-offline-data-with-analytics-data-what-type-of-analytics-property-can-export-data-to-bigquery/"
+  },
+  {
+    "id": 148,
+    "question": "You want to run queries and combine some of your offline data with analytics data to do so you want to export your Google Analytics data to BigQuery what analytics properties are able to export dat (URL 제목 추출)",
+    "options": [
+      "Only Analytics 360 properties in GA4 or Universal Analytics",
+      "Only Standard properties in GA4 or Universal Analytics",
+      "Standard or Analytics 360 properties using Universal Analytics",
+      "Standard or Analytics 360 properties using GA4"
+    ],
+    "correctAnswer": "Standard or Analytics 360 properties using GA4",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-run-queries-and-combine-some-of-your-offline-data-with-analytics-data-to-do-so-you-want-to-export-your-google-analytics-data-to-bigquery-what-analytics-properties-are-able-to-export-dat/"
+  },
+  {
+    "id": 149,
+    "question": "You generate a report to show how many users are coming from various device types like desktops and mobile phones over the past 30 days in this report what is device type (URL 제목 추출)",
+    "options": ["An event", "A metric", "A user", "A dimension"],
+    "correctAnswer": "A dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-generate-a-report-to-show-how-many-users-are-coming-from-various-device-types-like-desktops-and-mobile-phones-over-the-past-30-days-in-this-report-what-is-device-type/"
+  },
+  {
+    "id": 150,
+    "question": "You create a report to show the types of devices users have been coming from over the past 30 days whether they were on desktops or mobile phones for example in this report what is device (URL 제목 추출)",
+    "options": ["An event", "A user", "A metric", "A dimension"],
+    "correctAnswer": "A dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-create-a-report-to-show-the-types-of-devices-users-have-been-coming-from-over-the-past-30-days-whether-they-were-on-desktops-or-mobile-phones-for-example-in-this-report-what-is-device/"
+  },
+  {
+    "id": 151,
+    "question": "To understand how many users are coming from various devices like desktops or mobile phones you run a report that shows this data per device over the past 30 days in this report what is device t (URL 제목 추출)",
+    "options": ["A user", "A metric", "An event", "A dimension"],
+    "correctAnswer": "A dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/to-understand-how-many-users-are-coming-from-various-devices-like-desktops-or-mobile-phones-you-run-a-report-that-shows-this-data-per-device-over-the-past-30-days-in-this-report-what-is-device-t/"
+  },
+  {
+    "id": 152,
+    "question": "Which analytics 360 feature allows you to filter data and create a new data set needed for a specific audience or use case (URL 제목 추출)",
+    "options": [
+      "Roll-up properties",
+      "Data streams",
+      "Organizations",
+      "Subproperties"
+    ],
+    "correctAnswer": "Subproperties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-analytics-360-feature-allows-you-to-filter-data-and-create-a-new-data-set-needed-for-a-specific-audience-or-use-case/"
+  },
+  {
+    "id": 153,
+    "question": "If you wanted to filter data and create a new data set for a specific use case or audience which analytics 360 feature would you use (URL 제목 추출)",
+    "options": [
+      "Roll-up properties",
+      "Organizations",
+      "Data streams",
+      "Subproperties"
+    ],
+    "correctAnswer": "Subproperties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-filter-data-and-create-a-new-data-set-for-a-specific-use-case-or-audience-which-analytics-360-feature-would-you-use/"
+  },
+  {
+    "id": 154,
+    "question": "Which of these analytics 360 features would you use to filter data and create a new data set for a specific use case or audience (URL 제목 추출)",
+    "options": [
+      "Data streams",
+      "Organizations",
+      "Roll-up properties",
+      "Subproperties"
+    ],
+    "correctAnswer": "Subproperties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-analytics-360-features-would-you-use-to-filter-data-and-create-a-new-data-set-for-a-specific-use-case-or-audience/"
+  },
+  {
+    "id": 155,
+    "question": "Which analytics 360 feature allows you to create a new data set with a broad view of your business across products brands or regions by combining data from multiple source properties (URL 제목 추출)",
+    "options": [
+      "Data streams",
+      "Organizations",
+      "Subproperties",
+      "Roll-up properties"
+    ],
+    "correctAnswer": "Roll-up properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-analytics-360-feature-allows-you-to-create-a-new-data-set-with-a-broad-view-of-your-business-across-products-brands-or-regions-by-combining-data-from-multiple-source-properties/"
+  },
+  {
+    "id": 156,
+    "question": "If you wanted to create a new data set with a wide view of your business across brands products or regions by combining data from multiple source properties which analytics 360 feature would you us (URL 제목 추출)",
+    "options": [
+      "Organizations",
+      "Data streams",
+      "Subproperties",
+      "Roll-up properties"
+    ],
+    "correctAnswer": "Roll-up properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-create-a-new-data-set-with-a-wide-view-of-your-business-across-brands-products-or-regions-by-combining-data-from-multiple-source-properties-which-analytics-360-feature-would-you-us/"
+  },
+  {
+    "id": 157,
+    "question": "Which analytics 360 feature would you use to create a new data set by combining data from multi source properties to get a broad view of your business across brands products or regions (URL 제목 추출)",
+    "options": [
+      "Subproperties",
+      "Organizations",
+      "Data streams",
+      "Roll-up properties"
+    ],
+    "correctAnswer": "Roll-up properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-analytics-360-feature-would-you-use-to-create-a-new-data-set-by-combining-data-from-multi-source-properties-to-get-a-broad-view-of-your-business-across-brands-products-or-regions/"
+  },
+  {
+    "id": 158,
+    "question": "Some of the events on your website are especially valuable to you things like purchases or newsletter sign ups if you wanted to mark these events as important and assign a value to them wh (URL 제목 추출)",
+    "options": [
+      "Custom events",
+      "Recommended events",
+      "Goals",
+      "Conversion events"
+    ],
+    "correctAnswer": "You should mark them as Key events/ Conversion events",
+    "status": "구버전 용어 (Key Events)",
+    "note": "최신 GA4에서는 'Conversion events(전환 이벤트)' 명칭이 'Key events(주요 이벤트)'로 변경되었습니다. (의미는 동일)",
+    "url": "https://school4seo.com/google-analytics-4-exam/some-of-the-events-on-your-website-are-especially-valuable-to-you-things-like-purchases-or-newsletter-sign-ups-if-you-wanted-to-mark-these-events-as-important-and-assign-a-value-to-them-wh/"
+  },
+  {
+    "id": 159,
+    "question": "You manage a website and consider certain events as especially valuable like when users sign up for your newsletter or make a purchase if you want to designate these events as important and (URL 제목 추출)",
+    "options": [
+      "Recommended events",
+      "Custom events",
+      "Goals",
+      "Conversion events"
+    ],
+    "correctAnswer": "Conversion events",
+    "status": "구버전 용어 (Key Events)",
+    "note": "최신 GA4에서는 'Conversion events(전환 이벤트)' 명칭이 'Key events(주요 이벤트)'로 변경되었습니다. (의미는 동일)",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-website-and-consider-certain-events-as-especially-valuable-like-when-users-sign-up-for-your-newsletter-or-make-a-purchase-if-you-want-to-designate-these-events-as-important-and/"
+  },
+  {
+    "id": 160,
+    "question": "You have many events on your website that are very valuable like when users purchase items or sign up for your newsletter you would like to mark these events as important and assign a value to these (URL 제목 추출)",
+    "options": [
+      "Goals",
+      "Recommended events",
+      "Custom events",
+      "Conversion events"
+    ],
+    "correctAnswer": "Conversion events",
+    "status": "구버전 용어 (Key Events)",
+    "note": "최신 GA4에서는 'Conversion events(전환 이벤트)' 명칭이 'Key events(주요 이벤트)'로 변경되었습니다. (의미는 동일)",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-many-events-on-your-website-that-are-very-valuable-like-when-users-purchase-items-or-sign-up-for-your-newsletter-you-would-like-to-mark-these-events-as-important-and-assign-a-value-to-these/"
+  },
+  {
+    "id": 161,
+    "question": "You want to see the steps your users take toward a key conversion which exploration technique lets you visualize the steps users take toward a key task or conversion and see how well they are succeed (URL 제목 추출)",
+    "options": [
+      "Free form",
+      "Cohort explorations",
+      "Segment overlap",
+      "Funnel exploration"
+    ],
+    "correctAnswer": "Funnel exploration",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-see-the-steps-your-users-take-toward-a-key-conversion-which-exploration-technique-lets-you-visualize-the-steps-users-take-toward-a-key-task-or-conversion-and-see-how-well-they-are-succeed/"
+  },
+  {
+    "id": 162,
+    "question": "Which of these exploration techniques helps you visualize the steps your users take toward a key task or conversion and see how well they are succeeding or failing at each step (URL 제목 추출)",
+    "options": [
+      "Free form",
+      "Cohort explorations",
+      "Segment overlap",
+      "Funnel exploration"
+    ],
+    "correctAnswer": "Funnel exploration",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-exploration-techniques-helps-you-visualize-the-steps-your-users-take-toward-a-key-task-or-conversion-and-see-how-well-they-are-succeeding-or-failing-at-each-step/"
+  },
+  {
+    "id": 163,
+    "question": "If you wanted to see the steps your users take to reach a key task or conversion which exploration technique would you use to visualize those steps and see how well they are succeeding or failing at (URL 제목 추출)",
+    "options": [
+      "Segment overlap",
+      "Free form",
+      "Cohort explorations",
+      "Funnel exploration"
+    ],
+    "correctAnswer": "Funnel exploration",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-see-the-steps-your-users-take-to-reach-a-key-task-or-conversion-which-exploration-technique-would-you-use-to-visualize-those-steps-and-see-how-well-they-are-succeeding-or-failing-at/"
+  },
+  {
+    "id": 164,
+    "question": "You are in the Explore section of your Google Analytics property and would like to customize metrics and dimensions in a table format which exploration technique should you use (URL 제목 추출)",
+    "options": [
+      "Cohort explorations",
+      "Segment overlap",
+      "Funnel exploration",
+      "Free form"
+    ],
+    "correctAnswer": "Free form",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-are-in-the-explore-section-of-your-google-analytics-property-and-would-like-to-customize-metrics-and-dimensions-in-a-table-format-which-exploration-technique-should-you-use/"
+  },
+  {
+    "id": 165,
+    "question": "If you were in your Google Analytics propertys Explore section and wanted to customize metrics and dimensions in a table format which of these exploration techniques would you use (URL 제목 추출)",
+    "options": [
+      "Cohort explorations",
+      "Segment overlap",
+      "Funnel exploration",
+      "Free form"
+    ],
+    "correctAnswer": "Free form",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-were-in-your-google-analytics-propertys-explore-section-and-wanted-to-customize-metrics-and-dimensions-in-a-table-format-which-of-these-exploration-techniques-would-you-use/"
+  },
+  {
+    "id": 166,
+    "question": "You are in your Google Analytics propertys Explore section what exploration technique should you use in order to customize metrics and dimensions in a table format (URL 제목 추출)",
+    "options": [
+      "Funnel exploration",
+      "Cohort explorations",
+      "Segment overlap",
+      "Free form"
+    ],
+    "correctAnswer": "Free form",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-are-in-your-google-analytics-propertys-explore-section-what-exploration-technique-should-you-use-in-order-to-customize-metrics-and-dimensions-in-a-table-format/"
+  },
+  {
+    "id": 167,
+    "question": "You're currently using last click attribution which of these Reports would let you see how first click attribution would value channels and campaigns (URL 제목 추출)",
+    "options": [
+      "Funnel exploration",
+      "Conversion paths",
+      "Segment overlap",
+      "Model comparison"
+    ],
+    "correctAnswer": "Model comparison",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-currently-using-last-click-attribution-which-of-these-reports-would-let-you-see-how-first-click-attribution-would-value-channels-and-campaigns/"
+  },
+  {
+    "id": 168,
+    "question": "You're using last click attribution but would like to see how first click attribution would value channels and campaigns which report can you use to find this insight (URL 제목 추출)",
+    "options": [
+      "Conversion paths",
+      "Funnel exploration",
+      "Segment overlap",
+      "Model comparison"
+    ],
+    "correctAnswer": "Model comparison",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-using-last-click-attribution-but-would-like-to-see-how-first-click-attribution-would-value-channels-and-campaigns-which-report-can-you-use-to-find-this-insight/"
+  },
+  {
+    "id": 169,
+    "question": "If you were using last click attribution and wanted to see how channels and campaigns would be valued under first click attribution which report would you look at to find this insight (URL 제목 추출)",
+    "options": [
+      "Conversion paths",
+      "Funnel exploration",
+      "Segment overlap",
+      "Model comparison"
+    ],
+    "correctAnswer": "Model comparison",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-were-using-last-click-attribution-and-wanted-to-see-how-channels-and-campaigns-would-be-valued-under-first-click-attribution-which-report-would-you-look-at-to-find-this-insight/"
+  },
+  {
+    "id": 170,
+    "question": "To gain insight into which pages new users open most often after they open your home page you've created a new path exploration in Explore what's the default setting for who can see the exploratio (URL 제목 추출)",
+    "options": [
+      "Anyone in your property can access it and make edits.",
+      "Anyone in your property can access it in read-only mode.",
+      "Only you can see it, but you can share it with the other users of the property for them to make edits.",
+      "Only you can see it, but you can share it with the other users of the property in read-only mode."
+    ],
+    "correctAnswer": "Only you can see it, but you can share it with the other users of the property in read-only mode.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/to-gain-insight-into-which-pages-new-users-open-most-often-after-they-open-your-home-page-youve-created-a-new-path-exploration-in-explore-whats-the-default-setting-for-who-can-see-the-exploratio/"
+  },
+  {
+    "id": 171,
+    "question": "You want to know what pages new users open most often after opening your home page so you create a new path exploration in Explore that you plan to share with a co worker who can see this new path e (URL 제목 추출)",
+    "options": [
+      "Anyone in your property can access it in read-only mode.",
+      "Only you can see it, but you can share it with the other users of the property for them to make edits.",
+      "Anyone in your property can access it and make edits.",
+      "Only you can see it, but you can share it with the other users of the property in read-only mode."
+    ],
+    "correctAnswer": "Only you can see it, but you can share it with the other users of the property in read-only mode.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-know-what-pages-new-users-open-most-often-after-opening-your-home-page-so-you-create-a-new-path-exploration-in-explore-that-you-plan-to-share-with-a-co-worker-who-can-see-this-new-path-e/"
+  },
+  {
+    "id": 172,
+    "question": "You've created a new path exploration in Explore to gain insight into the top pages that new users open after opening your home page you're interested in sharing your findings with yo (URL 제목 추출)",
+    "options": [
+      "Anyone in your property can access it in read-only mode.",
+      "Anyone in your property can access it and make edits.",
+      "Only you can see it, but you can share it with the other users of the property for them to make edits.",
+      "Only you can see it, but you can share it with the other users of the property in read-only mode."
+    ],
+    "correctAnswer": "Only you can see it, but you can share it with the other users of the property in read-only mode.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-created-a-new-path-exploration-in-explore-to-gain-insight-into-the-top-pages-that-new-users-open-after-opening-your-home-page-youre-interested-in-sharing-your-findings-with-yo/"
+  },
+  {
+    "id": 173,
+    "question": "You have ads personalization enabled for your property but want to exclude specific events what does this mean for the data for those events (URL 제목 추출)",
+    "options": [
+      "That data will only be used for audiences in Google Ads",
+      "That data will only be available in the Advertising section",
+      "That data will only be available in the Reports and Explore sections",
+      "That data will only be used for measurement purposes"
+    ],
+    "correctAnswer": "That data will only be used for measurement purposes",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-ads-personalization-enabled-for-your-property-but-want-to-exclude-specific-events-what-does-this-mean-for-the-data-for-those-events/"
+  },
+  {
+    "id": 174,
+    "question": "If you've enabled ads personalization for your property but want to exclude specific events what happens to the data for those events (URL 제목 추출)",
+    "options": [
+      "That data will only be available in the Reports and Explore sections",
+      "That data will only be available in the Advertising section",
+      "That data will only be used for audiences in Google Ads",
+      "That data will only be used for measurement purposes"
+    ],
+    "correctAnswer": "That data will only be used for measurement purposes",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-youve-enabled-ads-personalization-for-your-property-but-want-to-exclude-specific-events-what-happens-to-the-data-for-those-events/"
+  },
+  {
+    "id": 175,
+    "question": "When you've enabled ads personalization for your property but want specific events excluded what happens with the data for those excluded events (URL 제목 추출)",
+    "options": [
+      "That data will only be available in the Advertising section",
+      "That data will only be used for audiences in Google Ads",
+      "That data will only be available in the Reports and Explore sections",
+      "That data will only be used for measurement purposes"
+    ],
+    "correctAnswer": "That data will only be used for measurement purposes",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-youve-enabled-ads-personalization-for-your-property-but-want-specific-events-excluded-what-happens-with-the-data-for-those-excluded-events/"
+  },
+  {
+    "id": 176,
+    "question": "You're using Google Analytics for your website in which situation could you use the engagement overview report (URL 제목 추출)",
+    "options": [
+      "You’d like insight into your users’ interests they’ve express through their online browsing and purchase activities.",
+      "You’re interested in monitoring user activity as it is happening on your site.",
+      "You’re interested in seeing where users are coming from before landing on your website.",
+      "You’re interested in seeing which pages on your site are getting the most traffic."
+    ],
+    "correctAnswer": "You’re interested in seeing which pages on your site are getting the most traffic.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youre-using-google-analytics-for-your-website-in-which-situation-could-you-use-the-engagement-overview-report/"
+  },
+  {
+    "id": 177,
+    "question": "In which of these situations could you use the engagement overview report in Google Analytics (URL 제목 추출)",
+    "options": [
+      "You’d like insight into your users’ interests they’ve express through their online browsing and purchase activities.",
+      "You’re interested in monitoring user activity as it is happening on your site.",
+      "You’re interested in seeing where users are coming from before landing on your website.",
+      "You’re interested in seeing which pages on your site are getting the most traffic."
+    ],
+    "correctAnswer": "You’re interested in seeing which pages on your site are getting the most traffic.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/in-which-of-these-situations-could-you-use-the-engagement-overview-report-in-google-analytics/"
+  },
+  {
+    "id": 178,
+    "question": "In which of these scenarios would the engagement overview report be useful if you're using Google Analytics for your website (URL 제목 추출)",
+    "options": [
+      "You’d like insight into your users’ interests they’ve express through their online browsing and purchase activities.",
+      "You’re interested in seeing where users are coming from before landing on your website.",
+      "You’re interested in monitoring user activity as it is happening on your site.",
+      "You’re interested in seeing which pages on your site are getting the most traffic."
+    ],
+    "correctAnswer": "You’re interested in seeing which pages on your site are getting the most traffic.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/in-which-of-these-scenarios-would-the-engagement-overview-report-be-useful-if-youre-using-google-analytics-for-your-website/"
+  },
+  {
+    "id": 179,
+    "question": "When Google Analytics and Google Ads are linked how can Google Ads utilize conversion events from Google Analytics (URL 제목 추출)",
+    "options": [
+      "Google Ads can use these conversions to see industry benchmarking data",
+      "Google Ads can use these conversions to generate new keyword ideas",
+      "Google Ads can use these conversions to adjust and optimize your ad copy",
+      "Google Ads can use these conversions to optimize your bids for ad placements"
+    ],
+    "correctAnswer": "Google Ads can use these conversions to optimize your bids for ad placements",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-google-analytics-and-google-ads-are-linked-how-can-google-ads-utilize-conversion-events-from-google-analytics/"
+  },
+  {
+    "id": 180,
+    "question": "Which of these describes how conversion events from Google Analytics can be used in Google Ads when they are linked together (URL 제목 추출)",
+    "options": [
+      "Google Ads can use these conversions to generate new keyword ideas",
+      "Google Ads can use these conversions to see industry benchmarking data",
+      "Google Ads can use these conversions to adjust and optimize your ad copy",
+      "Google Ads can use these conversions to optimize your bids for ad placements"
+    ],
+    "correctAnswer": "Google Ads can use these conversions to optimize your bids for ad placements",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-describes-how-conversion-events-from-google-analytics-can-be-used-in-google-ads-when-they-are-linked-together/"
+  },
+  {
+    "id": 181,
+    "question": "When Google Ads is linked to Google Analytics how can conversion events from Google Analytics can be used in Google Ads (URL 제목 추출)",
+    "options": [
+      "Google Ads can use these conversions to adjust and optimize your ad copy",
+      "Google Ads can use these conversions to see industry benchmarking data",
+      "Google Ads can use these conversions to generate new keyword ideas",
+      "Google Ads can use these conversions to optimize your bids for ad placements"
+    ],
+    "correctAnswer": "Google Ads can use these conversions to optimize your bids for ad placements",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-google-ads-is-linked-to-google-analytics-how-can-conversion-events-from-google-analytics-can-be-used-in-google-ads/"
+  },
+  {
+    "id": 182,
+    "question": "You manage an eCommerce site and are creating new audiences to segment users in ways that are important to your business like users who've made a purchase which of these is an example of a p (URL 제목 추출)",
+    "options": [
+      "You create an audience of users who added items to their purchase wishlist",
+      "You create an audience of users who made a purchase in the last 30 days",
+      "You create an audience of users who started checking out but didn’t complete the purchase",
+      "You create an audience of users who are likely to purchase in the next seven days"
+    ],
+    "correctAnswer": "You create an audience of users who are likely to purchase in the next seven days",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-an-ecommerce-site-and-are-creating-new-audiences-to-segment-users-in-ways-that-are-important-to-your-business-like-users-whove-made-a-purchase-which-of-these-is-an-example-of-a-p/"
+  },
+  {
+    "id": 183,
+    "question": "You want to create new audiences for your eCommerce site by segmenting users according to parameters that make sense for your business like those who've made a purchase which of these approa (URL 제목 추출)",
+    "options": [
+      "You create an audience of users who added items to their purchase wishlist",
+      "You create an audience of users who made a purchase in the last 30 days",
+      "You create an audience of users who started checking out but didn’t complete the purchase",
+      "You create an audience of users who are likely to purchase in the next seven days"
+    ],
+    "correctAnswer": "You create an audience of users who are likely to purchase in the next seven days",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-create-new-audiences-for-your-ecommerce-site-by-segmenting-users-according-to-parameters-that-make-sense-for-your-business-like-those-whove-made-a-purchase-which-of-these-approa/"
+  },
+  {
+    "id": 184,
+    "question": "If you wanted to create new audiences for your eCommerce site through segmentation that made sense for your business basing it on users who've made a purchase for example which o (URL 제목 추출)",
+    "options": [
+      "You create an audience of users who added items to their purchase wishlist",
+      "You create an audience of users who made a purchase in the last 30 days",
+      "You create an audience of users who started checking out but didn’t complete the purchase",
+      "You create an audience of users who are likely to purchase in the next seven days"
+    ],
+    "correctAnswer": "You create an audience of users who are likely to purchase in the next seven days",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-create-new-audiences-for-your-ecommerce-site-through-segmentation-that-made-sense-for-your-business-basing-it-on-users-whove-made-a-purchase-for-example-which-o/"
+  },
+  {
+    "id": 185,
+    "question": "What's a key difference between Google Analytics 4 properties and Universal Analytics properties (URL 제목 추출)",
+    "options": [
+      "Google Analytics 4 properties use “dimensions” as the foundation for data collection and reporting, while Universal Analytics uses “events” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “sessions” as the foundation for data collection and reporting, while Universal Analytics uses “dimensions” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “sessions” as the foundation for data collection and reporting, while Universal Analytics uses “events” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “events” as the foundation for data collection and reporting, while Universal Analytics uses “sessions” as the foundation for data collection and reporting."
+    ],
+    "correctAnswer": "Google Analytics 4 properties use “events” as the foundation for data collection and reporting, while Universal Analytics uses “sessions” as the foundation for data collection and reporting.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/whats-a-key-difference-between-google-analytics-4-properties-and-universal-analytics-properties/"
+  },
+  {
+    "id": 186,
+    "question": "What distinguishes Google Analytics 4 properties from Universal Analytics properties (URL 제목 추출)",
+    "options": [
+      "Google Analytics 4 properties use “sessions” as the foundation for data collection and reporting, while Universal Analytics uses “events” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “sessions” as the foundation for data collection and reporting, while Universal Analytics uses “dimensions” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “dimensions” as the foundation for data collection and reporting, while Universal Analytics uses “events” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “events” as the foundation for data collection and reporting, while Universal Analytics uses “sessions” as the foundation for data collection and reporting."
+    ],
+    "correctAnswer": "Google Analytics 4 properties use “events” as the foundation for data collection and reporting, while Universal Analytics uses “sessions” as the foundation for data collection and reporting.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-distinguishes-google-analytics-4-properties-from-universal-analytics-properties/"
+  },
+  {
+    "id": 187,
+    "question": "How do Google Analytics 4 properties differ from Universal Analytics properties (URL 제목 추출)",
+    "options": [
+      "Google Analytics 4 properties use “sessions” as the foundation for data collection and reporting, while Universal Analytics uses “events” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “dimensions” as the foundation for data collection and reporting, while Universal Analytics uses “events” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “sessions” as the foundation for data collection and reporting, while Universal Analytics uses “dimensions” as the foundation for data collection and reporting.",
+      "Google Analytics 4 properties use “events” as the foundation for data collection and reporting, while Universal Analytics uses “sessions” as the foundation for data collection and reporting."
+    ],
+    "correctAnswer": "Google Analytics 4 properties use “events” as the foundation for data collection and reporting, while Universal Analytics uses “sessions” as the foundation for data collection and reporting.",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/how-do-google-analytics-4-properties-differ-from-universal-analytics-properties/"
+  },
+  {
+    "id": 188,
+    "question": "To understand how many users are coming from various devices like computers or mobile phones you run a report that shows this data per device over the past 30 days in this report which of these (URL 제목 추출)",
+    "options": [
+      "The date range setting for the last 30 days",
+      "Where users came from before reaching your site",
+      "The device types, desktops and mobile phones",
+      "How many users were on mobile phones"
+    ],
+    "correctAnswer": "How many users were on mobile phones",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/to-understand-how-many-users-are-coming-from-various-devices-like-computers-or-mobile-phones-you-run-a-report-that-shows-this-data-per-device-over-the-past-30-days-in-this-report-which-of-these/"
+  },
+  {
+    "id": 189,
+    "question": "You create a report to show the types of devices users have been coming from over the past 30 days whether they were on desktops or mobile phones for example in this report which of thes (URL 제목 추출)",
+    "options": [
+      "Where users came from before reaching your site",
+      "The device types, desktops and mobile phones",
+      "The date range setting for the last 30 days",
+      "How many users were on mobile phones"
+    ],
+    "correctAnswer": "How many users were on mobile phones",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-create-a-report-to-show-the-types-of-devices-users-have-been-coming-from-over-the-past-30-days-whether-they-were-on-desktops-or-mobile-phones-for-example-in-this-report-which-of-thes/"
+  },
+  {
+    "id": 190,
+    "question": "You generate a report to show how many users are coming from various device types like computers and mobile phones over the past 30 days in this report which of these is a metric (URL 제목 추출)",
+    "options": [
+      "The date range setting for the last 30 days",
+      "Where users came from before reaching your site",
+      "The device types, desktops and mobile phones",
+      "How many users were on mobile phones"
+    ],
+    "correctAnswer": "How many users were on mobile phones",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-generate-a-report-to-show-how-many-users-are-coming-from-various-device-types-like-computers-and-mobile-phones-over-the-past-30-days-in-this-report-which-of-these-is-a-metric/"
+  },
+  {
+    "id": 191,
+    "question": "Which of these attribution models distributes the credit for a conversion equally across all the channels a customer clicked or engaged with before converting (URL 제목 추출)",
+    "options": ["Time decay", "Data-driven", "Position-based", "Linear"],
+    "correctAnswer": "Linear",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-attribution-models-distributes-the-credit-for-a-conversion-equally-across-all-the-channels-a-customer-clicked-or-engaged-with-before-converting/"
+  },
+  {
+    "id": 192,
+    "question": "Which attribution model distributes the credit for a conversion equally across all the channels a customer clicked or engaged with before converting (URL 제목 추출)",
+    "options": ["Time decay", "Data-driven", "Position-based", "Linear"],
+    "correctAnswer": "Linear",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-attribution-model-distributes-the-credit-for-a-conversion-equally-across-all-the-channels-a-customer-clicked-or-engaged-with-before-converting/"
+  },
+  {
+    "id": 193,
+    "question": "One of these attribution models distributes the credit for a conversion equally across all the channels a customer clicked or engaged with before converting which is it (URL 제목 추출)",
+    "options": ["Position-based", "Time decay", "Data-driven", "Linear"],
+    "correctAnswer": "Linear",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/one-of-these-attribution-models-distributes-the-credit-for-a-conversion-equally-across-all-the-channels-a-customer-clicked-or-engaged-with-before-converting-which-is-it/"
+  },
+  {
+    "id": 194,
+    "question": "One of these attribution models relies on machine learning algorithms to assign credit for a conversion across various touchpoints which is it (URL 제목 추출)",
+    "options": ["Time decay", "First click", "Last click", "Data-driven"],
+    "correctAnswer": "Data-driven",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/one-of-these-attribution-models-relies-on-machine-learning-algorithms-to-assign-credit-for-a-conversion-across-various-touchpoints-which-is-it/"
+  },
+  {
+    "id": 195,
+    "question": "Which attribution model uses machine learning algorithms to distribute credit for a conversion across different touchpoints (URL 제목 추출)",
+    "options": ["Last click", "Time decay", "First click", "Data-driven"],
+    "correctAnswer": "Data-driven",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-attribution-model-uses-machine-learning-algorithms-to-distribute-credit-for-a-conversion-across-different-touchpoints/"
+  },
+  {
+    "id": 196,
+    "question": "Which attribution model spreads credit for a conversion across different touchpoints through the use of machine learning algorithms (URL 제목 추출)",
+    "options": ["Time decay", "Last click", "First click", "Data-driven"],
+    "correctAnswer": "Data-driven",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-attribution-model-spreads-credit-for-a-conversion-across-different-touchpoints-through-the-use-of-machine-learning-algorithms/"
+  },
+  {
+    "id": 197,
+    "question": "When enabled which analytics feature associates event data it collects from users on their website or app with the google accounts of signed in users who have consented to sharing this information (URL 제목 추출)",
+    "options": [
+      "Google Search Console",
+      "Google Ads",
+      "User-ID",
+      "Google Signals"
+    ],
+    "correctAnswer": "Google signals",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-enabled-which-analytics-feature-associates-event-data-it-collects-from-users-on-their-website-or-app-with-the-google-accounts-of-signed-in-users-who-have-consented-to-sharing-this-information/"
+  },
+  {
+    "id": 198,
+    "question": "One of these features when enabled associates event data collected from users on their app or website with the google accounts of users who are signed in and have agreed to share this information w (URL 제목 추출)",
+    "options": [
+      "User-ID",
+      "Google signals",
+      "Google Ads",
+      "Google Search Console"
+    ],
+    "correctAnswer": "Google signals",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/one-of-these-features-when-enabled-associates-event-data-collected-from-users-on-their-app-or-website-with-the-google-accounts-of-users-who-are-signed-in-and-have-agreed-to-share-this-information-w/"
+  },
+  {
+    "id": 199,
+    "question": "Which one of these analytics features when enabled associates event data collected from users on an app or website with the google accounts of users who are signed in and have explicitly consented t (URL 제목 추출)",
+    "options": [
+      "User-ID",
+      "Google Search Console",
+      "Google Ads",
+      "Google signals"
+    ],
+    "correctAnswer": "Google signals",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-one-of-these-analytics-features-when-enabled-associates-event-data-collected-from-users-on-an-app-or-website-with-the-google-accounts-of-users-who-are-signed-in-and-have-explicitly-consented-t/"
+  },
+  {
+    "id": 200,
+    "question": "You've just set up an option on your website for your users to sign up for a newsletter you want to count those new sign up events as conversions and create an audience for users who signed u (URL 제목 추출)",
+    "options": ["Explore", "Admin", "Advertising", "Configure"],
+    "correctAnswer": "Configure",
+    "status": "구버전 용어 (Updated UI)",
+    "note": "현재 GA4 UI에서는 'Configure(구성)' 메뉴가 'Admin(관리) > Data display(데이터 표시)'로 통합되었습니다. 시험에서는 Admin 또는 Key events로 출제됩니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-just-set-up-an-option-on-your-website-for-your-users-to-sign-up-for-a-newsletter-you-want-to-count-those-new-sign-up-events-as-conversions-and-create-an-audience-for-users-who-signed-u/"
+  },
+  {
+    "id": 201,
+    "question": "You just added a feature to your website allowing users to sign up for a newsletter now you want to mark new sign up events as conversions and create an audience for people who signed up what part (URL 제목 추출)",
+    "options": ["Explore", "Advertising", "Admin", "Configure"],
+    "correctAnswer": "Configure",
+    "status": "구버전 용어 (Updated UI)",
+    "note": "현재 GA4 UI에서는 'Configure(구성)' 메뉴가 'Admin(관리) > Data display(데이터 표시)'로 통합되었습니다. 시험에서는 Admin 또는 Key events로 출제됩니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-just-added-a-feature-to-your-website-allowing-users-to-sign-up-for-a-newsletter-now-you-want-to-mark-new-sign-up-events-as-conversions-and-create-an-audience-for-people-who-signed-up-what-part/"
+  },
+  {
+    "id": 202,
+    "question": "You created a new option for your users to sign up for a newsletter on your website you'd like to mark those new sign up events as conversions and create a new audience for those users who signed u (URL 제목 추출)",
+    "options": ["Advertising", "Explore", "Admin", "Configure"],
+    "correctAnswer": "Configure",
+    "status": "구버전 용어 (Updated UI)",
+    "note": "현재 GA4 UI에서는 'Configure(구성)' 메뉴가 'Admin(관리) > Data display(데이터 표시)'로 통합되었습니다. 시험에서는 Admin 또는 Key events로 출제됩니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-created-a-new-option-for-your-users-to-sign-up-for-a-newsletter-on-your-website-youd-like-to-mark-those-new-sign-up-events-as-conversions-and-create-a-new-audience-for-those-users-who-signed-u/"
+  },
+  {
+    "id": 203,
+    "question": "If you wanted to link a new Google Ads account to your Google Analytics property in order to see detailed marketing campaign data where in your Google Analytics 4 property would you go to manage this (URL 제목 추출)",
+    "options": ["Explore", "Configure", "Advertising", "Admin"],
+    "correctAnswer": "Admin",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-link-a-new-google-ads-account-to-your-google-analytics-property-in-order-to-see-detailed-marketing-campaign-data-where-in-your-google-analytics-4-property-would-you-go-to-manage-this/"
+  },
+  {
+    "id": 204,
+    "question": "You've started a new Google Ads account and would like to link it to your Google Analytics property so that you can see detailed marketing campaign data where in your Google Analytics 4 property can (URL 제목 추출)",
+    "options": ["Configure", "Advertising", "Explore", "Admin"],
+    "correctAnswer": "Admin",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-started-a-new-google-ads-account-and-would-like-to-link-it-to-your-google-analytics-property-so-that-you-can-see-detailed-marketing-campaign-data-where-in-your-google-analytics-4-property-can/"
+  },
+  {
+    "id": 205,
+    "question": "You want to see detailed marketing campaign data by linking a new Google Ads account to your Google Analytics property where in your Google Analytics 4 property can you manage product links such as t (URL 제목 추출)",
+    "options": ["Advertising", "Explore", "Configure", "Admin"],
+    "correctAnswer": "Admin",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-see-detailed-marketing-campaign-data-by-linking-a-new-google-ads-account-to-your-google-analytics-property-where-in-your-google-analytics-4-property-can-you-manage-product-links-such-as-t/"
+  },
+  {
+    "id": 206,
+    "question": "You want to find readymade cards that address typical questions about how users are interacting with your app or website which section do you go to in order to find this (URL 제목 추출)",
+    "options": ["Explore", "Configure", "Admin", "Reports"],
+    "correctAnswer": "Reports",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-find-readymade-cards-that-address-typical-questions-about-how-users-are-interacting-with-your-app-or-website-which-section-do-you-go-to-in-order-to-find-this/"
+  },
+  {
+    "id": 207,
+    "question": "There's a section of Google Analytics that includes cards answering common questions about how users interact with your app or website which section is it (URL 제목 추출)",
+    "options": ["Explore", "Configure", "Admin", "Reports"],
+    "correctAnswer": "Reports",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/theres-a-section-of-google-analytics-that-includes-cards-answering-common-questions-about-how-users-interact-with-your-app-or-website-which-section-is-it/"
+  },
+  {
+    "id": 208,
+    "question": "Which section of Google Analytics contains readymade cards that answer common questions about how your users are interacting with your app or website (URL 제목 추출)",
+    "options": ["Explore", "Admin", "Configure", "Reports"],
+    "correctAnswer": "Reports",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-section-of-google-analytics-contains-readymade-cards-that-answer-common-questions-about-how-your-users-are-interacting-with-your-app-or-website/"
+  },
+  {
+    "id": 209,
+    "question": "You are looking for advanced techniques that go beyond the standard Reports to help you uncover deeper insights about your customers engagement which section would you open in your Google Analytics (URL 제목 추출)",
+    "options": ["Advertising", "Configure", "Reports", "Explore"],
+    "correctAnswer": "Explore",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-are-looking-for-advanced-techniques-that-go-beyond-the-standard-reports-to-help-you-uncover-deeper-insights-about-your-customers-engagement-which-section-would-you-open-in-your-google-analytics/"
+  },
+  {
+    "id": 210,
+    "question": "Which section would you open in your Google Analytics property in order to find advanced techniques that can help you uncover deeper insights about your customers engagement (URL 제목 추출)",
+    "options": ["Advertising", "Configure", "Reports", "Explore"],
+    "correctAnswer": "Explore",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-section-would-you-open-in-your-google-analytics-property-in-order-to-find-advanced-techniques-that-can-help-you-uncover-deeper-insights-about-your-customers-engagement/"
+  },
+  {
+    "id": 211,
+    "question": "You want to find techniques that go beyond standard Reports so that you can uncover deeper insights about customer engagement which section of your Google Analytics property contains this (URL 제목 추출)",
+    "options": ["Reports", "Advertising", "Configure", "Explore"],
+    "correctAnswer": "Explore",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-find-techniques-that-go-beyond-standard-reports-so-that-you-can-uncover-deeper-insights-about-customer-engagement-which-section-of-your-google-analytics-property-contains-this/"
+  },
+  {
+    "id": 212,
+    "question": "You want to know how various ads you've placed work together on the path to conversions where in your Google Analytics 4 property can you find the Conversion Paths report (URL 제목 추출)",
+    "options": ["Configure", "Reports", "Explore", "Advertising"],
+    "correctAnswer": "Advertising",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-want-to-know-how-various-ads-youve-placed-work-together-on-the-path-to-conversions-where-in-your-google-analytics-4-property-can-you-find-the-conversion-paths-report/"
+  },
+  {
+    "id": 213,
+    "question": "Conversion Paths can show you how various ads work together on the path to conversions where can you find the Conversion Paths report in your Google Analytics 4 property (URL 제목 추출)",
+    "options": ["Configure", "Reports", "Explore", "Advertising"],
+    "correctAnswer": "Advertising",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/conversion-paths-can-show-you-how-various-ads-work-together-on-the-path-to-conversions-where-can-you-find-the-conversion-paths-report-in-your-google-analytics-4-property/"
+  },
+  {
+    "id": 214,
+    "question": "You decide to advertise online in a few different places to drive traffic to your website you're in your Google Analytics 4 property and are interested in how these various ads work together on the (URL 제목 추출)",
+    "options": ["Configure", "Reports", "Explore", "Advertising"],
+    "correctAnswer": "Advertising",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-decide-to-advertise-online-in-a-few-different-places-to-drive-traffic-to-your-website-youre-in-your-google-analytics-4-property-and-are-interested-in-how-these-various-ads-work-together-on-the/"
+  },
+  {
+    "id": 215,
+    "question": "You have an event on your website that triggers when users watch a video which of these is an example event parameter (URL 제목 추출)",
+    "options": [
+      "How many users viewed a video on your site",
+      "How many users opened the page containing a video on your site",
+      "The devices users are on when watching a video on your site",
+      "Name of a video watched on your site"
+    ],
+    "correctAnswer": "Name of a video watched on your site",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-have-an-event-on-your-website-that-triggers-when-users-watch-a-video-which-of-these-is-an-example-event-parameter/"
+  },
+  {
+    "id": 216,
+    "question": "If you had an event on your website triggered by a user watching a video which of these definitions could be considered an example event parameter (URL 제목 추출)",
+    "options": [
+      "How many users opened the page containing a video on your site",
+      "The devices users are on when watching a video on your site",
+      "How many users viewed a video on your site",
+      "Name of a video watched on your site"
+    ],
+    "correctAnswer": "Name of a video watched on your site",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-had-an-event-on-your-website-triggered-by-a-user-watching-a-video-which-of-these-definitions-could-be-considered-an-example-event-parameter/"
+  },
+  {
+    "id": 217,
+    "question": "When a user watches a video this triggers an event on your website which of these is an event parameter (URL 제목 추출)",
+    "options": [
+      "The devices users are on when watching a video on your site",
+      "How many users viewed a video on your site",
+      "How many users opened the page containing a video on your site",
+      "Name of a video watched on your site"
+    ],
+    "correctAnswer": "Name of a video watched on your site",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/when-a-user-watches-a-video-this-triggers-an-event-on-your-website-which-of-these-is-an-event-parameter/"
+  },
+  {
+    "id": 218,
+    "question": "You manage a blog that has a few contributing authors what could you use to report the name of the author on each article page (URL 제목 추출)",
+    "options": [
+      "Custom table",
+      "Custom user parameter",
+      "Custom metric",
+      "Custom dimension"
+    ],
+    "correctAnswer": "Custom dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-blog-that-has-a-few-contributing-authors-what-could-you-use-to-report-the-name-of-the-author-on-each-article-page-2/"
+  },
+  {
+    "id": 219,
+    "question": "If you managed a blog that featured multiple different writers what could you use to report the relevant writers name on each article page (URL 제목 추출)",
+    "options": [
+      "Custom user parameter",
+      "Custom metric",
+      "Custom table",
+      "Custom dimension"
+    ],
+    "correctAnswer": "Custom dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-managed-a-blog-that-featured-multiple-different-writers-what-could-you-use-to-report-the-relevant-writers-name-on-each-article-page/"
+  },
+  {
+    "id": 220,
+    "question": "You manage a blog that has a few contributing authors what could you use to report the name of the author on each article page (URL 제목 추출)",
+    "options": [
+      "Custom table",
+      "Custom user parameter",
+      "Custom metric",
+      "Custom dimension"
+    ],
+    "correctAnswer": "Custom dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-manage-a-blog-that-has-a-few-contributing-authors-what-could-you-use-to-report-the-name-of-the-author-on-each-article-page/"
+  },
+  {
+    "id": 221,
+    "question": "You are the managing editor of a blog that features several contributing writers what could you use to report the writers name on each article page (URL 제목 추출)",
+    "options": [
+      "Custom user parameter",
+      "Custom table",
+      "Custom metric",
+      "Custom dimension"
+    ],
+    "correctAnswer": "Custom dimension",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-are-the-managing-editor-of-a-blog-that-features-several-contributing-writers-what-could-you-use-to-report-the-writers-name-on-each-article-page/"
+  },
+  {
+    "id": 222,
+    "question": "After you've exported Google Analytics data to BigQuery what can you do with your data (URL 제목 추출)",
+    "options": [
+      "You can access app-specific reports such as crash data, notification effectiveness, and deep-link performance",
+      "You can use conversions for ad campaign bidding, and audiences to target ad campaigns",
+      "You can use audiences to target website experiments and test variants of your web pages",
+      "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels"
+    ],
+    "correctAnswer": "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/after-youve-exported-google-analytics-data-to-bigquery-what-can-you-do-with-your-data/"
+  },
+  {
+    "id": 223,
+    "question": "After exporting Google Analytics data to BigQuery what new opportunity do you have to use your data (URL 제목 추출)",
+    "options": [
+      "You can use audiences to target website experiments and test variants of your web pages",
+      "You can use conversions for ad campaign bidding, and audiences to target ad campaigns",
+      "You can access app-specific reports such as crash data, notification effectiveness, and deep-link performance",
+      "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels"
+    ],
+    "correctAnswer": "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/after-exporting-google-analytics-data-to-bigquery-what-new-opportunity-do-you-have-to-use-your-data/"
+  },
+  {
+    "id": 224,
+    "question": "What is something you can do with your data when you export your Google Analytics data to BigQuery (URL 제목 추출)",
+    "options": [
+      "You can use conversions for ad campaign bidding, and audiences to target ad campaigns",
+      "You can use audiences to target website experiments and test variants of your web pages",
+      "You can access app-specific reports such as crash data, notification effectiveness, and deep-link performance",
+      "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels"
+    ],
+    "correctAnswer": "You can use SQL to query your data to answer questions and gain insights into your products, users, and channels",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-is-something-you-can-do-with-your-data-when-you-export-your-google-analytics-data-to-bigquery/"
+  },
+  {
+    "id": 225,
+    "question": "You work for an online vintage clothing retailer and store data about each of your sales items offline which of these features allows you to upload a CSV file containing item data you want to join wi (URL 제목 추출)",
+    "options": [
+      "Modify event",
+      "Measurement Protocol",
+      "HTTP request",
+      "Data import"
+    ],
+    "correctAnswer": "Data import",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-work-for-an-online-vintage-clothing-retailer-and-store-data-about-each-of-your-sales-items-offline-which-of-these-features-allows-you-to-upload-a-csv-file-containing-item-data-you-want-to-join-wi/"
+  },
+  {
+    "id": 226,
+    "question": "You work for an online baseball card reseller and store data about each of your sales items offline which of these features would let you upload a CSV file that contains item data to join with analyt (URL 제목 추출)",
+    "options": [
+      "HTTP request",
+      "Measurement Protocol",
+      "Modify event",
+      "Data import"
+    ],
+    "correctAnswer": "Data import",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-work-for-an-online-baseball-card-reseller-and-store-data-about-each-of-your-sales-items-offline-which-of-these-features-would-let-you-upload-a-csv-file-that-contains-item-data-to-join-with-analyt/"
+  },
+  {
+    "id": 227,
+    "question": "You sell items online and store data about each item offline which feature allows you to upload a CSV file that contains your item data to join with analytics data (URL 제목 추출)",
+    "options": [
+      "Measurement Protocol",
+      "Modify event",
+      "HTTP request",
+      "Data import"
+    ],
+    "correctAnswer": "Data import",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-sell-items-online-and-store-data-about-each-item-offline-which-feature-allows-you-to-upload-a-csv-file-that-contains-your-item-data-to-join-with-analytics-data/"
+  },
+  {
+    "id": 228,
+    "question": "The data you collect on your point of sale system could complement data that your website and app sends to Google Analytics which feature allows for the collection and sending of events directly to g (URL 제목 추출)",
+    "options": [
+      "Data import",
+      "HTTP request",
+      "Modify event",
+      "Measurement Protocol"
+    ],
+    "correctAnswer": "Measurement Protocol",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/the-data-you-collect-on-your-point-of-sale-system-could-complement-data-that-your-website-and-app-sends-to-google-analytics-which-feature-allows-for-the-collection-and-sending-of-events-directly-to-g/"
+  },
+  {
+    "id": 229,
+    "question": "You collect data on your point of sale system that could complement the data you are sending to Google Analytics from your website and app which of these features allows you to collect and send event (URL 제목 추출)",
+    "options": [
+      "Data import",
+      "HTTP request",
+      "Modify event",
+      "Measurement Protocol"
+    ],
+    "correctAnswer": "Measurement Protocol",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/you-collect-data-on-your-point-of-sale-system-that-could-complement-the-data-you-are-sending-to-google-analytics-from-your-website-and-app-which-of-these-features-allows-you-to-collect-and-send-event/"
+  },
+  {
+    "id": 230,
+    "question": "You've been collecting data on your point of sale system that could be used in conjunction with data you send to Google Analytics from your website and app which of these features allows you (URL 제목 추출)",
+    "options": [
+      "Data import",
+      "Modify event",
+      "HTTP request",
+      "Measurement Protocol"
+    ],
+    "correctAnswer": "Measurement Protocol",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-been-collecting-data-on-your-point-of-sale-system-that-could-be-used-in-conjunction-with-data-you-send-to-google-analytics-from-your-website-and-app-which-of-these-features-allows-you/"
+  },
+  {
+    "id": 231,
+    "question": "How does Google Analytics measure and report distinct user interactions when a Google Analytics 4 property exists on a mobile app and website (URL 제목 추출)",
+    "options": ["As views", "As sessions", "As hits", "As events"],
+    "correctAnswer": "As events",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/how-does-google-analytics-measure-and-report-distinct-user-interactions-when-a-google-analytics-4-property-exists-on-a-mobile-app-and-website/"
+  },
+  {
+    "id": 232,
+    "question": "If you have created a Google Analytics 4 property for your mobile app and web site how would Google Analytics measure and report distinct user interactions (URL 제목 추출)",
+    "options": ["As hits", "As views", "As sessions", "As events"],
+    "correctAnswer": "As events",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-have-created-a-google-analytics-4-property-for-your-mobile-app-and-web-site-how-would-google-analytics-measure-and-report-distinct-user-interactions/"
+  },
+  {
+    "id": 233,
+    "question": "You've created a Google Analytics 4 property for your website and mobile app as users engage with your website and app how does Google Analytics measure and report distinct user interactions (URL 제목 추출)",
+    "options": ["As views", "As hits", "As sessions", "As events"],
+    "correctAnswer": "As events",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/youve-created-a-google-analytics-4-property-for-your-website-and-mobile-app-as-users-engage-with-your-website-and-app-how-does-google-analytics-measure-and-report-distinct-user-interactions/"
+  },
+  {
+    "id": 234,
+    "question": "If you're a business owner that wants to analyze how users arrive at your website and app as well as the user journeys across both of these platforms what should you use to generate insights (URL 제목 추출)",
+    "options": [
+      "Google Marketing Platform",
+      "Universal Analytics properties",
+      "Google Optimize",
+      "Google Analytics 4 properties"
+    ],
+    "correctAnswer": "Google Analytics 4 properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-youre-a-business-owner-that-wants-to-analyze-how-users-arrive-at-your-website-and-app-as-well-as-the-user-journeys-across-both-of-these-platforms-what-should-you-use-to-generate-insights/"
+  },
+  {
+    "id": 235,
+    "question": "Your business has a website and an app and you would like to analyze user journeys across these two platforms as well as see how new users are arriving at your website and your app which of these s (URL 제목 추출)",
+    "options": [
+      "Google Optimize",
+      "Google Marketing Platform",
+      "Universal Analytics properties",
+      "Google Analytics 4 properties"
+    ],
+    "correctAnswer": "Google Analytics 4 properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/your-business-has-a-website-and-an-app-and-you-would-like-to-analyze-user-journeys-across-these-two-platforms-as-well-as-see-how-new-users-are-arriving-at-your-website-and-your-app-which-of-these-s/"
+  },
+  {
+    "id": 236,
+    "question": "If you wanted to analyze user journeys across a website and an app and see how new users were arriving at both which of these techniques should you use for insights (URL 제목 추출)",
+    "options": [
+      "Universal Analytics properties",
+      "Google Optimize",
+      "Google Marketing Platform",
+      "Google Analytics 4 properties"
+    ],
+    "correctAnswer": "Google Analytics 4 properties",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/if-you-wanted-to-analyze-user-journeys-across-a-website-and-an-app-and-see-how-new-users-were-arriving-at-both-which-of-these-techniques-should-you-use-for-insights/"
+  },
+  {
+    "id": 237,
+    "question": "Which of these tasks can be done using audience triggers (URL 제목 추출)",
+    "options": [
+      "Create new audiences based on predictive metrics",
+      "Create new events based on existing event parameters",
+      "Create new audiences based on specific events that are triggered",
+      "Create new events based on an audience rule being satisfied"
+    ],
+    "correctAnswer": "Create new events based on an audience rule being satisfied",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-of-these-tasks-can-be-done-using-audience-triggers/"
+  },
+  {
+    "id": 238,
+    "question": "What do audience triggers allow you to do (URL 제목 추출)",
+    "options": [
+      "Create new events based on existing event parameters",
+      "Create new audiences based on predictive metrics",
+      "Create new audiences based on specific events that are triggered",
+      "Create new events based on an audience rule being satisfied"
+    ],
+    "correctAnswer": "Create new events based on an audience rule being satisfied",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-do-audience-triggers-allow-you-to-do/"
+  },
+  {
+    "id": 239,
+    "question": "What can you do with audience triggers (URL 제목 추출)",
+    "options": [
+      "Create new events based on existing event parameters",
+      "Create new audiences based on specific events that are triggered",
+      "Create new audiences based on predictive metrics",
+      "Create new events based on an audience rule being satisfied"
+    ],
+    "correctAnswer": "Create new events based on an audience rule being satisfied",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-can-you-do-with-audience-triggers/"
+  },
+  {
+    "id": 240,
+    "question": "What can you find in the realtime report (URL 제목 추출)",
+    "options": [
+      "Events that took place within the last 8 hours",
+      "Events that took place within the last 12 hours",
+      "Events that took place within the last 60 minutes",
+      "Events that took place within the last 30 minutes"
+    ],
+    "correctAnswer": "Events that took place within the last 30 minutes",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-can-you-find-in-the-realtime-report/"
+  },
+  {
+    "id": 241,
+    "question": "Which events are accounted for in the realtime report (URL 제목 추출)",
+    "options": [
+      "Events that took place within the last 60 minutes",
+      "Events that took place within the last 8 hour",
+      "Events that took place within the last 12 hours",
+      "Events that took place within the last 30 minutes"
+    ],
+    "correctAnswer": "Events that took place within the last 30 minutes",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/which-events-are-accounted-for-in-the-realtime-report/"
+  },
+  {
+    "id": 242,
+    "question": "What data does the realtime report show (URL 제목 추출)",
+    "options": [
+      "Events that took place within the last 8 hours",
+      "Events that took place within the last 12 hours",
+      "Events that took place within the last 60 minutes",
+      "Events that took place within the last 30 minutes"
+    ],
+    "correctAnswer": "Events that took place within the last 30 minutes",
+    "status": "정상 (Verified)",
+    "note": "질문, 4지선다 보기 및 GA4 공식 정답이 모두 일치합니다.",
+    "url": "https://school4seo.com/google-analytics-4-exam/what-data-does-the-realtime-report-show/"
+  }
+]

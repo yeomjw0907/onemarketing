@@ -1,0 +1,19 @@
+{
+  "filename": "GA4_Exam_239_Complete_Verified.xlsx",
+  "sha256": "eb67b8bc905803db9bc559aabcd8262940ae884afc9a891dd216b4c18e405df5",
+  "sheet": "전체 문항 및 정답",
+  "questionCount": 239,
+  "excludedGuideIds": [38, 39, 40],
+  "statusCounts": {
+    "정상 (Verified)": 217,
+    "보기 매칭 확인 필요": 4,
+    "용어 변형 (정상)": 3,
+    "정상 (용어 참고)": 3,
+    "주의/오류 의심 (Mismatch)": 3,
+    "구버전 문항 (Deprecated)": 3,
+    "구버전 용어 (Key Events)": 3,
+    "구버전 용어 (Updated UI)": 3
+  },
+  "incompleteOptions": [59, 60, 61],
+  "urlDerivedTitleCount": 142
+}
