@@ -7,6 +7,7 @@ import {
   type Question,
 } from "../src/app/ga4/questions";
 import sourceQuestions from "../src/app/ga4/data/source-questions.json";
+import { answerVerifications } from "../src/app/ga4/answer-verifications";
 import { createQuestionSearch } from "../src/app/ga4/search";
 
 const search = createQuestionSearch(questions);
@@ -121,7 +122,7 @@ test("new bilingual records are indexed without modifying the search engine", ()
   }
 });
 
-test("239 supplied questions retain every original question, answer and option position", () => {
+test("239 supplied questions preserve source answers with explicit verified option repairs", () => {
   assert.equal(suppliedBank.length, 239);
   assert.equal(new Set(suppliedBank.map((q) => q.slug)).size, 239);
   for (const row of sourceQuestions) {
@@ -130,11 +131,17 @@ test("239 supplied questions retain every original question, answer and option p
     assert.equal(question.sourceQuestion, row.question);
     assert.equal(getAnswer(question), row.correctAnswer);
     assert.equal(question.source, row.url);
-    assert.deepEqual(question.options, row.options);
+    assert.deepEqual(
+      question.options,
+      answerVerifications[row.id]?.options ?? row.options,
+    );
     assert.match(question.title, /[가-힣]/);
     assert.ok(question.answerKo);
     assert.equal(question.reviewStatus, row.status);
-    if (question.answer >= 0) {
+    if (answerVerifications[row.id]) {
+      assert.equal(question.answer, answerVerifications[row.id]!.answer);
+      assert.ok(question.answerVerification);
+    } else if (question.answer >= 0) {
       const normalize = (value: string) =>
         value
           .normalize("NFKC")
@@ -146,11 +153,37 @@ test("239 supplied questions retain every original question, answer and option p
       );
     }
   }
-  assert.equal(suppliedBank.filter((q) => q.answer < 0).length, 6);
-  assert.equal(suppliedBank.find((q) => q.sourceId === 59)!.answer, -1);
+  assert.equal(suppliedBank.filter((q) => q.answer < 0).length, 0);
   assert.equal(
     suppliedBank.find((q) => q.sourceId === 104)!.reviewStatus,
     "주의/오류 의심 (Mismatch)",
+  );
+});
+
+test("six formerly unresolved questions use the verified fourth option with source data intact", () => {
+  assert.deepEqual(
+    Object.keys(answerVerifications).map(Number),
+    [41, 42, 47, 59, 99, 158],
+  );
+  for (const id of [41, 42, 47, 59, 99, 158]) {
+    const question = suppliedBank.find((q) => q.sourceId === id)!;
+    assert.equal(question.answer + 1, 4, String(id));
+    assert.equal(question.options.length, 4);
+    assert.ok(question.options.every(Boolean));
+    assert.match(question.answerVerification!, /원문/);
+  }
+  const original = sourceQuestions.find((row) => row.id === 59)!;
+  const restored = suppliedBank.find((q) => q.sourceId === 59)!;
+  assert.equal(original.options.filter(Boolean).length, 1);
+  assert.equal(restored.options[2], original.options[0]);
+  assert.equal(restored.options[3], getAnswer(restored));
+  assert.equal(
+    suppliedBank.find((q) => q.sourceId === 158)!.options[3],
+    "Conversion events",
+  );
+  assert.match(
+    suppliedBank.find((q) => q.sourceId === 158)!.answerVerification!,
+    /2번/,
   );
 });
 

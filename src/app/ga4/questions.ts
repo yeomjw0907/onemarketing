@@ -1,6 +1,7 @@
 import { bilingual } from "./bilingual";
 import suppliedQuestions from "./data/source-questions.json";
 import { koreanSummaries } from "./translations";
+import { answerVerifications } from "./answer-verifications";
 
 export const topics = [
   "전체",
@@ -30,6 +31,7 @@ export type Question = {
   reviewStatus?: string;
   reviewNote?: string;
   urlDerivedTitle?: boolean;
+  answerVerification?: string;
 };
 
 export function getAnswer(question: Question) {
@@ -239,9 +241,14 @@ export const questions: Question[] = suppliedQuestions.map((row) => {
   const ko = koreanSummaries[row.id];
   if (!ko || !topics.includes(ko.topic as Topic))
     throw new Error(`Missing GA4 translation for ${row.id}`);
-  const answer = row.options.findIndex(
-    (option) => normalizeOption(option) === normalizeOption(row.correctAnswer),
-  );
+  const verification = answerVerifications[row.id];
+  const options = verification?.options ?? row.options;
+  const answer =
+    verification?.answer ??
+    options.findIndex(
+      (option) =>
+        normalizeOption(option) === normalizeOption(row.correctAnswer),
+    );
   return {
     slug: `exam-${String(row.id).padStart(3, "0")}`,
     sourceId: row.id,
@@ -249,7 +256,7 @@ export const questions: Question[] = suppliedQuestions.map((row) => {
     title: ko.title,
     titleEn: row.question.replace(/\s*\(URL 제목 추출\)\s*$/, ""),
     sourceQuestion: row.question,
-    options: row.options,
+    options,
     answer,
     correctAnswer: row.correctAnswer,
     answerEn: row.correctAnswer,
@@ -259,5 +266,8 @@ export const questions: Question[] = suppliedQuestions.map((row) => {
     reviewStatus: row.status,
     reviewNote: row.note,
     urlDerivedTitle: row.question.includes("URL 제목 추출"),
+    answerVerification: verification
+      ? `${verification.checkedAt} 원문 대조: ${verification.note}`
+      : undefined,
   };
 });

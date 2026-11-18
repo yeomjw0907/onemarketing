@@ -28,7 +28,8 @@ const searchQuestions = createQuestionSearch(questions);
 
 function ReviewNotice({ question }: { question: Question }) {
   const notes: string[] = [];
-  if (question.reviewStatus && question.reviewStatus !== "정상 (Verified)")
+  if (question.answerVerification) notes.push(question.answerVerification);
+  else if (question.reviewStatus && question.reviewStatus !== "정상 (Verified)")
     notes.push(question.reviewStatus + ". " + (question.reviewNote || ""));
   if (question.answer < 0)
     notes.push(
@@ -38,7 +39,11 @@ function ReviewNotice({ question }: { question: Question }) {
     notes.push("제공 자료에 일부 보기가 누락되어 있습니다.");
   return notes.length ? (
     <details className={s.reviewNotice}>
-      <summary>자료 확인이 필요한 문제입니다</summary>
+      <summary>
+        {question.answerVerification
+          ? "원문 대조 완료 · 확인 메모"
+          : "자료 확인이 필요한 문제입니다"}
+      </summary>
       {notes.map((note) => (
         <p key={note}>{note}</p>
       ))}
